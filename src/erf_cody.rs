@@ -1,51 +1,51 @@
 const A: [f64; 5] = [
     3.1611237438705656,
-    113.864154151050156,
-    377.485237685302021,
-    3209.37758913846947,
-    0.185777706184603153,
+    113.864_154_151_050_16,
+    377.485_237_685_302,
+    3_209.377_589_138_469_4,
+    0.185_777_706_184_603_15,
 ];
 const B: [f64; 4] = [
-    23.6012909523441209,
-    244.024637934444173,
-    1282.61652607737228,
-    2844.23683343917062,
+    23.601_290_952_344_122,
+    244.024_637_934_444_17,
+    1_282.616_526_077_372_3,
+    2_844.236_833_439_171,
 ];
 const C: [f64; 9] = [
-    0.564188496988670089,
-    8.88314979438837594,
-    66.1191906371416295,
-    298.635138197400131,
-    881.95222124176909,
-    1712.04761263407058,
-    2051.07837782607147,
-    1230.33935479799725,
-    2.15311535474403846e-8,
+    0.564_188_496_988_670_1,
+    8.883_149_794_388_377,
+    66.119_190_637_141_63,
+    298.635_138_197_400_1,
+    881.952_221_241_769,
+    1_712.047_612_634_070_7,
+    2_051.078_377_826_071_6,
+    1_230.339_354_797_997_2,
+    2.153_115_354_744_038_3e-8,
 ];
 const D: [f64; 8] = [
-    15.7449261107098347,
-    117.693950891312499,
-    537.181101862009858,
-    1621.38957456669019,
-    3290.79923573345963,
-    4362.61909014324716,
-    3439.36767414372164,
-    1230.33935480374942,
+    15.744_926_110_709_835,
+    117.693_950_891_312_5,
+    537.181_101_862_009_9,
+    1_621.389_574_566_690_3,
+    3_290.799_235_733_459_7,
+    4_362.619_090_143_247,
+    3_439.367_674_143_721_6,
+    1_230.339_354_803_749_5,
 ];
 const P: [f64; 6] = [
-    0.305326634961232344,
-    0.360344899949804439,
-    0.125781726111229246,
-    0.0160837851487422766,
-    6.58749161529837803e-4,
-    0.0163153871373020978,
+    0.305_326_634_961_232_36,
+    0.360_344_899_949_804_45,
+    0.125_781_726_111_229_26,
+    0.016_083_785_148_742_275,
+    6.587_491_615_298_378e-4,
+    0.016_315_387_137_302_097,
 ];
 const Q: [f64; 5] = [
-    2.56852019228982242,
-    1.87295284992346047,
-    0.527905102951428412,
-    0.0605183413124413191,
-    0.00233520497626869185,
+    2.568_520_192_289_822,
+    1.872_952_849_923_460_4,
+    0.527_905_102_951_428_5,
+    0.060_518_341_312_441_32,
+    0.002_335_204_976_268_691_8,
 ];
 
 const ZERO: f64 = 0.0;
@@ -53,7 +53,7 @@ const HALF: f64 = 0.5;
 const ONE: f64 = 1.0;
 const TWO: f64 = 2.0;
 const FOUR: f64 = 4.0;
-const SQRPI: f64 = 0.56418958354775628695;
+const SQRPI: f64 = 0.564_189_583_547_756_3;
 const THRESH: f64 = 0.46875;
 const SIXTEN: f64 = 16.0;
 const XINF: f64 = 1.79e308;
@@ -75,7 +75,7 @@ const XMAX: f64 = 2.53e307;
 ///
 /// # Returns
 /// The calculated complementary error function value.
-pub(crate) fn calerf(x: f64, jint: i32) -> f64 {
+pub fn calerf(x: f64, jint: i32) -> f64 {
     let y = x.abs();
     let mut ysq = ZERO;
     let mut xden;
@@ -118,31 +118,29 @@ pub(crate) fn calerf(x: f64, jint: i32) -> f64 {
             let del = (y - ysq) * (y + ysq);
             result *= (-ysq * ysq).exp() * (-del).exp();
         }
+    } else if y >= XBIG {
+        if jint != 2 || y >= XMAX {
+            return fix_up(x, jint, result);
+        } else if y >= XHUGE {
+            result = SQRPI / y;
+            return fix_up(x, jint, result);
+        }
     } else {
-        if y >= XBIG {
-            if jint != 2 || y >= XMAX {
-                return fix_up(x, jint, result);
-            } else if y >= XHUGE {
-                result = SQRPI / y;
-                return fix_up(x, jint, result);
-            }
-        } else {
-            ysq = ONE / (y * y);
-            xnum = P[5] * ysq;
-            xden = ysq;
+        ysq = ONE / (y * y);
+        xnum = P[5] * ysq;
+        xden = ysq;
 
-            for i in 0..4 {
-                xnum = (xnum + P[i]) * ysq;
-                xden = (xden + Q[i]) * ysq;
-            }
-            result = ysq * (xnum + P[4]) / (xden + Q[4]);
-            result = (SQRPI - result) / y;
+        for i in 0..4 {
+            xnum = (xnum + P[i]) * ysq;
+            xden = (xden + Q[i]) * ysq;
+        }
+        result = ysq * (xnum + P[4]) / (xden + Q[4]);
+        result = (SQRPI - result) / y;
 
-            if jint != 2 {
-                ysq = (y * SIXTEN).trunc() / SIXTEN;
-                let del = (y - ysq) * (y + ysq);
-                result = ((-ysq * ysq).exp() * (-del).exp()) * result;
-            }
+        if jint != 2 {
+            ysq = (y * SIXTEN).trunc() / SIXTEN;
+            let del = (y - ysq) * (y + ysq);
+            result *= (-ysq * ysq).exp() * (-del).exp();
         }
     }
     fix_up(x, jint, result)
@@ -189,16 +187,14 @@ fn fix_up(x: f64, jint: i32, result: f64) -> f64 {
         if x < ZERO {
             result = TWO - result;
         }
-    } else {
-        if x < ZERO {
-            if x < XNEG {
-                result = XINF;
-            } else {
-                let ysq = (x * SIXTEN).trunc() / SIXTEN;
-                let del = (x - ysq) * (x + ysq);
-                let y = (ysq * ysq).exp() * del.exp();
-                result = (y + y) - result;
-            }
+    } else if x < ZERO {
+        if x < XNEG {
+            result = XINF;
+        } else {
+            let ysq = (x * SIXTEN).trunc() / SIXTEN;
+            let del = (x - ysq) * (x + ysq);
+            let y = (ysq * ysq).exp() * del.exp();
+            result = (y + y) - result;
         }
     }
     result
