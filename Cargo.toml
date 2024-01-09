@@ -1,0 +1,19 @@
+[package]
+name = "implied-vol"
+version = "0.1.0"
+authors = ["Hikaru Nakashima <nakashima.alg57@gmail.com>"]
+edition = "2021"
+repository = "https://github.com/nakashima-hikaru/implied-vol"
+license-file = "LICENSE"
+keywords = ["finance"]
+categories = ["finance"]
+
+[dependencies]
+
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+pedantic = "warn"
+cargo = "warn"
