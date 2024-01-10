@@ -1,5 +1,3 @@
-use crate::erf_cody::FunctionType::{Erf, Erfc, Erfcx};
-
 const A: [f64; 5] = [
     3.1611237438705656,
     113.864_154_151_050_16,
@@ -65,12 +63,6 @@ const XBIG: f64 = 26.543;
 const XHUGE: f64 = 6.71e7;
 const XMAX: f64 = 2.53e307;
 
-#[derive(Eq, PartialEq)]
-pub(crate) enum FunctionType {
-    Erf,
-    Erfc,
-    Erfcx,
-}
 
 pub fn erf_cody(x: f64) -> f64 {
     /* -------------------------------------------------------------------- */
@@ -78,7 +70,65 @@ pub fn erf_cody(x: f64) -> f64 {
     /*   (see comments heading CALERF). */
     /*   Author/date: W. J. Cody, January 8, 1985 */
     /* -------------------------------------------------------------------- */
-    calerf(x, Erf)
+    let y = x.abs();
+    let mut ysq = ZERO;
+    let mut xden;
+    let mut xnum;
+    let mut result = ZERO;
+
+    if y <= THRESH {
+        if y > XSMALL {
+            ysq = y * y;
+        }
+        xnum = A[4] * ysq;
+        xden = ysq;
+
+        for i in 0..3 {
+            xnum = (xnum + A[i]) * ysq;
+            xden = (xden + B[i]) * ysq;
+        }
+        result = x * (xnum + A[3]) / (xden + B[3]);
+        return result;
+    } else if y <= FOUR {
+        xnum = C[8] * y;
+        xden = y;
+
+        for i in 0..7 {
+            xnum = (xnum + C[i]) * y;
+            xden = (xden + D[i]) * y;
+        }
+        result = (xnum + C[7]) / (xden + D[7]);
+
+        ysq = (y * SIXTEN).trunc() / SIXTEN;
+        let del = (y - ysq) * (y + ysq);
+        result *= (-ysq * ysq).exp() * (-del).exp();
+    } else if y >= XBIG {
+        result = (HALF - result) + HALF;
+        if x < ZERO {
+            result = -result;
+        }
+        return result;
+    } else {
+        ysq = ONE / (y * y);
+        xnum = P[5] * ysq;
+        xden = ysq;
+
+        for i in 0..4 {
+            xnum = (xnum + P[i]) * ysq;
+            xden = (xden + Q[i]) * ysq;
+        }
+        result = ysq * (xnum + P[4]) / (xden + Q[4]);
+        result = (SQRPI - result) / y;
+
+        ysq = (y * SIXTEN).trunc() / SIXTEN;
+        let del = (y - ysq) * (y + ysq);
+        result *= (-ysq * ysq).exp() * (-del).exp();
+    }
+    result = (HALF - result) + HALF;
+    if x < ZERO {
+        result = -result;
+    }
+    return result;
 }
 
 pub fn erfc_cody(x: f64) -> f64 {
@@ -87,31 +137,6 @@ pub fn erfc_cody(x: f64) -> f64 {
     /*   (see comments heading CALERF). */
     /*   Author/date: W. J. Cody, January 8, 1985 */
     /* -------------------------------------------------------------------- */
-    calerf(x, Erfc)
-}
-
-pub fn erfcx_cody(x: f64) -> f64 {
-    /* ------------------------------------------------------------------ */
-    /* This subprogram computes approximate values for exp(x*x) * erfc(x). */
-    /*   (see comments heading CALERF). */
-    /*   Author/date: W. J. Cody, March 30, 1987 */
-    /* ------------------------------------------------------------------ */
-    calerf(x, Erfcx)
-}
-
-/// This function calculates the complementary error function (erfc) using the algorithm outlined in the paper:
-/// "Approximating the erfc and related functions" by W.J. Cody, Math. Comp., 1969, Volume 23, No 107, Pages 631-637.
-///
-/// # Arguments
-/// * `x` - The value for which to calculate the complementary error function.
-/// * `jint` - The indicator for the type of calculation to perform.
-///     - 0: Calculate the complementary error function.
-///     - 1: Calculate the scaled complementary error function.
-///     - 2: Calculate the scaled complementary error function multiplied by `exp(x^2)`.
-///
-/// # Returns
-/// The calculated complementary error function value.
-fn calerf(x: f64, jint: FunctionType) -> f64 {
     let y = x.abs();
     let mut ysq = ZERO;
     let mut xden;
@@ -131,13 +156,7 @@ fn calerf(x: f64, jint: FunctionType) -> f64 {
         }
         result = x * (xnum + A[3]) / (xden + B[3]);
 
-        if jint != Erf {
-            result = ONE - result;
-        }
-
-        if jint == Erfcx {
-            result *= ysq.exp();
-        }
+        result = ONE - result;
         return result;
     } else if y <= FOUR {
         xnum = C[8] * y;
@@ -149,18 +168,14 @@ fn calerf(x: f64, jint: FunctionType) -> f64 {
         }
         result = (xnum + C[7]) / (xden + D[7]);
 
-        if jint != Erfcx {
-            ysq = (y * SIXTEN).trunc() / SIXTEN;
-            let del = (y - ysq) * (y + ysq);
-            result *= (-ysq * ysq).exp() * (-del).exp();
-        }
+        ysq = (y * SIXTEN).trunc() / SIXTEN;
+        let del = (y - ysq) * (y + ysq);
+        result *= (-ysq * ysq).exp() * (-del).exp();
     } else if y >= XBIG {
-        if jint != Erfcx || y >= XMAX {
-            return fix_up(x, jint, result);
-        } else if y >= XHUGE {
-            result = SQRPI / y;
-            return fix_up(x, jint, result);
+        if x < ZERO {
+            result = TWO - result;
         }
+        return result;
     } else {
         ysq = ONE / (y * y);
         xnum = P[5] * ysq;
@@ -173,57 +188,95 @@ fn calerf(x: f64, jint: FunctionType) -> f64 {
         result = ysq * (xnum + P[4]) / (xden + Q[4]);
         result = (SQRPI - result) / y;
 
-        if jint != Erfcx {
-            ysq = (y * SIXTEN).trunc() / SIXTEN;
-            let del = (y - ysq) * (y + ysq);
-            result *= (-ysq * ysq).exp() * (-del).exp();
-        }
+        ysq = (y * SIXTEN).trunc() / SIXTEN;
+        let del = (y - ysq) * (y + ysq);
+        result *= (-ysq * ysq).exp() * (-del).exp();
     }
-    fix_up(x, jint, result)
+    if x < ZERO {
+        result = TWO - result;
+    }
+    result
 }
 
-/// Calculates the result based on the given parameters.
-///
-/// # Arguments
-///
-/// * `x` - A `f64` value representing a number.
-/// * `jint` - An `i32` value representing the integer part of a number.
-/// * `result` - A `f64` value representing the current result.
-///
-/// # Returns
-///
-/// Returns a `f64` value representing the calculated result.
-///
-/// # Remarks
-///
-/// This function applies different calculations to `result` based on the value of `jint`
-/// and the sign of `x`. The calculated result is then returned.
-///
-/// - If `jint` is 0:
-///   - `result` is adjusted to be in the range [0.5, 1) by using the formula `(HALF - result) + HALF`.
-///   - If `x` is less than 0, the result is negated.
-///
-/// - If `jint` is 1:
-///   - If `x` is less than 0, the result is adjusted to be in the range [1, 2) by using the formula `TWO - result`.
-///
-/// - Otherwise:
-///   - If `x` is less than 0:
-///     - If `x` is less than XNEG, the result is set to XINF.
-///     - Otherwise, the result is calculated based on the given formula and stored in `result`.
-///
-/// The final `result` value is then returned.
-fn fix_up(x: f64, jint: FunctionType, result: f64) -> f64 {
-    let mut result = result;
-    if jint == Erf {
-        result = (HALF - result) + HALF;
-        if x < ZERO {
-            result = -result;
+pub fn erfcx_cody(x: f64) -> f64 {
+    /* ------------------------------------------------------------------ */
+    /* This subprogram computes approximate values for exp(x*x) * erfc(x). */
+    /*   (see comments heading CALERF). */
+    /*   Author/date: W. J. Cody, March 30, 1987 */
+    /* ------------------------------------------------------------------ */
+    let y = x.abs();
+    let mut ysq = ZERO;
+    let mut xden;
+    let mut xnum;
+    let mut result = ZERO;
+
+    if y <= THRESH {
+        if y > XSMALL {
+            ysq = y * y;
         }
-    } else if jint == Erfc {
-        if x < ZERO {
-            result = TWO - result;
+        xnum = A[4] * ysq;
+        xden = ysq;
+
+        for i in 0..3 {
+            xnum = (xnum + A[i]) * ysq;
+            xden = (xden + B[i]) * ysq;
         }
-    } else if x < ZERO {
+        result = x * (xnum + A[3]) / (xden + B[3]);
+
+        result = ONE - result;
+
+
+        result *= ysq.exp();
+        return result;
+    } else if y <= FOUR {
+        xnum = C[8] * y;
+        xden = y;
+
+        for i in 0..7 {
+            xnum = (xnum + C[i]) * y;
+            xden = (xden + D[i]) * y;
+        }
+        result = (xnum + C[7]) / (xden + D[7]);
+    } else if y >= XBIG {
+        if y >= XMAX {
+            if x < ZERO {
+                if x < XNEG {
+                    result = XINF;
+                } else {
+                    let ysq = (x * SIXTEN).trunc() / SIXTEN;
+                    let del = (x - ysq) * (x + ysq);
+                    let y = (ysq * ysq).exp() * del.exp();
+                    result = (y + y) - result;
+                }
+            }
+            return result;
+        } else if y >= XHUGE {
+            result = SQRPI / y;
+            if x < ZERO {
+                if x < XNEG {
+                    result = XINF;
+                } else {
+                    let ysq = (x * SIXTEN).trunc() / SIXTEN;
+                    let del = (x - ysq) * (x + ysq);
+                    let y = (ysq * ysq).exp() * del.exp();
+                    result = (y + y) - result;
+                }
+            }
+            return result;
+        }
+    } else {
+        ysq = ONE / (y * y);
+        xnum = P[5] * ysq;
+        xden = ysq;
+
+        for i in 0..4 {
+            xnum = (xnum + P[i]) * ysq;
+            xden = (xden + Q[i]) * ysq;
+        }
+        result = ysq * (xnum + P[4]) / (xden + Q[4]);
+        result = (SQRPI - result) / y;
+    }
+    if x < ZERO {
         if x < XNEG {
             result = XINF;
         } else {
@@ -236,10 +289,11 @@ fn fix_up(x: f64, jint: FunctionType, result: f64) -> f64 {
     result
 }
 
+
 #[cfg(test)]
 mod tests {
     use crate::erf_cody::{erf_cody, erfc_cody, erfcx_cody, FOUR, THRESH, XBIG, XHUGE, XMAX, XNEG, ZERO};
-    
+
 
     #[test]
     fn calerf_0() {
