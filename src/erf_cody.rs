@@ -1,3 +1,5 @@
+use crate::erf_cody::FunctionType::{Erf, Erfc, Erfcx};
+
 const A: [f64; 5] = [
     3.1611237438705656,
     113.864_154_151_050_16,
@@ -63,6 +65,40 @@ const XBIG: f64 = 26.543;
 const XHUGE: f64 = 6.71e7;
 const XMAX: f64 = 2.53e307;
 
+#[derive(Eq, PartialEq)]
+pub(crate) enum FunctionType {
+    Erf,
+    Erfc,
+    Erfcx,
+}
+
+pub fn erf_cody(x: f64) -> f64 {
+    /* -------------------------------------------------------------------- */
+    /* This subprogram computes approximate values for erf(x). */
+    /*   (see comments heading CALERF). */
+    /*   Author/date: W. J. Cody, January 8, 1985 */
+    /* -------------------------------------------------------------------- */
+    calerf(x, Erf)
+}
+
+pub fn erfc_cody(x: f64) -> f64 {
+    /* -------------------------------------------------------------------- */
+    /* This subprogram computes approximate values for erfc(x). */
+    /*   (see comments heading CALERF). */
+    /*   Author/date: W. J. Cody, January 8, 1985 */
+    /* -------------------------------------------------------------------- */
+    calerf(x, Erfc)
+}
+
+pub fn erfcx_cody(x: f64) -> f64 {
+    /* ------------------------------------------------------------------ */
+    /* This subprogram computes approximate values for exp(x*x) * erfc(x). */
+    /*   (see comments heading CALERF). */
+    /*   Author/date: W. J. Cody, March 30, 1987 */
+    /* ------------------------------------------------------------------ */
+    calerf(x, Erfcx)
+}
+
 /// This function calculates the complementary error function (erfc) using the algorithm outlined in the paper:
 /// "Approximating the erfc and related functions" by W.J. Cody, Math. Comp., 1969, Volume 23, No 107, Pages 631-637.
 ///
@@ -75,7 +111,7 @@ const XMAX: f64 = 2.53e307;
 ///
 /// # Returns
 /// The calculated complementary error function value.
-pub fn calerf(x: f64, jint: i32) -> f64 {
+fn calerf(x: f64, jint: FunctionType) -> f64 {
     let y = x.abs();
     let mut ysq = ZERO;
     let mut xden;
@@ -95,11 +131,11 @@ pub fn calerf(x: f64, jint: i32) -> f64 {
         }
         result = x * (xnum + A[3]) / (xden + B[3]);
 
-        if jint != 0 {
+        if jint != Erf {
             result = ONE - result;
         }
 
-        if jint == 2 {
+        if jint == Erfcx {
             result *= ysq.exp();
         }
         return result;
@@ -113,13 +149,13 @@ pub fn calerf(x: f64, jint: i32) -> f64 {
         }
         result = (xnum + C[7]) / (xden + D[7]);
 
-        if jint != 2 {
+        if jint != Erfcx {
             ysq = (y * SIXTEN).trunc() / SIXTEN;
             let del = (y - ysq) * (y + ysq);
             result *= (-ysq * ysq).exp() * (-del).exp();
         }
     } else if y >= XBIG {
-        if jint != 2 || y >= XMAX {
+        if jint != Erfcx || y >= XMAX {
             return fix_up(x, jint, result);
         } else if y >= XHUGE {
             result = SQRPI / y;
@@ -137,7 +173,7 @@ pub fn calerf(x: f64, jint: i32) -> f64 {
         result = ysq * (xnum + P[4]) / (xden + Q[4]);
         result = (SQRPI - result) / y;
 
-        if jint != 2 {
+        if jint != Erfcx {
             ysq = (y * SIXTEN).trunc() / SIXTEN;
             let del = (y - ysq) * (y + ysq);
             result *= (-ysq * ysq).exp() * (-del).exp();
@@ -176,14 +212,14 @@ pub fn calerf(x: f64, jint: i32) -> f64 {
 ///     - Otherwise, the result is calculated based on the given formula and stored in `result`.
 ///
 /// The final `result` value is then returned.
-fn fix_up(x: f64, jint: i32, result: f64) -> f64 {
+fn fix_up(x: f64, jint: FunctionType, result: f64) -> f64 {
     let mut result = result;
-    if jint == 0 {
+    if jint == Erf {
         result = (HALF - result) + HALF;
         if x < ZERO {
             result = -result;
         }
-    } else if jint == 1 {
+    } else if jint == Erfc {
         if x < ZERO {
             result = TWO - result;
         }
@@ -202,179 +238,180 @@ fn fix_up(x: f64, jint: i32, result: f64) -> f64 {
 
 #[cfg(test)]
 mod tests {
-    use crate::erf_cody::{calerf, FOUR, THRESH, XBIG, XHUGE, XMAX, XNEG, ZERO};
+    use crate::erf_cody::{erf_cody, erfc_cody, erfcx_cody, FOUR, THRESH, XBIG, XHUGE, XMAX, XNEG, ZERO};
+    
 
     #[test]
     fn calerf_0() {
-        let x = calerf(THRESH + f64::EPSILON, 0);
+        let x = erf_cody(THRESH + f64::EPSILON);
         assert_eq!(x, 0.49261347321793825);
-        let x = calerf(THRESH - f64::EPSILON, 0);
+        let x = erf_cody(THRESH - f64::EPSILON);
         assert_eq!(x, 0.49261347321793775);
-        let x = calerf(-THRESH - f64::EPSILON, 0);
+        let x = erf_cody(-THRESH - f64::EPSILON);
         assert_eq!(x, -0.49261347321793825);
-        let x = calerf(-THRESH + f64::EPSILON, 0);
+        let x = erf_cody(-THRESH + f64::EPSILON);
         assert_eq!(x, -0.49261347321793775);
 
-        let x = calerf(FOUR + f64::EPSILON, 0);
+        let x = erf_cody(FOUR + f64::EPSILON);
         assert_eq!(x, 0.9999999845827421);
-        let x = calerf(FOUR - f64::EPSILON, 0);
+        let x = erf_cody(FOUR - f64::EPSILON);
         assert_eq!(x, 0.9999999845827421);
-        let x = calerf(-FOUR - f64::EPSILON, 0);
+        let x = erf_cody(-FOUR - f64::EPSILON);
         assert_eq!(x, -0.9999999845827421);
-        let x = calerf(-FOUR + f64::EPSILON, 0);
+        let x = erf_cody(-FOUR + f64::EPSILON);
         assert_eq!(x, -0.9999999845827421);
 
-        let x = calerf(XBIG + f64::EPSILON, 0);
+        let x = erf_cody(XBIG + f64::EPSILON);
         assert_eq!(x, 1.0);
-        let x = calerf(XBIG - f64::EPSILON, 0);
+        let x = erf_cody(XBIG - f64::EPSILON);
         assert_eq!(x, 1.0);
-        let x = calerf(-XBIG - f64::EPSILON, 0);
+        let x = erf_cody(-XBIG - f64::EPSILON);
         assert_eq!(x, -1.0);
-        let x = calerf(-XBIG + f64::EPSILON, 0);
-        assert_eq!(x, -1.0);
-
-        let x = calerf(XMAX + f64::EPSILON, 0);
-        assert_eq!(x, 1.0);
-        let x = calerf(XMAX - f64::EPSILON, 0);
-        assert_eq!(x, 1.0);
-        let x = calerf(-XMAX - f64::EPSILON, 0);
-        assert_eq!(x, -1.0);
-        let x = calerf(-XMAX + f64::EPSILON, 0);
+        let x = erf_cody(-XBIG + f64::EPSILON);
         assert_eq!(x, -1.0);
 
-        let x = calerf(XHUGE + f64::EPSILON, 0);
+        let x = erf_cody(XMAX + f64::EPSILON);
         assert_eq!(x, 1.0);
-        let x = calerf(XHUGE - f64::EPSILON, 0);
+        let x = erf_cody(XMAX - f64::EPSILON);
         assert_eq!(x, 1.0);
-        let x = calerf(-XHUGE - f64::EPSILON, 0);
+        let x = erf_cody(-XMAX - f64::EPSILON);
         assert_eq!(x, -1.0);
-        let x = calerf(-XHUGE + f64::EPSILON, 0);
+        let x = erf_cody(-XMAX + f64::EPSILON);
         assert_eq!(x, -1.0);
 
-        let x = calerf(ZERO + f64::EPSILON, 0);
+        let x = erf_cody(XHUGE + f64::EPSILON);
+        assert_eq!(x, 1.0);
+        let x = erf_cody(XHUGE - f64::EPSILON);
+        assert_eq!(x, 1.0);
+        let x = erf_cody(-XHUGE - f64::EPSILON);
+        assert_eq!(x, -1.0);
+        let x = erf_cody(-XHUGE + f64::EPSILON);
+        assert_eq!(x, -1.0);
+
+        let x = erf_cody(ZERO + f64::EPSILON);
         assert_eq!(x, 2.5055050636335897e-16);
-        let x = calerf(ZERO - f64::EPSILON, 0);
+        let x = erf_cody(ZERO - f64::EPSILON);
         assert_eq!(x, -2.5055050636335897e-16);
 
-        let x = calerf(XNEG + f64::EPSILON, 0);
+        let x = erf_cody(XNEG + f64::EPSILON);
         assert_eq!(x, -1.0);
-        let x = calerf(XNEG - f64::EPSILON, 0);
+        let x = erf_cody(XNEG - f64::EPSILON);
         assert_eq!(x, -1.0);
     }
 
     #[test]
     fn calerf_1() {
-        let x = calerf(THRESH + f64::EPSILON, 1);
+        let x = erfc_cody(THRESH + f64::EPSILON);
         assert_eq!(x, 0.5073865267820618);
-        let x = calerf(THRESH - f64::EPSILON, 1);
+        let x = erfc_cody(THRESH - f64::EPSILON);
         assert_eq!(x, 0.5073865267820623);
-        let x = calerf(-THRESH - f64::EPSILON, 1);
+        let x = erfc_cody(-THRESH - f64::EPSILON);
         assert_eq!(x, 1.4926134732179381);
-        let x = calerf(-THRESH + f64::EPSILON, 1);
+        let x = erfc_cody(-THRESH + f64::EPSILON);
         assert_eq!(x, 1.4926134732179377);
 
-        let x = calerf(FOUR + f64::EPSILON, 1);
+        let x = erfc_cody(FOUR + f64::EPSILON);
         assert_eq!(x, 1.541725790028002e-8);
-        let x = calerf(FOUR - f64::EPSILON, 1);
+        let x = erfc_cody(FOUR - f64::EPSILON);
         assert_eq!(x, 1.541725790028002e-8);
-        let x = calerf(-FOUR - f64::EPSILON, 1);
+        let x = erfc_cody(-FOUR - f64::EPSILON);
         assert_eq!(x, 1.999999984582742);
-        let x = calerf(-FOUR + f64::EPSILON, 1);
+        let x = erfc_cody(-FOUR + f64::EPSILON);
         assert_eq!(x, 1.999999984582742);
 
-        let x = calerf(XBIG + f64::EPSILON, 1);
+        let x = erfc_cody(XBIG + f64::EPSILON);
         assert_eq!(x, 0.0);
-        let x = calerf(XBIG - f64::EPSILON, 1);
+        let x = erfc_cody(XBIG - f64::EPSILON);
         assert_eq!(x, 0.0);
-        let x = calerf(-XBIG - f64::EPSILON, 1);
+        let x = erfc_cody(-XBIG - f64::EPSILON);
         assert_eq!(x, 2.0);
-        let x = calerf(-XBIG + f64::EPSILON, 1);
-        assert_eq!(x, 2.0);
-
-        let x = calerf(XMAX + f64::EPSILON, 1);
-        assert_eq!(x, 0.0);
-        let x = calerf(XMAX - f64::EPSILON, 1);
-        assert_eq!(x, 0.0);
-        let x = calerf(-XMAX - f64::EPSILON, 1);
-        assert_eq!(x, 2.0);
-        let x = calerf(-XMAX + f64::EPSILON, 1);
+        let x = erfc_cody(-XBIG + f64::EPSILON);
         assert_eq!(x, 2.0);
 
-        let x = calerf(XHUGE + f64::EPSILON, 1);
+        let x = erfc_cody(XMAX + f64::EPSILON);
         assert_eq!(x, 0.0);
-        let x = calerf(XHUGE - f64::EPSILON, 1);
+        let x = erfc_cody(XMAX - f64::EPSILON);
         assert_eq!(x, 0.0);
-        let x = calerf(-XHUGE - f64::EPSILON, 1);
+        let x = erfc_cody(-XMAX - f64::EPSILON);
         assert_eq!(x, 2.0);
-        let x = calerf(-XHUGE + f64::EPSILON, 1);
+        let x = erfc_cody(-XMAX + f64::EPSILON);
         assert_eq!(x, 2.0);
 
-        let x = calerf(ZERO + f64::EPSILON, 1);
+        let x = erfc_cody(XHUGE + f64::EPSILON);
+        assert_eq!(x, 0.0);
+        let x = erfc_cody(XHUGE - f64::EPSILON);
+        assert_eq!(x, 0.0);
+        let x = erfc_cody(-XHUGE - f64::EPSILON);
+        assert_eq!(x, 2.0);
+        let x = erfc_cody(-XHUGE + f64::EPSILON);
+        assert_eq!(x, 2.0);
+
+        let x = erfc_cody(ZERO + f64::EPSILON);
         assert_eq!(x, 0.9999999999999998);
-        let x = calerf(ZERO - f64::EPSILON, 1);
+        let x = erfc_cody(ZERO - f64::EPSILON);
         assert_eq!(x, 1.0000000000000002);
 
-        let x = calerf(XNEG + f64::EPSILON, 1);
+        let x = erfc_cody(XNEG + f64::EPSILON);
         assert_eq!(x, 2.0);
-        let x = calerf(XNEG - f64::EPSILON, 1);
+        let x = erfc_cody(XNEG - f64::EPSILON);
         assert_eq!(x, 2.0);
     }
 
     #[test]
     fn calerf_2() {
-        let x = calerf(THRESH + f64::EPSILON, 2);
+        let x = erfcx_cody(THRESH + f64::EPSILON);
         assert_eq!(x, 0.6320696892495559);
-        let x = calerf(THRESH - f64::EPSILON, 2);
+        let x = erfcx_cody(THRESH - f64::EPSILON);
         assert_eq!(x, 0.6320696892495563);
-        let x = calerf(-THRESH - f64::EPSILON, 2);
+        let x = erfcx_cody(-THRESH - f64::EPSILON);
         assert_eq!(x, 1.8594024168714227);
-        let x = calerf(-THRESH + f64::EPSILON, 2);
+        let x = erfcx_cody(-THRESH + f64::EPSILON);
         assert_eq!(x, 1.8594024168714214);
 
-        let x = calerf(FOUR + f64::EPSILON, 2);
+        let x = erfcx_cody(FOUR + f64::EPSILON);
         assert_eq!(x, 0.1369994576250614);
-        let x = calerf(FOUR - f64::EPSILON, 2);
+        let x = erfcx_cody(FOUR - f64::EPSILON);
         assert_eq!(x, 0.1369994576250614);
-        let x = calerf(-FOUR - f64::EPSILON, 2);
+        let x = erfcx_cody(-FOUR - f64::EPSILON);
         assert_eq!(x, 17772220.904016286);
-        let x = calerf(-FOUR + f64::EPSILON, 2);
+        let x = erfcx_cody(-FOUR + f64::EPSILON);
         assert_eq!(x, 17772220.904016286);
 
-        let x = calerf(XBIG + f64::EPSILON, 2);
+        let x = erfcx_cody(XBIG + f64::EPSILON);
         assert_eq!(x, 0.0);
-        let x = calerf(XBIG - f64::EPSILON, 2);
+        let x = erfcx_cody(XBIG - f64::EPSILON);
         assert_eq!(x, 0.0);
-        let x = calerf(-XBIG - f64::EPSILON, 2);
+        let x = erfcx_cody(-XBIG - f64::EPSILON);
         assert_eq!(x, 1.8831722547514706e306);
-        let x = calerf(-XBIG + f64::EPSILON, 2);
+        let x = erfcx_cody(-XBIG + f64::EPSILON);
         assert_eq!(x, 1.8831722547514706e306);
 
-        let x = calerf(XMAX + f64::EPSILON, 2);
+        let x = erfcx_cody(XMAX + f64::EPSILON);
         assert_eq!(x, 0.0);
-        let x = calerf(XMAX - f64::EPSILON, 2);
+        let x = erfcx_cody(XMAX - f64::EPSILON);
         assert_eq!(x, 0.0);
-        let x = calerf(-XMAX - f64::EPSILON, 2);
+        let x = erfcx_cody(-XMAX - f64::EPSILON);
         assert_eq!(x, 1.79e308);
-        let x = calerf(-XMAX + f64::EPSILON, 2);
+        let x = erfcx_cody(-XMAX + f64::EPSILON);
         assert_eq!(x, 1.79e308);
 
-        let x = calerf(XHUGE + f64::EPSILON, 2);
+        let x = erfcx_cody(XHUGE + f64::EPSILON);
         assert_eq!(x, 8.408190514869691e-9);
-        let x = calerf(XHUGE - f64::EPSILON, 2);
+        let x = erfcx_cody(XHUGE - f64::EPSILON);
         assert_eq!(x, 8.408190514869691e-9);
-        let x = calerf(-XHUGE - f64::EPSILON, 2);
+        let x = erfcx_cody(-XHUGE - f64::EPSILON);
         assert_eq!(x, 1.79e308);
-        let x = calerf(-XHUGE + f64::EPSILON, 2);
+        let x = erfcx_cody(-XHUGE + f64::EPSILON);
         assert_eq!(x, 1.79e308);
 
-        let x = calerf(ZERO + f64::EPSILON, 2);
+        let x = erfcx_cody(ZERO + f64::EPSILON);
         assert_eq!(x, 0.9999999999999998);
-        let x = calerf(ZERO - f64::EPSILON, 2);
+        let x = erfcx_cody(ZERO - f64::EPSILON);
         assert_eq!(x, 1.0000000000000002);
 
-        let x = calerf(XNEG + f64::EPSILON, 2);
+        let x = erfcx_cody(XNEG + f64::EPSILON);
         assert_eq!(x, 1.728618506590026e308);
-        let x = calerf(XNEG - f64::EPSILON, 2);
+        let x = erfcx_cody(XNEG - f64::EPSILON);
         assert_eq!(x, 1.728618506590026e308);
     }
 }
