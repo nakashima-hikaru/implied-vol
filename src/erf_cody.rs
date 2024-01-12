@@ -56,13 +56,12 @@ const FOUR: f64 = 4.0;
 const SQRPI: f64 = 0.564_189_583_547_756_3;
 const THRESH: f64 = 0.46875;
 const SIXTEN: f64 = 16.0;
-const XINF: f64 = 1.79e308;
+const XINF: f64 = f64::MAX;
 const XNEG: f64 = -26.628;
 const XSMALL: f64 = 1.11e-16;
 const XBIG: f64 = 26.543;
 const XHUGE: f64 = 6.71e7;
 const XMAX: f64 = 2.53e307;
-
 
 pub fn erf_cody(x: f64) -> f64 {
     /* -------------------------------------------------------------------- */
@@ -225,7 +224,6 @@ pub fn erfcx_cody(x: f64) -> f64 {
 
         result = ONE - result;
 
-
         result *= ysq.exp();
         return result;
     } else if y <= FOUR {
@@ -289,11 +287,11 @@ pub fn erfcx_cody(x: f64) -> f64 {
     result
 }
 
-
 #[cfg(test)]
 mod tests {
-    use crate::erf_cody::{erf_cody, erfc_cody, erfcx_cody, FOUR, THRESH, XBIG, XHUGE, XMAX, XNEG, ZERO};
-
+    use crate::erf_cody::{
+        erf_cody, erfc_cody, erfcx_cody, FOUR, THRESH, XBIG, XHUGE, XMAX, XNEG, ZERO,
+    };
 
     #[test]
     fn calerf_0() {
@@ -445,18 +443,18 @@ mod tests {
         let x = erfcx_cody(XMAX - f64::EPSILON);
         assert_eq!(x, 0.0);
         let x = erfcx_cody(-XMAX - f64::EPSILON);
-        assert_eq!(x, 1.79e308);
+        assert_eq!(x, 1.7976931348623157e308);
         let x = erfcx_cody(-XMAX + f64::EPSILON);
-        assert_eq!(x, 1.79e308);
+        assert_eq!(x, 1.7976931348623157e308);
 
         let x = erfcx_cody(XHUGE + f64::EPSILON);
         assert_eq!(x, 8.408190514869691e-9);
         let x = erfcx_cody(XHUGE - f64::EPSILON);
         assert_eq!(x, 8.408190514869691e-9);
         let x = erfcx_cody(-XHUGE - f64::EPSILON);
-        assert_eq!(x, 1.79e308);
+        assert_eq!(x, 1.7976931348623157e308);
         let x = erfcx_cody(-XHUGE + f64::EPSILON);
-        assert_eq!(x, 1.79e308);
+        assert_eq!(x, 1.7976931348623157e308);
 
         let x = erfcx_cody(ZERO + f64::EPSILON);
         assert_eq!(x, 0.9999999999999998);
