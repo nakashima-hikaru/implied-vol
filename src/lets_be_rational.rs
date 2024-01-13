@@ -75,7 +75,7 @@ fn asymptotic_expansion_of_normalised_black_call_over_vega(h: f64, t: f64) -> f6
 fn small_t_expansion_of_normalised_black_call_over_vega(h: f64, t: f64) -> f64 {
     let w = t.powi(2);
     let h2 = h.powi(2);
-    let a = 1_f64 + h * (SQRT_2 / 2_f64).sqrt() * erfcx_cody(-h / SQRT_2);
+    let a = 1_f64 + h * SQRT_PI_OVER_TWO * erfcx_cody(-(1.0 / SQRT_2) * h);
     let b_over_vega = 2.0 * t * (a + w * ((-1.0 + 3.0 * a + a * h2) / 6.0 + w * ((-7.0 + 15.0 * a + h2 * (-1.0 + 10.0 * a + a * h2)) / 120.0 + w * ((-57.0 + 105.0 * a + h2 * (-18.0 + 105.0 * a + h2 * (-1.0 + 21.0 * a + a * h2))) / 5040.0 + w * ((-561.0 + 945.0 * a + h2 * (-285.0 + 1260.0 * a + h2 * (-33.0 + 378.0 * a + h2 * (-1.0 + 36.0 * a + a * h2)))) / 362880.0 + w * ((-6555.0 + 10395.0 * a + h2 * (-4680.0 + 17325.0 * a + h2 * (-840.0 + 6930.0 * a + h2 * (-52.0 + 990.0 * a + h2 * (-1.0 + 55.0 * a + a * h2))))) / 39916800.0 + ((-89055.0 + 135135.0 * a + h2 * (-82845.0 + 270270.0 * a + h2 * (-20370.0 + 135135.0 * a + h2 * (-1926.0 + 25740.0 * a + h2 * (-75.0 + 2145.0 * a + h2 * (-1.0 + 78.0 * a + a * h2)))))) * w) / 6227020800.0))))));
     return f64::abs(f64::max(b_over_vega, 0_f64));
 }
@@ -316,7 +316,7 @@ fn unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_wit
                 let b_h3 = b_h2 * b_h2 - c - 0.25;
                 let sq_bpob = bpob * bpob;
                 let mu = 6.0 * lambda * (1.0 + lambda);
-                let h3 = b_h3 + sq_bpob * (2.0 + mu) - (b_h2 * bpob * 3.0 * otlambda) - (b_h3 * bpob * 4.0 * otlambda);
+                let h3 = b_h3 + sq_bpob * (2.0 + mu) - (b_h2 * bpob * 3.0 * otlambda);
                 ds = if x < -190.0 {
                     nu * householder4_factor(nu, h2, h3, ((b_h2 * (b_h3 - 0.5)) - ((b_h2 - 2.0 / s) * 2.0 * c)) - (bpob * (sq_bpob * (6.0 + lambda * (22.0 + lambda * (36.0 + lambda * 24.0))) - (b_h2 * bpob * (12.0 + 6.0 * mu))) - (b_h2 * bpob * 3.0 * otlambda) - (b_h3 * bpob * 4.0 * otlambda)))
                 } else {
