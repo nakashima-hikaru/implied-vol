@@ -98,9 +98,9 @@ fn normalised_black_call_with_optimal_use_of_codys_functions(x: f64, s: f64) -> 
     let two_b: f64;
     if q1 < CODYS_THRESHOLD {
         if q2 < CODYS_THRESHOLD {
-            two_b = 0.5 * (x.exp() * erfc_cody(q1) - (-0.5 * x).exp() * erfc_cody(q2));
+            two_b = 0.5 * ((0.5 * x).exp() * erfc_cody(q1) - (-0.5 * x).exp() * erfc_cody(q2));
         } else {
-            two_b = 0.5 * (x.exp() * erfc_cody(q1) - (-0.5 * (h * h + t * t)).exp() * erfcx_cody(q2));
+            two_b = 0.5 * ((0.5 * x).exp() * erfc_cody(q1) - (-0.5 * (h * h + t * t)).exp() * erfcx_cody(q2));
         }
     } else {
         if q2 < CODYS_THRESHOLD {
@@ -302,7 +302,7 @@ fn unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_wit
             let ln_beta = beta.ln();
 
             ds = 1.0_f64;
-            while iterations < n && ds.abs() > std::f64::EPSILON * s {
+            while iterations < n && ds.abs() > f64::EPSILON * s {
                 let (bx, ln_vega) = normalised_black_call_over_vega_and_ln_vega(x, s);
                 let ln_b = (bx.ln()) + ln_vega;
                 let bpob = 1.0 / bx;
@@ -491,18 +491,44 @@ mod tests {
     use super::*;
 
     #[test]
-    fn reconstruction() {
-        for i in 0..1 {
-            let price = 20.0 + 0.1 * i as f64;
-            let f = 120.0;
-            let k = 100.0;
+    fn reconstruction_atm() {
+        for i in 1..100 {
+            let price = 0.01 * i as f64;
+            let f = 100.0;
+            let k = f;
             let t = 1.0;
             let q = 1.0;
             let sigma = implied_black_volatility(price, f, k, t, q);
-            println!("{sigma}");
             let reprice = black(f, k, sigma, t, q);
-            println!("{price}, {reprice}");
             assert!((price - reprice).abs() < 1e-13);
         }
     }
+
+    #[test]
+    fn reconstruction_intrinsic() {
+        let price = 20.0;
+        let f = 120.0;
+        let k = f - price;
+        let t = 1.0;
+        let q = 1.0;
+        let sigma = implied_black_volatility(price, f, k, t, q);
+        let reprice = black(f, k, sigma, t, q);
+        assert!((price - reprice).abs() < 1e-13);
+    }
+}
+
+#[test]
+fn reconstruction() {
+    // for i in 1..2 {
+        let price = 20.01;
+        let f = 120.0;
+        let k = 100.0;
+        let t = 1.0;
+        let q = 1.0;
+        let sigma = implied_black_volatility(price, f, k, t, q);
+        println!("{sigma}");
+        let reprice = black(f, k, sigma, t, q);
+        println!("{price}, {reprice}");
+        assert!((price - reprice).abs() < 1e-13);
+    // }
 }
