@@ -67,10 +67,10 @@ fn asymptotic_expansion_of_normalised_black_call_over_vega(h: f64, t: f64) -> f6
 }
 
 
-fn normalised_black_call_using_erfcx(h: f64, t: f64) -> f64 {
-    let b = 0.5 * (-0.5 * (h * h + t * t)).exp() * (erfcx_cody(-(1.0 / SQRT_2) * (h + t)) - erfcx_cody(-(1.0 / SQRT_2) * (h - t)));
-    b.abs().max(0.0)
-}
+// fn normalised_black_call_using_erfcx(h: f64, t: f64) -> f64 {
+//     let b = 0.5 * (-0.5 * (h * h + t * t)).exp() * (erfcx_cody(-(1.0 / SQRT_2) * (h + t)) - erfcx_cody(-(1.0 / SQRT_2) * (h - t)));
+//     b.abs().max(0.0)
+// }
 
 fn small_t_expansion_of_normalised_black_call_over_vega(h: f64, t: f64) -> f64 {
     let w = t.powi(2);
@@ -80,14 +80,14 @@ fn small_t_expansion_of_normalised_black_call_over_vega(h: f64, t: f64) -> f64 {
     return f64::abs(f64::max(b_over_vega, 0_f64));
 }
 
-fn normalised_black_call_using_norm_cdf(x: f64, s: f64) -> f64 {
-    let h = x / s;
-    let t = 0.5 * s;
-    let b_max = (0.5 * x).exp();
-    let b = norm_cdf(h + t) * b_max - norm_cdf(h - t) / b_max;
-
-    b.max(0.0).abs()
-}
+// fn normalised_black_call_using_norm_cdf(x: f64, s: f64) -> f64 {
+//     let h = x / s;
+//     let t = 0.5 * s;
+//     let b_max = (0.5 * x).exp();
+//     let b = norm_cdf(h + t) * b_max - norm_cdf(h - t) / b_max;
+//
+//     b.max(0.0).abs()
+// }
 
 fn normalised_black_call_with_optimal_use_of_codys_functions(x: f64, s: f64) -> f64 {
     const CODYS_THRESHOLD: f64 = 0.46875;
@@ -172,21 +172,21 @@ fn normalised_black_call_over_vega_and_ln_vega(x: f64, s: f64) -> (f64, f64) {
     return (normalised_black_call_with_optimal_use_of_codys_functions(x, s) * (-ln_vega).exp(), ln_vega);
 }
 
-fn normalised_volga(x: f64, s: f64) -> f64 {
-    let ax = x.abs();
-    if ax <= 0f64 { return (1f64 / SQRT_TWO_PI) * (-0.125 * s * s).exp(); }
-    if s <= 0f64 || s <= ax * SQRT_DBL_MIN { return 0f64; }
-    let h2 = x.powi(2) / s.powi(2);
-    let t2 = (0.5 * s).powi(2);
-    return (1f64 / SQRT_TWO_PI) * (-0.5 * (h2 + t2)).exp() * (h2 - t2) / s;
-}
+// fn normalised_volga(x: f64, s: f64) -> f64 {
+//     let ax = x.abs();
+//     if ax <= 0f64 { return (1f64 / SQRT_TWO_PI) * (-0.125 * s * s).exp(); }
+//     if s <= 0f64 || s <= ax * SQRT_DBL_MIN { return 0f64; }
+//     let h2 = x.powi(2) / s.powi(2);
+//     let t2 = (0.5 * s).powi(2);
+//     return (1f64 / SQRT_TWO_PI) * (-0.5 * (h2 + t2)).exp() * (h2 - t2) / s;
+// }
 
 fn normalised_black(x: f64, s: f64, theta: f64) -> f64 {
     normalised_black_call(if theta < 0f64 { -x } else { x }, s)
 }
 
 fn black(f: f64, k: f64, sigma: f64, t: f64, q: f64) -> f64 {
-    let intrinsic = ((q < 0f64).then(|| k - f).unwrap_or(f - k)).abs().max(0f64);
+    let intrinsic = (q < 0f64).then(|| k - f).unwrap_or(f - k).max(0f64).abs();
     if q * (f - k) > 0f64 {
         return intrinsic + black(f, k, sigma, t, -q);
     }
@@ -251,12 +251,12 @@ fn take_step(x_min: f64, x_max: f64, x: f64, dx: &mut f64) -> f64 {
     return new_x;
 }
 
-pub fn complementary_normalised_black_inner(h: f64, t: f64) -> f64 {
-    0.5 * (erfcx_cody((t + h) * (1.0 / SQRT_2)) + erfcx_cody((t - h) * (1.0 / SQRT_2))) * (-0.5 * (t * t + h * h)).exp()
-}
+// pub fn complementary_normalised_black_inner(h: f64, t: f64) -> f64 {
+//     0.5 * (erfcx_cody((t + h) * (1.0 / SQRT_2)) + erfcx_cody((t - h) * (1.0 / SQRT_2))) * (-0.5 * (t * t + h * h)).exp()
+// }
 
 fn unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(
-    mut beta: f64, mut x: f64, mut q: f64, n: i32,
+    mut beta: f64, mut x: f64, q: f64, n: i32,
 ) -> f64 {
     if q * x > 0. {
         beta = (beta - normalised_intrinsic(x, q)).max(0.).abs();
@@ -276,7 +276,7 @@ fn unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_wit
     }
     let mut iterations = 0;
     let mut f = -f64::MAX;
-    let mut s = -f64::MAX;
+    let mut s;
     let mut ds = -f64::MAX;
     let mut s_left = f64::MIN;
     let mut s_right = f64::MAX;
@@ -438,29 +438,29 @@ fn implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(
     ) / t.sqrt()
 }
 
-fn complementary_normalised_black(x: f64, s: f64) -> f64 {
-    complementary_normalised_black_inner(x / s, s / 2.0)
-}
+// fn complementary_normalised_black(x: f64, s: f64) -> f64 {
+//     complementary_normalised_black_inner(x / s, s / 2.0)
+// }
 
-fn normalised_implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(mut beta: f64, x: f64, mut q: f64 /* q=±1 */, n: i32) -> f64 {
-    // Map in-the-money to out-of-the-money
-    if q * x > 0.0 {
-        beta -= normalised_intrinsic(x, q);
-        q = -q;
-    }
-    if beta < 0.0 {
-        return VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_BELOW_INTRINSIC;
-    }
-    return unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(beta, x, q, n);
-}
+// fn normalised_implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(mut beta: f64, x: f64, mut q: f64 /* q=±1 */, n: i32) -> f64 {
+//     // Map in-the-money to out-of-the-money
+//     if q * x > 0.0 {
+//         beta -= normalised_intrinsic(x, q);
+//         q = -q;
+//     }
+//     if beta < 0.0 {
+//         return VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_BELOW_INTRINSIC;
+//     }
+//     return unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(beta, x, q, n);
+// }
 
 pub fn implied_black_volatility(price: f64, f: f64, k: f64, t: f64, q: f64 /* q=±1 */) -> f64 {
     implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(price, f, k, t, q, 2)
 }
 
-fn normalised_implied_black_volatility(beta: f64, x: f64, q: f64 /* q=±1 */) -> f64 {
-    normalised_implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(beta, x, q, 2)
-}
+// fn normalised_implied_black_volatility(beta: f64, x: f64, q: f64 /* q=±1 */) -> f64 {
+//     normalised_implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(beta, x, q, 2)
+// }
 
 // fn vega(f: f64, k: f64, sigma: f64, t: f64) -> f64 {
 //     (f.sqrt() * k.sqrt()) * normalised_vega((f / k).ln(), sigma * t.sqrt()) * t.sqrt()
@@ -486,29 +486,23 @@ fn normalised_implied_black_volatility(beta: f64, x: f64, q: f64 /* q=±1 */) ->
 //         1.0
 //     }
 // }
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-#[test]
-fn main() {
-    /*price = 1.90
-    f = 100.0
-    k = 100.0
-    t = 1.0
-    q = 1.0
-    sigma = implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(price, f, k, t, q, 2)
-    print(black(f, k, sigma, t, q))*/
-    for i in 0..100 {
-        let price = 1.0 * i as f64;
-        let f = 100.0;
-        let k = 100.0;
-        let t = 1.0;
-        let q = 1.0;
-        let sigma = implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(price, f, k, t, q, 2);
-        let reprice = black(f, k, sigma, t, q);
-        // println!("sigma: {}", sigma);
-        println!("{i}: {price}, {reprice}, {:?}", price - reprice);
-        // assert!((price - reprice).abs() < 1e-10);
+    #[test]
+    fn reconstruction() {
+        for i in 0..1 {
+            let price = 20.0 + 0.1 * i as f64;
+            let f = 120.0;
+            let k = 100.0;
+            let t = 1.0;
+            let q = 1.0;
+            let sigma = implied_black_volatility(price, f, k, t, q);
+            println!("{sigma}");
+            let reprice = black(f, k, sigma, t, q);
+            println!("{price}, {reprice}");
+            assert!((price - reprice).abs() < 1e-13);
+        }
     }
-    //
-    // let x = implied_black_volatility(1.90, 100.0, 100.0, 1.0, 1.0);
-    // println!("{}", x);
 }
