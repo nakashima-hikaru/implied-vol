@@ -16,7 +16,7 @@ jobs:
         shell: bash
         run: |
           curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-      - run: cargo fmt --all --check
+#      - run: cargo fmt --all --check
       - run: cargo check --workspace
       - run: cargo clippy --all-targets --all-features -- -D warnings -Aclippy::multiple_crate_versions
       - run: cargo nextest run

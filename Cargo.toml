@@ -10,6 +10,8 @@ categories = ["finance"]
 
 [dependencies]
 
+[dev-dependencies]
+rand = "0.8.5"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

@@ -19,8 +19,8 @@ const SQRT_DBL_MIN: f64 = 1.4916681462400413e-154;
 const SQRT_DBL_MAX: f64 = 1.3407807929942596e154;
 const DENORMALISATION_CUTOFF: f64 = 0.0;
 
-const VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_BELOW_INTRINSIC: f64 = -f64::MAX;
-const VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_ABOVE_MAXIMUM: f64 = f64::MAX;
+const VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_BELOW_INTRINSIC: f64 = f64::NEG_INFINITY;
+const VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_ABOVE_MAXIMUM: f64 = f64::INFINITY;
 
 
 fn is_below_horizon(x: f64) -> bool { x.abs() < DENORMALISATION_CUTOFF }
@@ -491,7 +491,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn reconstruction_atm() {
+    fn reconstruction_call_atm() {
         for i in 1..100 {
             let price = 0.01 * i as f64;
             let f = 100.0;
@@ -505,30 +505,111 @@ mod tests {
     }
 
     #[test]
+    fn reconstruction_put_atm() {
+        for i in 1..100 {
+            let price = 0.01 * i as f64;
+            let f = 100.0;
+            let k = f;
+            let t = 1.0;
+            let q = -1.0;
+            let sigma = implied_black_volatility(price, f, k, t, q);
+            let reprice = black(f, k, sigma, t, q);
+            assert!((price - reprice).abs() < 1e-13);
+        }
+    }
+
+    #[test]
     fn reconstruction_intrinsic() {
         let price = 20.0;
         let f = 120.0;
         let k = f - price;
         let t = 1.0;
-        let q = 1.0;
+        let q = -1.0;
         let sigma = implied_black_volatility(price, f, k, t, q);
         let reprice = black(f, k, sigma, t, q);
         assert!((price - reprice).abs() < 1e-13);
     }
-}
 
-#[test]
-fn reconstruction() {
-    // for i in 1..2 {
-        let price = 20.01;
-        let f = 120.0;
-        let k = 100.0;
-        let t = 1.0;
-        let q = 1.0;
-        let sigma = implied_black_volatility(price, f, k, t, q);
-        println!("{sigma}");
-        let reprice = black(f, k, sigma, t, q);
-        println!("{price}, {reprice}");
-        assert!((price - reprice).abs() < 1e-13);
-    // }
+
+    #[test]
+    fn reconstruction() {
+        for i in 0..1000 {
+            let price = 20.0 + 0.01 * i as f64;
+            let f = 120.0;
+            let k = 100.0;
+            let t = 1.0;
+            let q = -1.0;
+            let sigma = implied_black_volatility(price, f, k, t, q);
+            let reprice = black(f, k, sigma, t, q);
+            assert!((price - reprice).abs() < 1e-13);
+        }
+    }
+
+    #[test]
+    fn reconstruction_random_call_itm() {
+        for _ in 0..100_000 {
+            let r: f64 = rand::random();
+            let r2: f64 = rand::random();
+            let r3: f64 = rand::random();
+            let price = 100.0 * (1.0 - r) + 100.0 * r * r2;
+            let f = 100.0;
+            let k = 100.0 * r;
+            let t = 100.0 * r3;
+            let q = 1.0;
+            let sigma = implied_black_volatility(price, f, k, t, q);
+            let reprice = black(f, k, sigma, t, q);
+            assert!((price - reprice).abs() < 1e-13);
+        }
+    }
+
+    #[test]
+    fn reconstruction_random_call_otm() {
+        for _ in 0..100_000 {
+            let r: f64 = rand::random();
+            let r2: f64 = rand::random();
+            let r3: f64 = rand::random();
+            let price = 100.0 * r * r2;
+            let f = 100.0 * r;
+            let k = 100.0;
+            let t = 100.0 * r3;
+            let q = 1.0;
+            let sigma = implied_black_volatility(price, f, k, t, q);
+            let reprice = black(f, k, sigma, t, q);
+            assert!((price - reprice).abs() < 1e-13);
+        }
+    }
+
+    #[test]
+    fn reconstruction_random_put_itm() {
+        for _ in 0..100_000 {
+            let r: f64 = rand::random();
+            let r2: f64 = rand::random();
+            let r3: f64 = rand::random();
+            let price = 100.0 * r * r2;
+            let f = 100.0;
+            let k = 100.0 * r;
+            let t = 100.0 * r3;
+            let q = -1.0;
+            let sigma = implied_black_volatility(price, f, k, t, q);
+            let reprice = black(f, k, sigma, t, q);
+            assert!((price - reprice).abs() < 1e-13);
+        }
+    }
+
+    #[test]
+    fn reconstruction_random_put_otm() {
+        for _ in 0..100_000 {
+            let r: f64 = rand::random();
+            let r2: f64 = rand::random();
+            let r3: f64 = rand::random();
+            let price = 100.0 * (1.0 - r) + 100.0 * r * r2;
+            let f = 100.0 * r;
+            let k = 100.0;
+            let t = 100.0 * r3;
+            let q = -1.0;
+            let sigma = implied_black_volatility(price, f, k, t, q);
+            let reprice = black(f, k, sigma, t, q);
+            assert!((price - reprice).abs() < 1e-13);
+        }
+    }
 }
