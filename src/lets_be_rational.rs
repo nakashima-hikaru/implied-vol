@@ -259,7 +259,7 @@ fn unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_wit
     mut beta: f64, mut x: f64, mut q: f64, n: i32,
 ) -> f64 {
     if q * x > 0. {
-        beta = (beta - normalised_intrinsic(x, q)).abs().max(0.);
+        beta = (beta - normalised_intrinsic(x, q)).max(0.).abs();
         // q = -q;
     }
     if q < 0. {
@@ -359,7 +359,7 @@ fn unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_wit
                 let t = (beta - b_u) / h;
                 f = (f_upper_map_h * (1.0 - t) + 0.5 * h * t) * (1.0 - t);
             }
-            let (mut s, s_left) = (inverse_f_upper_map(f), s_u);
+            (s, s_left) = (inverse_f_upper_map(f), s_u);
             if beta > 0.5 * b_max {
                 let beta_bar = b_max - beta;
                 while iterations < n && ds.abs() > f64::EPSILON * s {
@@ -431,11 +431,11 @@ fn implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(
     }
 
     unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(
-        price / (f64::sqrt(f) * f64::sqrt(k)),
+        price / (f.sqrt() * k.sqrt()),
         x,
         q,
         n,
-    ) / f64::sqrt(t)
+    ) / t.sqrt()
 }
 
 fn complementary_normalised_black(x: f64, s: f64) -> f64 {
@@ -496,7 +496,7 @@ fn main() {
     q = 1.0
     sigma = implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(price, f, k, t, q, 2)
     print(black(f, k, sigma, t, q))*/
-    for i in 0..45 {
+    for i in 42..43 {
         let price = 1.90 * i as f64;
         let f = 100.0;
         let k = 100.0;
@@ -504,7 +504,7 @@ fn main() {
         let q = 1.0;
         let sigma = implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(price, f, k, t, q, 2);
         let reprice = black(f, k, sigma, t, q);
-        // println!("{}", sigma);
+        println!("sigma: {}", sigma);
         println!("{i}: {price}, {reprice}, {}", price - reprice);
         // assert!((price - reprice).abs() < 1e-10);
     }
