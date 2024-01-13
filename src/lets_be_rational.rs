@@ -365,7 +365,7 @@ fn unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_wit
                 while iterations < n && ds.abs() > f64::EPSILON * s {
                     let h = x / s;
                     let t = s / 2.0;
-                    let gp = (2.0 / std::f64::consts::PI.sqrt()) / (erfcx_cody((t + h) * (1.0 / SQRT_2)) + erfcx_cody((t - h) * (1.0 / SQRT_2)));
+                    let gp = (2.0 / SQRT_TWO_PI) / (erfcx_cody((t + h) * (1.0 / SQRT_2)) + erfcx_cody((t - h) * (1.0 / SQRT_2)));
                     let b_bar = normalised_vega(x, s) / gp;
                     let g = (beta_bar / b_bar).ln();
                     let x_over_s_square = (h * h) / s;
@@ -496,16 +496,16 @@ fn main() {
     q = 1.0
     sigma = implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(price, f, k, t, q, 2)
     print(black(f, k, sigma, t, q))*/
-    for i in 42..43 {
-        let price = 1.90 * i as f64;
+    for i in 0..100 {
+        let price = 1.0 * i as f64;
         let f = 100.0;
         let k = 100.0;
         let t = 1.0;
         let q = 1.0;
         let sigma = implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(price, f, k, t, q, 2);
         let reprice = black(f, k, sigma, t, q);
-        println!("sigma: {}", sigma);
-        println!("{i}: {price}, {reprice}, {}", price - reprice);
+        // println!("sigma: {}", sigma);
+        println!("{i}: {price}, {reprice}, {:?}", price - reprice);
         // assert!((price - reprice).abs() < 1e-10);
     }
     //
