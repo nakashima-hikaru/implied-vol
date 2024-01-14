@@ -3,7 +3,7 @@ use crate::erf_cody::erfc_cody;
 const NORM_CDF_ASYMPTOTIC_EXPANSION_FIRST_THRESHOLD: f64 = -10.0;
 const NORM_CDF_ASYMPTOTIC_EXPANSION_SECOND_THRESHOLD: f64 = -67108864.0;
 // 1.0 / f64::sqrt(f64::EPSILON);
-const FRAC_SQRT_2_PI: f64 = 0.3989422804014327;
+const FRAC_SQRT_2_PI: f64 = 0.398_942_280_401_432_7;
 
 pub(crate) fn norm_pdf(x: f64) -> f64 {
     FRAC_SQRT_2_PI * (-0.5 * x * x).exp()

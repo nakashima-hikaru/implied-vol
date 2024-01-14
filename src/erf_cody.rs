@@ -49,7 +49,7 @@ const Q: [f64; 5] = [
 ];
 
 const ZERO: f64 = 0.0;
-const HALF: f64 = 0.5;
+// const HALF: f64 = 0.5;
 const ONE: f64 = 1.0;
 const TWO: f64 = 2.0;
 const FOUR: f64 = 4.0;
@@ -63,74 +63,74 @@ const XBIG: f64 = 26.543;
 const XHUGE: f64 = 6.71e7;
 const XMAX: f64 = 2.53e307;
 
-pub fn erf_cody(x: f64) -> f64 {
-    /* -------------------------------------------------------------------- */
-    /* This subprogram computes approximate values for erf(x). */
-    /*   (see comments heading CALERF). */
-    /*   Author/date: W. J. Cody, January 8, 1985 */
-    /* -------------------------------------------------------------------- */
-    let y = x.abs();
-    let mut ysq = ZERO;
-    let mut xden;
-    let mut xnum;
-    let mut result = ZERO;
+// pub(crate) fn erf_cody(x: f64) -> f64 {
+//     /* -------------------------------------------------------------------- */
+//     /* This subprogram computes approximate values for erf(x). */
+//     /*   (see comments heading CALERF). */
+//     /*   Author/date: W. J. Cody, January 8, 1985 */
+//     /* -------------------------------------------------------------------- */
+//     let y = x.abs();
+//     let mut ysq = ZERO;
+//     let mut xden;
+//     let mut xnum;
+//     let mut result = ZERO;
+//
+//     if y <= THRESH {
+//         if y > XSMALL {
+//             ysq = y * y;
+//         }
+//         xnum = A[4] * ysq;
+//         xden = ysq;
+//
+//         for i in 0..3 {
+//             xnum = (xnum + A[i]) * ysq;
+//             xden = (xden + B[i]) * ysq;
+//         }
+//         result = x * (xnum + A[3]) / (xden + B[3]);
+//         return result;
+//     } else if y <= FOUR {
+//         xnum = C[8] * y;
+//         xden = y;
+//
+//         for i in 0..7 {
+//             xnum = (xnum + C[i]) * y;
+//             xden = (xden + D[i]) * y;
+//         }
+//         result = (xnum + C[7]) / (xden + D[7]);
+//
+//         ysq = (y * SIXTEN).trunc() / SIXTEN;
+//         let del = (y - ysq) * (y + ysq);
+//         result *= (-ysq * ysq).exp() * (-del).exp();
+//     } else if y >= XBIG {
+//         result = (HALF - result) + HALF;
+//         if x < ZERO {
+//             result = -result;
+//         }
+//         return result;
+//     } else {
+//         ysq = ONE / (y * y);
+//         xnum = P[5] * ysq;
+//         xden = ysq;
+//
+//         for i in 0..4 {
+//             xnum = (xnum + P[i]) * ysq;
+//             xden = (xden + Q[i]) * ysq;
+//         }
+//         result = ysq * (xnum + P[4]) / (xden + Q[4]);
+//         result = (SQRPI - result) / y;
+//
+//         ysq = (y * SIXTEN).trunc() / SIXTEN;
+//         let del = (y - ysq) * (y + ysq);
+//         result *= (-ysq * ysq).exp() * (-del).exp();
+//     }
+//     result = (HALF - result) + HALF;
+//     if x < ZERO {
+//         result = -result;
+//     }
+//     result
+// }
 
-    if y <= THRESH {
-        if y > XSMALL {
-            ysq = y * y;
-        }
-        xnum = A[4] * ysq;
-        xden = ysq;
-
-        for i in 0..3 {
-            xnum = (xnum + A[i]) * ysq;
-            xden = (xden + B[i]) * ysq;
-        }
-        result = x * (xnum + A[3]) / (xden + B[3]);
-        return result;
-    } else if y <= FOUR {
-        xnum = C[8] * y;
-        xden = y;
-
-        for i in 0..7 {
-            xnum = (xnum + C[i]) * y;
-            xden = (xden + D[i]) * y;
-        }
-        result = (xnum + C[7]) / (xden + D[7]);
-
-        ysq = (y * SIXTEN).trunc() / SIXTEN;
-        let del = (y - ysq) * (y + ysq);
-        result *= (-ysq * ysq).exp() * (-del).exp();
-    } else if y >= XBIG {
-        result = (HALF - result) + HALF;
-        if x < ZERO {
-            result = -result;
-        }
-        return result;
-    } else {
-        ysq = ONE / (y * y);
-        xnum = P[5] * ysq;
-        xden = ysq;
-
-        for i in 0..4 {
-            xnum = (xnum + P[i]) * ysq;
-            xden = (xden + Q[i]) * ysq;
-        }
-        result = ysq * (xnum + P[4]) / (xden + Q[4]);
-        result = (SQRPI - result) / y;
-
-        ysq = (y * SIXTEN).trunc() / SIXTEN;
-        let del = (y - ysq) * (y + ysq);
-        result *= (-ysq * ysq).exp() * (-del).exp();
-    }
-    result = (HALF - result) + HALF;
-    if x < ZERO {
-        result = -result;
-    }
-    result
-}
-
-pub fn erfc_cody(x: f64) -> f64 {
+pub(crate) fn erfc_cody(x: f64) -> f64 {
     /* -------------------------------------------------------------------- */
     /* This subprogram computes approximate values for erfc(x). */
     /*   (see comments heading CALERF). */
@@ -197,7 +197,8 @@ pub fn erfc_cody(x: f64) -> f64 {
     result
 }
 
-pub fn erfcx_cody(x: f64) -> f64 {
+
+pub(crate) fn erfcx_cody(x: f64) -> f64 {
     /* ------------------------------------------------------------------ */
     /* This subprogram computes approximate values for exp(x*x) * erfc(x). */
     /*   (see comments heading CALERF). */
@@ -287,69 +288,70 @@ pub fn erfcx_cody(x: f64) -> f64 {
     result
 }
 
+
 #[cfg(test)]
 mod tests {
     use crate::erf_cody::{
-        erf_cody, erfc_cody, erfcx_cody, FOUR, THRESH, XBIG, XHUGE, XMAX, XNEG, ZERO,
+        erfc_cody, erfcx_cody, FOUR, THRESH, XBIG, XHUGE, XMAX, XNEG, ZERO,
     };
 
-    #[test]
-    fn calerf_0() {
-        let x = erf_cody(THRESH + f64::EPSILON);
-        assert_eq!(x, 0.49261347321793825);
-        let x = erf_cody(THRESH - f64::EPSILON);
-        assert_eq!(x, 0.49261347321793775);
-        let x = erf_cody(-THRESH - f64::EPSILON);
-        assert_eq!(x, -0.49261347321793825);
-        let x = erf_cody(-THRESH + f64::EPSILON);
-        assert_eq!(x, -0.49261347321793775);
-
-        let x = erf_cody(FOUR + f64::EPSILON);
-        assert_eq!(x, 0.9999999845827421);
-        let x = erf_cody(FOUR - f64::EPSILON);
-        assert_eq!(x, 0.9999999845827421);
-        let x = erf_cody(-FOUR - f64::EPSILON);
-        assert_eq!(x, -0.9999999845827421);
-        let x = erf_cody(-FOUR + f64::EPSILON);
-        assert_eq!(x, -0.9999999845827421);
-
-        let x = erf_cody(XBIG + f64::EPSILON);
-        assert_eq!(x, 1.0);
-        let x = erf_cody(XBIG - f64::EPSILON);
-        assert_eq!(x, 1.0);
-        let x = erf_cody(-XBIG - f64::EPSILON);
-        assert_eq!(x, -1.0);
-        let x = erf_cody(-XBIG + f64::EPSILON);
-        assert_eq!(x, -1.0);
-
-        let x = erf_cody(XMAX + f64::EPSILON);
-        assert_eq!(x, 1.0);
-        let x = erf_cody(XMAX - f64::EPSILON);
-        assert_eq!(x, 1.0);
-        let x = erf_cody(-XMAX - f64::EPSILON);
-        assert_eq!(x, -1.0);
-        let x = erf_cody(-XMAX + f64::EPSILON);
-        assert_eq!(x, -1.0);
-
-        let x = erf_cody(XHUGE + f64::EPSILON);
-        assert_eq!(x, 1.0);
-        let x = erf_cody(XHUGE - f64::EPSILON);
-        assert_eq!(x, 1.0);
-        let x = erf_cody(-XHUGE - f64::EPSILON);
-        assert_eq!(x, -1.0);
-        let x = erf_cody(-XHUGE + f64::EPSILON);
-        assert_eq!(x, -1.0);
-
-        let x = erf_cody(ZERO + f64::EPSILON);
-        assert_eq!(x, 2.5055050636335897e-16);
-        let x = erf_cody(ZERO - f64::EPSILON);
-        assert_eq!(x, -2.5055050636335897e-16);
-
-        let x = erf_cody(XNEG + f64::EPSILON);
-        assert_eq!(x, -1.0);
-        let x = erf_cody(XNEG - f64::EPSILON);
-        assert_eq!(x, -1.0);
-    }
+    // #[test]
+    // fn calerf_0() {
+    //     let x = erf_cody(THRESH + f64::EPSILON);
+    //     assert_eq!(x, 0.49261347321793825);
+    //     let x = erf_cody(THRESH - f64::EPSILON);
+    //     assert_eq!(x, 0.49261347321793775);
+    //     let x = erf_cody(-THRESH - f64::EPSILON);
+    //     assert_eq!(x, -0.49261347321793825);
+    //     let x = erf_cody(-THRESH + f64::EPSILON);
+    //     assert_eq!(x, -0.49261347321793775);
+    //
+    //     let x = erf_cody(FOUR + f64::EPSILON);
+    //     assert_eq!(x, 0.9999999845827421);
+    //     let x = erf_cody(FOUR - f64::EPSILON);
+    //     assert_eq!(x, 0.9999999845827421);
+    //     let x = erf_cody(-FOUR - f64::EPSILON);
+    //     assert_eq!(x, -0.9999999845827421);
+    //     let x = erf_cody(-FOUR + f64::EPSILON);
+    //     assert_eq!(x, -0.9999999845827421);
+    //
+    //     let x = erf_cody(XBIG + f64::EPSILON);
+    //     assert_eq!(x, 1.0);
+    //     let x = erf_cody(XBIG - f64::EPSILON);
+    //     assert_eq!(x, 1.0);
+    //     let x = erf_cody(-XBIG - f64::EPSILON);
+    //     assert_eq!(x, -1.0);
+    //     let x = erf_cody(-XBIG + f64::EPSILON);
+    //     assert_eq!(x, -1.0);
+    //
+    //     let x = erf_cody(XMAX + f64::EPSILON);
+    //     assert_eq!(x, 1.0);
+    //     let x = erf_cody(XMAX - f64::EPSILON);
+    //     assert_eq!(x, 1.0);
+    //     let x = erf_cody(-XMAX - f64::EPSILON);
+    //     assert_eq!(x, -1.0);
+    //     let x = erf_cody(-XMAX + f64::EPSILON);
+    //     assert_eq!(x, -1.0);
+    //
+    //     let x = erf_cody(XHUGE + f64::EPSILON);
+    //     assert_eq!(x, 1.0);
+    //     let x = erf_cody(XHUGE - f64::EPSILON);
+    //     assert_eq!(x, 1.0);
+    //     let x = erf_cody(-XHUGE - f64::EPSILON);
+    //     assert_eq!(x, -1.0);
+    //     let x = erf_cody(-XHUGE + f64::EPSILON);
+    //     assert_eq!(x, -1.0);
+    //
+    //     let x = erf_cody(ZERO + f64::EPSILON);
+    //     assert_eq!(x, 2.5055050636335897e-16);
+    //     let x = erf_cody(ZERO - f64::EPSILON);
+    //     assert_eq!(x, -2.5055050636335897e-16);
+    //
+    //     let x = erf_cody(XNEG + f64::EPSILON);
+    //     assert_eq!(x, -1.0);
+    //     let x = erf_cody(XNEG - f64::EPSILON);
+    //     assert_eq!(x, -1.0);
+    // }
 
     #[test]
     fn calerf_1() {

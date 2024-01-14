@@ -452,7 +452,7 @@ fn implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(
 //     return unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(beta, x, q, n);
 // }
 
-pub fn implied_black_volatility(price: f64, f: f64, k: f64, t: f64, q: f64 /* q=±1 */) -> f64 {
+pub fn implied_black_volatility(price: f64, f: f64, k: f64, t: f64, q: f64) -> f64 {
     implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(price, f, k, t, q, 2)
 }
 
@@ -486,6 +486,7 @@ pub fn implied_black_volatility(price: f64, f: f64, k: f64, t: f64, q: f64 /* q=
 // }
 #[cfg(test)]
 mod tests {
+    use rand::Rng;
     use super::*;
 
     #[test]
@@ -517,97 +518,93 @@ mod tests {
     }
 
     #[test]
-    fn reconstruction_intrinsic() {
-        let price = 20.0;
-        let f = 120.0;
-        let k = f - price;
-        let t = 1.0;
-        let q = -1.0;
-        let sigma = implied_black_volatility(price, f, k, t, q);
-        let reprice = black(f, k, sigma, t, q);
-        assert!((price - reprice).abs() < 5e-14);
-    }
-
-
-    #[test]
-    fn reconstruction() {
-        for i in 0..1000 {
-            let price = 20.0 + 0.01 * i as f64;
-            let f = 120.0;
-            let k = 100.0;
-            let t = 1.0;
-            let q = -1.0;
+    fn reconstruction_random_call_intrinsic() {
+        let n = 100_000;
+        let seed: [u8; 32] = [13; 32];
+        let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
+        for _ in 0..n {
+            let (r, r2, r3): (f64, f64, f64) = rng.gen();
+            let price = 1e5 * r2;
+            let f = r + 1e5 * r2;
+            let k = f - price;
+            let t = 1e5 * r3;
+            let q = 1.0;
             let sigma = implied_black_volatility(price, f, k, t, q);
             let reprice = black(f, k, sigma, t, q);
-            assert!((price - reprice).abs() < 5e-14);
+            assert!((price - reprice).abs() < 5e-16);
         }
     }
 
     #[test]
     fn reconstruction_random_call_itm() {
-        for _ in 0..100_000 {
-            let r: f64 = rand::random();
-            let r2: f64 = rand::random();
-            let r3: f64 = rand::random();
-            let price = 100.0 * (1.0 - r) + 100.0 * r * r2;
-            let f = 100.0;
-            let k = 100.0 * r;
-            let t = 100.0 * r3;
+        let n = 100_000;
+        let seed: [u8; 32] = [13; 32];
+        let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
+        for _ in 0..n {
+            let (r, r2, r3): (f64, f64, f64) = rng.gen();
+            let price = 1.0 * (1.0 - r) + 1.0 * r * r2;
+            let f = 1.0;
+            let k = 1.0 * r;
+            let t = 1e5 * r3;
             let q = 1.0;
             let sigma = implied_black_volatility(price, f, k, t, q);
             let reprice = black(f, k, sigma, t, q);
-            assert!((price - reprice).abs() < 5e-14);
+            assert!((price - reprice).abs() < 5e-16);
         }
     }
 
     #[test]
     fn reconstruction_random_call_otm() {
-        for _ in 0..100_000 {
-            let r: f64 = rand::random();
-            let r2: f64 = rand::random();
-            let r3: f64 = rand::random();
-            let price = 100.0 * r * r2;
-            let f = 100.0 * r;
-            let k = 100.0;
-            let t = 100.0 * r3;
+        let n = 100_000;
+        let seed: [u8; 32] = [13; 32];
+        let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
+        for _ in 0..n {
+            let (r, r2, r3): (f64, f64, f64) = rng.gen();
+            let price = 1.0 * r * r2;
+            let f = 1.0 * r;
+            let k = 1.0;
+            let t = 1e5 * r3;
             let q = 1.0;
             let sigma = implied_black_volatility(price, f, k, t, q);
             let reprice = black(f, k, sigma, t, q);
-            assert!((price - reprice).abs() < 5e-14);
+            assert!((price - reprice).abs() < 5e-16);
         }
     }
 
+
     #[test]
     fn reconstruction_random_put_itm() {
-        for _ in 0..100_000 {
-            let r: f64 = rand::random();
-            let r2: f64 = rand::random();
-            let r3: f64 = rand::random();
-            let price = 100.0 * r * r2;
-            let f = 100.0;
-            let k = 100.0 * r;
-            let t = 100.0 * r3;
+        let n = 100_000;
+        let seed: [u8; 32] = [13; 32];
+        let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
+        for _ in 0..n {
+            let (r, r2, r3): (f64, f64, f64) = rng.gen();
+            let price = 1.0 * r * r2;
+            let f = 1.0;
+            let k = 1.0 * r;
+            let t = 1e5 * r3;
             let q = -1.0;
             let sigma = implied_black_volatility(price, f, k, t, q);
             let reprice = black(f, k, sigma, t, q);
-            assert!((price - reprice).abs() < 5e-14);
+            assert!((price - reprice).abs() < 5e-16);
         }
     }
 
     #[test]
     fn reconstruction_random_put_otm() {
-        for _ in 0..100_000 {
-            let r: f64 = rand::random();
-            let r2: f64 = rand::random();
-            let r3: f64 = rand::random();
-            let price = 100.0 * (1.0 - r) + 100.0 * r * r2;
-            let f = 100.0 * r;
-            let k = 100.0;
-            let t = 100.0 * r3;
+        let n = 100_000;
+        let seed: [u8; 32] = [13; 32];
+        let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
+        for _ in 0..n {
+            let (r, r2, r3): (f64, f64, f64) = rng.gen();
+            let price = 1.0 * (1.0 - r) + 1.0 * r * r2;
+            let f = 1.0 * r;
+            let k = 1.0;
+            let t = 1e5 * r3;
             let q = -1.0;
             let sigma = implied_black_volatility(price, f, k, t, q);
             let reprice = black(f, k, sigma, t, q);
-            assert!((price - reprice).abs() < 5e-14);
+            assert!((price - reprice).abs() < 5e-16);
         }
     }
 }
