@@ -183,6 +183,19 @@ fn normalised_black(x: f64, s: f64, theta: f64) -> f64 {
     normalised_black_call(if theta < 0f64 { -x } else { x }, s)
 }
 
+/// Calculates the price of a European option using the Black-Scholes formula.
+///
+/// # Arguments
+///
+/// * `f` - The current value of the underlying asset.
+/// * `k` - The strike price of the option.
+/// * `sigma` - The volatility of the underlying asset.
+/// * `t` - The time to expiration of the option.
+/// * `q` - Positive if call else put.
+///
+/// # Returns
+///
+/// The price of the European option.
 pub fn black(f: f64, k: f64, sigma: f64, t: f64, q: f64) -> f64 {
     let intrinsic = if q < 0f64 { k - f } else { f - k }.max(0f64).abs();
     if q * (f - k) > 0f64 {
@@ -452,6 +465,19 @@ fn implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(
 //     return unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(beta, x, q, n);
 // }
 
+/// Calculates the implied black volatility using a transformed rational guess with limited iterations.
+///
+/// # Arguments
+///
+/// * `price` - The current price of the option.
+/// * `f` - The current forward price of the underlying asset.
+/// * `k` - The strike price of the option.
+/// * `t` - The time to expiration in years.
+/// * `q` - Positive if call else put.
+///
+/// # Returns
+///
+/// The implied black volatility.
 pub fn implied_black_volatility(price: f64, f: f64, k: f64, t: f64, q: f64) -> f64 {
     implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(price, f, k, t, q, 2)
 }
