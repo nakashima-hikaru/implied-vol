@@ -40,15 +40,15 @@ fn normalised_intrinsic(x: f64, q: f64 /* q=±1 */) -> f64 {
     }
     let b_max = (0.5 * x).exp();
     let one_over_b_max = 1.0 / b_max;
-    return ((q < 0.0) as i32 as f64 * -2.0 + 1.0) * (b_max - one_over_b_max).abs().max(0.0);
+    ((q < 0.0) as i32 as f64 * -2.0 + 1.0) * (b_max - one_over_b_max).abs().max(0.0)
 }
 
 fn normalised_intrinsic_call(x: f64) -> f64 {
-    return normalised_intrinsic(x, 1.0);
+    normalised_intrinsic(x, 1.0)
 }
 
 fn square(x: f64) -> f64 {
-    return x * x;
+    x * x
 }
 
 const ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD: f64 = -10.0;
@@ -63,7 +63,7 @@ fn asymptotic_expansion_of_normalised_black_call_over_vega(h: f64, t: f64) -> f6
     let asymptotic_expansion_sum = 2.0 + q * (-6.0E0 - 2.0 * e + 3.0 * q * (1.0E1 + e * (2.0E1 + 2.0 * e) + 5.0 * q * (-1.4E1 + e * (-7.0E1 + e * (-4.2E1 - 2.0 * e)) + 7.0 * q * (1.8E1 + e * (1.68E2 + e * (2.52E2 + e * (7.2E1 + 2.0 * e))) + 9.0 * q * (-2.2E1 + e * (-3.3E2 + e * (-9.24E2 + e * (-6.6E2 + e * (-1.1E2 - 2.0 * e)))) + 1.1E1 * q * (2.6E1 + e * (5.72E2 + e * (2.574E3 + e * (3.432E3 + e * (1.43E3 + e * (1.56E2 + 2.0 * e))))) + 1.3E1 * q * (-3.0E1 + e * (-9.1E2 + e * (-6.006E3 + e * (-1.287E4 + e * (-1.001E4 + e * (-2.73E3 + e * (-2.1E2 - 2.0 * e)))))) + 1.5E1 * q * (3.4E1 + e * (1.36E3 + e * (1.2376E4 + e * (3.8896E4 + e * (4.862E4 + e * (2.4752E4 + e * (4.76E3 + e * (2.72E2 + 2.0 * e))))))) + 1.7E1 * q * (-3.8E1 + e * (-1.938E3 + e * (-2.3256E4 + e * (-1.00776E5 + e * (-1.84756E5 + e * (-1.51164E5 + e * (-5.4264E4 + e * (-7.752E3 + e * (-3.42E2 - 2.0 * e)))))))) + 1.9E1 * q * (4.2E1 + e * (2.66E3 + e * (4.0698E4 + e * (2.3256E5 + e * (5.8786E5 + e * (7.05432E5 + e * (4.0698E5 + e * (1.08528E5 + e * (1.197E4 + e * (4.2E2 + 2.0 * e))))))))) + 2.1E1 * q * (-4.6E1 + e * (-3.542E3 + e * (-6.7298E4 + e * (-4.90314E5 + e * (-1.63438E6 + e * (-2.704156E6 + e * (-2.288132E6 + e * (-9.80628E5 + e * (-2.01894E5 + e * (-1.771E4 + e * (-5.06E2 - 2.0 * e)))))))))) + 2.3E1 * q * (5.0E1 + e * (4.6E3 + e * (1.0626E5 + e * (9.614E5 + e * (4.08595E6 + e * (8.9148E6 + e * (1.04006E7 + e * (6.53752E6 + e * (2.16315E6 + e * (3.542E5 + e * (2.53E4 + e * (6.0E2 + 2.0 * e))))))))))) + 2.5E1 * q * (-5.4E1 + e * (-5.85E3 + e * (-1.6146E5 + e * (-1.77606E6 + e * (-9.37365E6 + e * (-2.607579E7 + e * (-4.01166E7 + e * (-3.476772E7 + e * (-1.687257E7 + e * (-4.44015E6 + e * (-5.9202E5 + e * (-3.51E4 + e * (-7.02E2 - 2.0 * e)))))))))))) + 2.7E1 * q * (5.8E1 + e * (7.308E3 + e * (2.3751E5 + e * (3.12156E6 + e * (2.003001E7 + e * (6.919458E7 + e * (1.3572783E8 + e * (1.5511752E8 + e * (1.0379187E8 + e * (4.006002E7 + e * (8.58429E6 + e * (9.5004E5 + e * (4.7502E4 + e * (8.12E2 + 2.0 * e))))))))))))) + 2.9E1 * q * (-6.2E1 + e * (-8.99E3 + e * (-3.39822E5 + e * (-5.25915E6 + e * (-4.032015E7 + e * (-1.6934463E8 + e * (-4.1250615E8 + e * (-6.0108039E8 + e * (-5.3036505E8 + e * (-2.8224105E8 + e * (-8.870433E7 + e * (-1.577745E7 + e * (-1.472562E6 + e * (-6.293E4 + e * (-9.3E2 - 2.0 * e)))))))))))))) + 3.1E1 * q * (6.6E1 + e * (1.0912E4 + e * (4.74672E5 + e * (8.544096E6 + e * (7.71342E7 + e * (3.8707344E8 + e * (1.14633288E9 + e * (2.07431664E9 + e * (2.33360622E9 + e * (1.6376184E9 + e * (7.0963464E8 + e * (1.8512208E8 + e * (2.7768312E7 + e * (2.215136E6 + e * (8.184E4 + e * (1.056E3 + 2.0 * e))))))))))))))) + 3.3E1 * (-7.0E1 + e * (-1.309E4 + e * (-6.49264E5 + e * (-1.344904E7 + e * (-1.4121492E8 + e * (-8.344518E8 + e * (-2.9526756E9 + e * (-6.49588632E9 + e * (-9.0751353E9 + e * (-8.1198579E9 + e * (-4.6399188E9 + e * (-1.6689036E9 + e * (-3.67158792E8 + e * (-4.707164E7 + e * (-3.24632E6 + e * (-1.0472E5 + e * (-1.19E3 - 2.0 * e))))))))))))))))) * q))))))))))))))));
 
     let b_over_vega = (t / r) * asymptotic_expansion_sum;
-    return f64::abs(f64::max(b_over_vega, 0.));
+    f64::abs(f64::max(b_over_vega, 0.))
 }
 
 
@@ -77,7 +77,7 @@ fn small_t_expansion_of_normalised_black_call_over_vega(h: f64, t: f64) -> f64 {
     let h2 = h.powi(2);
     let a = 1_f64 + h * SQRT_PI_OVER_TWO * erfcx_cody(-(1.0 / SQRT_2) * h);
     let b_over_vega = 2.0 * t * (a + w * ((-1.0 + 3.0 * a + a * h2) / 6.0 + w * ((-7.0 + 15.0 * a + h2 * (-1.0 + 10.0 * a + a * h2)) / 120.0 + w * ((-57.0 + 105.0 * a + h2 * (-18.0 + 105.0 * a + h2 * (-1.0 + 21.0 * a + a * h2))) / 5040.0 + w * ((-561.0 + 945.0 * a + h2 * (-285.0 + 1260.0 * a + h2 * (-33.0 + 378.0 * a + h2 * (-1.0 + 36.0 * a + a * h2)))) / 362880.0 + w * ((-6555.0 + 10395.0 * a + h2 * (-4680.0 + 17325.0 * a + h2 * (-840.0 + 6930.0 * a + h2 * (-52.0 + 990.0 * a + h2 * (-1.0 + 55.0 * a + a * h2))))) / 39916800.0 + ((-89055.0 + 135135.0 * a + h2 * (-82845.0 + 270270.0 * a + h2 * (-20370.0 + 135135.0 * a + h2 * (-1926.0 + 25740.0 * a + h2 * (-75.0 + 2145.0 * a + h2 * (-1.0 + 78.0 * a + a * h2)))))) * w) / 6227020800.0))))));
-    return f64::abs(f64::max(b_over_vega, 0_f64));
+    f64::abs(f64::max(b_over_vega, 0_f64))
 }
 
 // fn normalised_black_call_using_norm_cdf(x: f64, s: f64) -> f64 {
@@ -102,12 +102,10 @@ fn normalised_black_call_with_optimal_use_of_codys_functions(x: f64, s: f64) -> 
         } else {
             two_b = 0.5 * ((0.5 * x).exp() * erfc_cody(q1) - (-0.5 * (h * h + t * t)).exp() * erfcx_cody(q2));
         }
+    } else if q2 < CODYS_THRESHOLD {
+        two_b = 0.5 * ((-0.5 * (h * h + t * t)).exp() * erfcx_cody(q1) - (-0.5 * x).exp() * erfc_cody(q2));
     } else {
-        if q2 < CODYS_THRESHOLD {
-            two_b = 0.5 * ((-0.5 * (h * h + t * t)).exp() * erfcx_cody(q1) - (-0.5 * x).exp() * erfc_cody(q2));
-        } else {
-            two_b = 0.5 * ((-0.5 * (h * h + t * t)).exp() * (erfcx_cody(q1) - erfcx_cody(q2)));
-        }
+        two_b = 0.5 * ((-0.5 * (h * h + t * t)).exp() * (erfcx_cody(q1) - erfcx_cody(q2)));
     }
     two_b.abs().max(0.0)
 }
@@ -150,7 +148,7 @@ fn normalised_black_call(x: f64, s: f64) -> f64 {
     if 0.5 * s < SMALL_T_EXPANSION_OF_NORMALISED_BLACK_THRESHOLD {
         return small_t_expansion_of_normalised_black_call_over_vega(x / s, 0.5 * s) * normalised_vega(x, s);
     }
-    return normalised_black_call_with_optimal_use_of_codys_functions(x, s);
+    normalised_black_call_with_optimal_use_of_codys_functions(x, s)
 }
 
 
@@ -169,7 +167,7 @@ fn normalised_black_call_over_vega_and_ln_vega(x: f64, s: f64) -> (f64, f64) {
     if 0.5 * s < SMALL_T_EXPANSION_OF_NORMALISED_BLACK_THRESHOLD {
         return (small_t_expansion_of_normalised_black_call_over_vega(x / s, 0.5 * s), ln_vega);
     }
-    return (normalised_black_call_with_optimal_use_of_codys_functions(x, s) * (-ln_vega).exp(), ln_vega);
+    (normalised_black_call_with_optimal_use_of_codys_functions(x, s) * (-ln_vega).exp(), ln_vega)
 }
 
 // fn normalised_volga(x: f64, s: f64) -> f64 {
@@ -185,12 +183,12 @@ fn normalised_black(x: f64, s: f64, theta: f64) -> f64 {
     normalised_black_call(if theta < 0f64 { -x } else { x }, s)
 }
 
-fn black(f: f64, k: f64, sigma: f64, t: f64, q: f64) -> f64 {
-    let intrinsic = (q < 0f64).then(|| k - f).unwrap_or(f - k).max(0f64).abs();
+pub fn black(f: f64, k: f64, sigma: f64, t: f64, q: f64) -> f64 {
+    let intrinsic = if q < 0f64 { k - f } else { f - k }.max(0f64).abs();
     if q * (f - k) > 0f64 {
         return intrinsic + black(f, k, sigma, t, -q);
     }
-    return intrinsic.max((f.sqrt() * k.sqrt()) * normalised_black((f / k).ln(), sigma * t.sqrt(), q));
+    intrinsic.max((f.sqrt() * k.sqrt()) * normalised_black((f / k).ln(), sigma * t.sqrt(), q))
 }
 
 fn compute_f_lower_map_and_first_two_derivatives(x: f64, s: f64, f: &mut f64, fp: &mut f64, fpp: &mut f64) {
@@ -242,13 +240,13 @@ fn compute_f_upper_map_and_first_two_derivatives(x: f64, s: f64) -> (f64, f64, f
 
 
 fn inverse_f_upper_map(f: f64) -> f64 {
-    return -2.0 * inverse_norm_cdf(f);
+    -2.0 * inverse_norm_cdf(f)
 }
 
 fn take_step(x_min: f64, x_max: f64, x: f64, dx: &mut f64) -> f64 {
     let new_x = x_min.max(x_max.min(x + *dx));
     *dx = new_x - x;
-    return new_x;
+    new_x
 }
 
 // pub fn complementary_normalised_black_inner(h: f64, t: f64) -> f64 {
@@ -426,7 +424,7 @@ fn implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(
     let x = (f / k).ln();
     // Map in-the-money to out-of-the-money
     if q * x > 0.0 {
-        price = f64::abs(f64::max(price - intrinsic, 0.0));
+        price = (price - intrinsic).max(0.0).abs();
         q = -q;
     }
 
@@ -500,7 +498,7 @@ mod tests {
             let q = 1.0;
             let sigma = implied_black_volatility(price, f, k, t, q);
             let reprice = black(f, k, sigma, t, q);
-            assert!((price - reprice).abs() < 1e-13);
+            assert!((price - reprice).abs() < 5e-14);
         }
     }
 
@@ -514,7 +512,7 @@ mod tests {
             let q = -1.0;
             let sigma = implied_black_volatility(price, f, k, t, q);
             let reprice = black(f, k, sigma, t, q);
-            assert!((price - reprice).abs() < 1e-13);
+            assert!((price - reprice).abs() < 5e-14);
         }
     }
 
@@ -527,7 +525,7 @@ mod tests {
         let q = -1.0;
         let sigma = implied_black_volatility(price, f, k, t, q);
         let reprice = black(f, k, sigma, t, q);
-        assert!((price - reprice).abs() < 1e-13);
+        assert!((price - reprice).abs() < 5e-14);
     }
 
 
@@ -541,7 +539,7 @@ mod tests {
             let q = -1.0;
             let sigma = implied_black_volatility(price, f, k, t, q);
             let reprice = black(f, k, sigma, t, q);
-            assert!((price - reprice).abs() < 1e-13);
+            assert!((price - reprice).abs() < 5e-14);
         }
     }
 
@@ -558,7 +556,7 @@ mod tests {
             let q = 1.0;
             let sigma = implied_black_volatility(price, f, k, t, q);
             let reprice = black(f, k, sigma, t, q);
-            assert!((price - reprice).abs() < 1e-13);
+            assert!((price - reprice).abs() < 5e-14);
         }
     }
 
@@ -575,7 +573,7 @@ mod tests {
             let q = 1.0;
             let sigma = implied_black_volatility(price, f, k, t, q);
             let reprice = black(f, k, sigma, t, q);
-            assert!((price - reprice).abs() < 1e-13);
+            assert!((price - reprice).abs() < 5e-14);
         }
     }
 
@@ -592,7 +590,7 @@ mod tests {
             let q = -1.0;
             let sigma = implied_black_volatility(price, f, k, t, q);
             let reprice = black(f, k, sigma, t, q);
-            assert!((price - reprice).abs() < 1e-13);
+            assert!((price - reprice).abs() < 5e-14);
         }
     }
 
@@ -609,7 +607,7 @@ mod tests {
             let q = -1.0;
             let sigma = implied_black_volatility(price, f, k, t, q);
             let reprice = black(f, k, sigma, t, q);
-            assert!((price - reprice).abs() < 1e-13);
+            assert!((price - reprice).abs() < 5e-14);
         }
     }
 }

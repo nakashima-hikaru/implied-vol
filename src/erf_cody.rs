@@ -127,7 +127,7 @@ pub fn erf_cody(x: f64) -> f64 {
     if x < ZERO {
         result = -result;
     }
-    return result;
+    result
 }
 
 pub fn erfc_cody(x: f64) -> f64 {

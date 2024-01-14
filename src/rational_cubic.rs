@@ -5,6 +5,7 @@ fn is_zero(x: f64) -> bool {
     x.abs() < f64::MIN_POSITIVE
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn rational_cubic_interpolation(
     x: f64,
     x_l: f64,
@@ -20,7 +21,7 @@ pub(crate) fn rational_cubic_interpolation(
         return 0.5 * (y_l + y_r);
     }
     let t = (x - x_l) / h;
-    if !(r >= MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE) {
+    if r < MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE {
         let omt = 1.0 - t;
         let t2 = t * t;
         let omt2 = omt * omt;
@@ -125,6 +126,7 @@ pub(crate) fn minimum_rational_cubic_control_parameter(
         .max(MINIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn convex_rational_cubic_control_parameter_to_fit_second_derivative_at_left_side(
     x_l: f64,
     x_r: f64,
@@ -153,6 +155,7 @@ pub(crate) fn convex_rational_cubic_control_parameter_to_fit_second_derivative_a
     r.max(r_min)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side(
     x_l: f64,
     x_r: f64,
@@ -178,7 +181,7 @@ pub(crate) fn convex_rational_cubic_control_parameter_to_fit_second_derivative_a
         (y_r - y_l) / (x_r - x_l),
         prefer_shape_preservation_over_smoothness,
     );
-    return r.max(r_min);
+    r.max(r_min)
 }
 
 #[cfg(test)]
