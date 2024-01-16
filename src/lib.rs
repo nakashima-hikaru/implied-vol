@@ -46,7 +46,7 @@ mod normal_distribution;
 mod rational_cubic;
 pub(crate) mod lets_be_rational;
 pub(crate) mod bachelier;
-pub mod constants;
+pub(crate) mod constants;
 
 /// Calculates the implied black volatility using a transformed rational guess with limited iterations.
 ///
