@@ -4,7 +4,7 @@
 [![Actions status](https://github.com/nakashima-hikaru/implied-vol/actions/workflows/ci.yaml/badge.svg)](https://github.com/nakashima-hikaru/implied-vol/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-More information about this crate can be found in the [crate documentation](https://docs.rs/implied-vol/0.1.0/implied_vol/).
+More information about this crate can be found in the [crate documentation](https://docs.rs/implied-vol/0.2/implied_vol/).
 
 ## About
 
@@ -32,8 +32,7 @@ analysis using Clippy lint. This library stands out by offering:
 - Exceptional testability and maintainability due to its implementation in Rust.
 - Unit tests aiding error checking.
 
-And most importantly, `implied-vol` follows the original C++ implementations closely, maintaining the same performance
-characteristics and output precision.
+And most importantly, `implied-vol` follows the original C++ implementations closely, maintaining the same output precision.
 
 Community contributions are always welcome!
 

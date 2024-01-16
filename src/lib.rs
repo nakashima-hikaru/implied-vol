@@ -21,7 +21,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! implied-vol = "0.1.0"
+//! implied-vol = "0.2"
 //! ```
 //!
 //! Then, in your code, bring the functions you need into scope with:
