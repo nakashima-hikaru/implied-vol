@@ -1,6 +1,7 @@
 const MINIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE: f64 = -(1f64 - 0.000000014901161193847656);
 const MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE: f64 = 2f64 / (f64::EPSILON * f64::EPSILON);
 
+#[inline]
 fn is_zero(x: f64) -> bool {
     x.abs() < f64::MIN_POSITIVE
 }
@@ -106,7 +107,7 @@ pub(crate) fn minimum_rational_cubic_control_parameter(
     } else if monotonic && s == 0.0 && prefer_shape_preservation_over_smoothness {
         r1 = MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE;
     } else {
-        r1 = -f64::MAX;
+        r1 = f64::MIN;
     }
     let r2;
     if convex || concave {
@@ -115,12 +116,12 @@ pub(crate) fn minimum_rational_cubic_control_parameter(
         } else if prefer_shape_preservation_over_smoothness {
             r2 = MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE;
         } else {
-            r2 = -f64::MAX;
+            r2 = f64::MIN;
         }
     } else if monotonic && prefer_shape_preservation_over_smoothness {
         r2 = MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE;
     } else {
-        r2 = -f64::MAX;
+        r2 = f64::MIN;
     }
     r1.max(r2)
         .max(MINIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE)

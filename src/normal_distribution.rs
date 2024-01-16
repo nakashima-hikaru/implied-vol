@@ -5,6 +5,7 @@ const NORM_CDF_ASYMPTOTIC_EXPANSION_SECOND_THRESHOLD: f64 = -67108864.0;
 // 1.0 / f64::sqrt(f64::EPSILON);
 const FRAC_SQRT_2_PI: f64 = 0.398_942_280_401_432_7;
 
+#[inline]
 pub(crate) fn norm_pdf(x: f64) -> f64 {
     FRAC_SQRT_2_PI * (-0.5 * x * x).exp()
 }
@@ -36,7 +37,7 @@ pub(crate) fn norm_cdf(z: f64) -> f64 {
         }
         return -norm_pdf(z) * sum / z;
     }
-    0.5 * erfc_cody(-z * (1.0 / std::f64::consts::SQRT_2))
+    0.5 * erfc_cody(-z * std::f64::consts::SQRT_2.recip())
 }
 
 
@@ -117,15 +118,15 @@ pub(crate) fn inverse_norm_cdf(u: f64) -> f64 {
         let mut r = if q < 0.0 { u } else { 1.0 - u };
         r = (-r.ln()).sqrt();
         let ret =
-        if r < SPLIT2 {
-            r -= CONST2;
-            (((((((C7 * r + C6) * r + C5) * r + C4) * r + C3) * r + C2) * r + C1) * r + C0) /
-                (((((((D7 * r + D6) * r + D5) * r + D4) * r + D3) * r + D2) * r + D1) * r + 1.0)
-        } else {
-            r -= SPLIT2;
-            (((((((E7 * r + E6) * r + E5) * r + E4) * r + E3) * r + E2) * r + E1) * r + E0) /
-                (((((((F7 * r + F6) * r + F5) * r + F4) * r + F3) * r + F2) * r + F1) * r + 1.0)
-        };
+            if r < SPLIT2 {
+                r -= CONST2;
+                (((((((C7 * r + C6) * r + C5) * r + C4) * r + C3) * r + C2) * r + C1) * r + C0) /
+                    (((((((D7 * r + D6) * r + D5) * r + D4) * r + D3) * r + D2) * r + D1) * r + 1.0)
+            } else {
+                r -= SPLIT2;
+                (((((((E7 * r + E6) * r + E5) * r + E4) * r + E3) * r + E2) * r + E1) * r + E0) /
+                    (((((((F7 * r + F6) * r + F5) * r + F4) * r + F3) * r + F2) * r + F1) * r + 1.0)
+            };
         if q < 0.0 { -ret } else { ret }
     }
 }
