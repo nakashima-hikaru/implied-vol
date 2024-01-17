@@ -20,3 +20,6 @@ unsafe_code = "forbid"
 [workspace.lints.clippy]
 pedantic = "warn"
 cargo = "warn"
+
+[profile.bench]
+lto = true

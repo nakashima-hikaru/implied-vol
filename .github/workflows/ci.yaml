@@ -21,3 +21,20 @@ jobs:
       - run: cargo clippy --all-targets --all-features -- -D warnings -Aclippy::multiple_crate_versions
       - run: cargo test --doc -- --show-output
       - run: cargo nextest run
+
+  benchmarks:
+    name: Run benchmarks
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install nightly toolchain
+        uses: dtolnay/rust-toolchain@nightly
+
+      - name: Run benchmarks
+        run: cargo +nightly bench --locked --all-features
+        env:
+          RUSTFLAGS: --cfg=bench

@@ -250,7 +250,7 @@ fn unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_wit
             ds = 1.0_f64;
             while iterations < n && ds.abs() > f64::EPSILON * s {
                 let (bx, ln_vega) = normalised_black_call_over_vega_and_ln_vega(x, s);
-                let ln_b = (bx.ln()) + ln_vega;
+                let ln_b = bx.ln() + ln_vega;
                 let bpob = 1.0 / bx;
                 let h = x / s;
                 let b_h2 = (h * h / s) - s / 4.0;
@@ -355,7 +355,7 @@ fn implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(
     mut q: bool,
     n: i32,
 ) -> f64 {
-    let intrinsic = f64::abs(f64::max(if !q { k - f } else { f - k }, 0.0));
+    let intrinsic = (if !q { k - f } else { f - k }).max(0.0).abs();
     if price < intrinsic {
         return
             VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_BELOW_INTRINSIC;
@@ -373,7 +373,7 @@ fn implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(
     }
 
     unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(
-        price / (f.sqrt() * k.sqrt()),
+        price / ((f * k).sqrt()),
         x,
         q,
         n,
