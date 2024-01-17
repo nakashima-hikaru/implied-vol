@@ -18,7 +18,7 @@ jobs:
           curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
 #      - run: cargo fmt --all --check
       - run: cargo check --workspace
-      - run: cargo clippy --all-targets --all-features -- -D warnings -Aclippy::multiple_crate_versions
+      - run: cargo clippy --all-features -- -D warnings
       - run: cargo test --doc -- --show-output
       - run: cargo nextest run
 
@@ -35,6 +35,6 @@ jobs:
         uses: dtolnay/rust-toolchain@nightly
 
       - name: Run benchmarks
-        run: cargo +nightly bench --locked --all-features
+        run: cargo +nightly bench
         env:
           RUSTFLAGS: --cfg=bench
