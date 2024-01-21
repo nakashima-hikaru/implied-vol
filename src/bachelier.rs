@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use crate::constants::{ONE_OVER_SQRT_TWO_PI, SQRT_TWO_PI};
 use crate::normal_distribution::norm_pdf;
 
@@ -13,7 +14,7 @@ fn phi_tilde_times_x(x: f64) -> f64 {
         return ONE_OVER_SQRT_TWO_PI + x * (0.5 + x * g);
     }
 
-    if x > 0.0 {
+    if x.is_sign_positive() {
         return phi_tilde_times_x(-x) + x;
     }
 
@@ -22,7 +23,7 @@ fn phi_tilde_times_x(x: f64) -> f64 {
         return (-0.5 * (x * x)).exp() * g;
     }
 
-    let w = 1.0 / (x * x);
+    let w = (x * x).recip();
     let g = (2.999_999_999_999_991 + w * (2.365_455_662_782_315E2 + w * (6.812_677_344_935_879E3 + w * (8.969_794_159_836_079E4 + w * (5.516_392_059_126_862E5 + w * (1.434_506_112_333_566_2E6 + w * (1.150_498_824_634_488_2E6 + 1.186_760_040_099_769_1E4 * w))))))) / (1.0 + w * (8.384_852_209_273_714E1 + w * (2.655_135_058_780_958E3 + w * (4.055_529_088_467_379E4 + w * (3.166_737_476_299_376_6E5 + w * (1.232_979_595_802_432_2E6 + w * (2.140_981_054_061_905E6 + 1.214_566_780_409_316E6 * w)))))));
     ONE_OVER_SQRT_TWO_PI * (-0.5 * (x * x)).exp() * w * (1.0 - g * w)
 }
@@ -35,12 +36,12 @@ fn inv_phi_tilde(phi_tilde_star: f64) -> f64 {
     if phi_tilde_star > 1.0 {
         return -inv_phi_tilde(1.0 - phi_tilde_star);
     }
-    if phi_tilde_star >= 0.0 {
+    if !phi_tilde_star.is_sign_negative() {
         return f64::NAN;
     }
     let x_bar = if phi_tilde_star < -0.00188203927 {
         // Equation (2.1)
-        let g = 1.0 / (phi_tilde_star - 0.5);
+        let g = (phi_tilde_star - 0.5).recip();
         let g2 = g * g;
         // Equation (2.2)
         let xi_bar = (0.032114372355 - g2 * (0.016969777977 - g2 * (0.002620733246 - 0.000096066952861 * g2))) /
@@ -80,8 +81,7 @@ pub(crate) fn bachelier(forward: f64, strike: f64, sigma: f64, t: f64, q: bool) 
     if s < f64::MIN_POSITIVE {
         return intrinsic_value(forward, strike, q);
     }
-    let theta = if q { 1.0 } else { -1.0 };
-    let moneyness = theta * (forward - strike);
+    let moneyness = if q { forward - strike } else { strike - forward };
     let x = moneyness / s;
     s * phi_tilde_times_x(x)
 }
@@ -91,16 +91,16 @@ pub(crate) fn implied_normal_volatility(price: f64, forward: f64, strike: f64, t
         return price * SQRT_TWO_PI / t.sqrt();
     }
     let intrinsic = intrinsic_value(forward, strike, q);
-    if price == intrinsic {
-        return 0.0;
+    match price.total_cmp(&intrinsic) {
+        Ordering::Less => { f64::NEG_INFINITY }
+        Ordering::Equal => { 0.0 }
+        Ordering::Greater => {
+            let absolute_moneyness = (forward - strike).abs();
+            let phi_tilde_star = (intrinsic - price) / absolute_moneyness;
+            let x_star = inv_phi_tilde(phi_tilde_star);
+            absolute_moneyness / (x_star * t.sqrt()).abs()
+        }
     }
-    if price < intrinsic {
-        return f64::NEG_INFINITY;
-    }
-    let absolute_moneyness = (forward - strike).abs();
-    let phi_tilde_star = (intrinsic - price) / absolute_moneyness;
-    let x_star = inv_phi_tilde(phi_tilde_star);
-    absolute_moneyness / (x_star * t.sqrt()).abs()
 }
 
 

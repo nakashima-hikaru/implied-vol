@@ -115,7 +115,7 @@ pub(crate) fn inverse_norm_cdf(u: f64) -> f64 {
         q * (((((((A7 * r + A6) * r + A5) * r + A4) * r + A3) * r + A2) * r + A1) * r + A0) /
             (((((((B7 * r + B6) * r + B5) * r + B4) * r + B3) * r + B2) * r + B1) * r + 1.0)
     } else {
-        let mut r = if q < 0.0 { u } else { 1.0 - u };
+        let mut r = if q.is_sign_negative() { u } else { 1.0 - u };
         r = (-r.ln()).sqrt();
         let ret =
             if r < SPLIT2 {
@@ -127,6 +127,6 @@ pub(crate) fn inverse_norm_cdf(u: f64) -> f64 {
                 (((((((E7 * r + E6) * r + E5) * r + E4) * r + E3) * r + E2) * r + E1) * r + E0) /
                     (((((((F7 * r + F6) * r + F5) * r + F4) * r + F3) * r + F2) * r + F1) * r + 1.0)
             };
-        if q < 0.0 { -ret } else { ret }
+        if q.is_sign_negative() { -ret } else { ret }
     }
 }

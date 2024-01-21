@@ -48,14 +48,8 @@ const Q: [f64; 5] = [
     0.002_335_204_976_268_691_8,
 ];
 
-const ZERO: f64 = 0.0;
-// const HALF: f64 = 0.5;
-const ONE: f64 = 1.0;
-const TWO: f64 = 2.0;
-const FOUR: f64 = 4.0;
 const SQRPI: f64 = 0.564_189_583_547_756_3;
 const THRESH: f64 = 0.46875;
-const SIXTEN: f64 = 16.0;
 const XINF: f64 = f64::MAX;
 const XNEG: f64 = -26.628;
 const XSMALL: f64 = 1.11e-16;
@@ -70,10 +64,10 @@ pub(crate) fn erfc_cody(x: f64) -> f64 {
     /*   Author/date: W. J. Cody, January 8, 1985 */
     /* -------------------------------------------------------------------- */
     let y = x.abs();
-    let mut ysq = ZERO;
+    let mut ysq = 0.0;
     let mut xden;
     let mut xnum;
-    let mut result = ZERO;
+    let mut result = 0.0;
 
     if y <= THRESH {
         if y > XSMALL {
@@ -88,9 +82,9 @@ pub(crate) fn erfc_cody(x: f64) -> f64 {
         }
         result = x * (xnum + A[3]) / (xden + B[3]);
 
-        result = ONE - result;
+        result = 1.0 - result;
         return result;
-    } else if y <= FOUR {
+    } else if y <= 4.0 {
         xnum = C[8] * y;
         xden = y;
 
@@ -100,16 +94,16 @@ pub(crate) fn erfc_cody(x: f64) -> f64 {
         }
         result = (xnum + C[7]) / (xden + D[7]);
 
-        ysq = (y * SIXTEN).trunc() / SIXTEN;
+        ysq = (y * 16.0).trunc() / 16.0;
         let del = (y - ysq) * (y + ysq);
         result *= (-ysq * ysq).exp() * (-del).exp();
     } else if y >= XBIG {
-        if x < ZERO {
-            result = TWO - result;
+        if x.is_sign_negative() {
+            result = 2.0 - result;
         }
         return result;
     } else {
-        ysq = ONE / (y * y);
+        ysq = (y * y).recip();
         xnum = P[5] * ysq;
         xden = ysq;
 
@@ -120,12 +114,12 @@ pub(crate) fn erfc_cody(x: f64) -> f64 {
         result = ysq * (xnum + P[4]) / (xden + Q[4]);
         result = (SQRPI - result) / y;
 
-        ysq = (y * SIXTEN).trunc() / SIXTEN;
+        ysq = (y * 16.0).trunc() / 16.0;
         let del = (y - ysq) * (y + ysq);
         result *= (-ysq * ysq).exp() * (-del).exp();
     }
-    if x < ZERO {
-        result = TWO - result;
+    if x.is_sign_negative() {
+        result = 2.0 - result;
     }
     result
 }
@@ -137,10 +131,10 @@ pub(crate) fn erfcx_cody(x: f64) -> f64 {
     /*   Author/date: W. J. Cody, March 30, 1987 */
     /* ------------------------------------------------------------------ */
     let y = x.abs();
-    let mut ysq = ZERO;
+    let mut ysq = 0.0;
     let mut xden;
     let mut xnum;
-    let mut result = ZERO;
+    let mut result = 0.0;
 
     if y <= THRESH {
         if y > XSMALL {
@@ -155,11 +149,11 @@ pub(crate) fn erfcx_cody(x: f64) -> f64 {
         }
         result = x * (xnum + A[3]) / (xden + B[3]);
 
-        result = ONE - result;
+        result = 1.0 - result;
 
         result *= ysq.exp();
         return result;
-    } else if y <= FOUR {
+    } else if y <= 4.0 {
         xnum = C[8] * y;
         xden = y;
 
@@ -170,11 +164,11 @@ pub(crate) fn erfcx_cody(x: f64) -> f64 {
         result = (xnum + C[7]) / (xden + D[7]);
     } else if y >= XBIG {
         if y >= XMAX {
-            if x < ZERO {
+            if x.is_sign_negative() {
                 if x < XNEG {
                     result = XINF;
                 } else {
-                    let ysq = (x * SIXTEN).trunc() / SIXTEN;
+                    let ysq = (x * 16.0).trunc() / 16.0;
                     let del = (x - ysq) * (x + ysq);
                     let y = (ysq * ysq).exp() * del.exp();
                     result = (y + y) - result;
@@ -183,11 +177,11 @@ pub(crate) fn erfcx_cody(x: f64) -> f64 {
             return result;
         } else if y >= XHUGE {
             result = SQRPI / y;
-            if x < ZERO {
+            if x.is_sign_negative() {
                 if x < XNEG {
                     result = XINF;
                 } else {
-                    let ysq = (x * SIXTEN).trunc() / SIXTEN;
+                    let ysq = (x * 16.0).trunc() / 16.0;
                     let del = (x - ysq) * (x + ysq);
                     let y = (ysq * ysq).exp() * del.exp();
                     result = (y + y) - result;
@@ -196,7 +190,7 @@ pub(crate) fn erfcx_cody(x: f64) -> f64 {
             return result;
         }
     } else {
-        ysq = ONE / (y * y);
+        ysq = (y * y).recip();
         xnum = P[5] * ysq;
         xden = ysq;
 
@@ -207,11 +201,11 @@ pub(crate) fn erfcx_cody(x: f64) -> f64 {
         result = ysq * (xnum + P[4]) / (xden + Q[4]);
         result = (SQRPI - result) / y;
     }
-    if x < ZERO {
+    if x.is_sign_negative() {
         if x < XNEG {
             result = XINF;
         } else {
-            let ysq = (x * SIXTEN).trunc() / SIXTEN;
+            let ysq = (x * 16.0).trunc() / 16.0;
             let del = (x - ysq) * (x + ysq);
             let y = (ysq * ysq).exp() * del.exp();
             result = (y + y) - result;
@@ -223,7 +217,7 @@ pub(crate) fn erfcx_cody(x: f64) -> f64 {
 #[cfg(test)]
 mod tests {
     use crate::erf_cody::{
-        erfc_cody, erfcx_cody, FOUR, THRESH, XBIG, XHUGE, XMAX, XNEG, ZERO,
+        erfc_cody, erfcx_cody, THRESH, XBIG, XHUGE, XMAX, XNEG,
     };
 
     #[test]
@@ -237,13 +231,13 @@ mod tests {
         let x = erfc_cody(-THRESH + f64::EPSILON);
         assert_eq!(x, 1.4926134732179377);
 
-        let x = erfc_cody(FOUR + f64::EPSILON);
+        let x = erfc_cody(4.0 + f64::EPSILON);
         assert_eq!(x, 1.541725790028002e-8);
-        let x = erfc_cody(FOUR - f64::EPSILON);
+        let x = erfc_cody(4.0 - f64::EPSILON);
         assert_eq!(x, 1.541725790028002e-8);
-        let x = erfc_cody(-FOUR - f64::EPSILON);
+        let x = erfc_cody(-4.0 - f64::EPSILON);
         assert_eq!(x, 1.999999984582742);
-        let x = erfc_cody(-FOUR + f64::EPSILON);
+        let x = erfc_cody(-4.0 + f64::EPSILON);
         assert_eq!(x, 1.999999984582742);
 
         let x = erfc_cody(XBIG + f64::EPSILON);
@@ -273,9 +267,9 @@ mod tests {
         let x = erfc_cody(-XHUGE + f64::EPSILON);
         assert_eq!(x, 2.0);
 
-        let x = erfc_cody(ZERO + f64::EPSILON);
+        let x = erfc_cody(0.0 + f64::EPSILON);
         assert_eq!(x, 0.9999999999999998);
-        let x = erfc_cody(ZERO - f64::EPSILON);
+        let x = erfc_cody(0.0 - f64::EPSILON);
         assert_eq!(x, 1.0000000000000002);
 
         let x = erfc_cody(XNEG + f64::EPSILON);
@@ -295,13 +289,13 @@ mod tests {
         let x = erfcx_cody(-THRESH + f64::EPSILON);
         assert_eq!(x, 1.8594024168714214);
 
-        let x = erfcx_cody(FOUR + f64::EPSILON);
+        let x = erfcx_cody(4.0 + f64::EPSILON);
         assert_eq!(x, 0.1369994576250614);
-        let x = erfcx_cody(FOUR - f64::EPSILON);
+        let x = erfcx_cody(4.0 - f64::EPSILON);
         assert_eq!(x, 0.1369994576250614);
-        let x = erfcx_cody(-FOUR - f64::EPSILON);
+        let x = erfcx_cody(-4.0 - f64::EPSILON);
         assert_eq!(x, 17772220.904016286);
-        let x = erfcx_cody(-FOUR + f64::EPSILON);
+        let x = erfcx_cody(-4.0 + f64::EPSILON);
         assert_eq!(x, 17772220.904016286);
 
         let x = erfcx_cody(XBIG + f64::EPSILON);
@@ -331,9 +325,9 @@ mod tests {
         let x = erfcx_cody(-XHUGE + f64::EPSILON);
         assert_eq!(x, 1.7976931348623157e308);
 
-        let x = erfcx_cody(ZERO + f64::EPSILON);
+        let x = erfcx_cody(0.0 + f64::EPSILON);
         assert_eq!(x, 0.9999999999999998);
-        let x = erfcx_cody(ZERO - f64::EPSILON);
+        let x = erfcx_cody(0.0 - f64::EPSILON);
         assert_eq!(x, 1.0000000000000002);
 
         let x = erfcx_cody(XNEG + f64::EPSILON);
