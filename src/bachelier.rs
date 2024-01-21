@@ -151,7 +151,7 @@ mod tests {
             let q = true;
             let sigma = implied_normal_volatility(price, f, k, t, q);
             let reprice = bachelier(f, k, sigma, t, q);
-            assert!((price - reprice).abs() < 5e-16);
+            assert!((price - reprice).abs() <= 2.0 * f64::EPSILON);
         }
     }
 
@@ -169,7 +169,7 @@ mod tests {
             let q = true;
             let sigma = implied_normal_volatility(price, f, k, t, q);
             let reprice = bachelier(f, k, sigma, t, q);
-            assert!((price - reprice).abs() < 5e-16);
+            assert!((price - reprice).abs() <= 2.0 * f64::EPSILON);
         }
     }
 
@@ -187,7 +187,7 @@ mod tests {
             let q = true;
             let sigma = implied_normal_volatility(price, f, k, t, q);
             let reprice = bachelier(f, k, sigma, t, q);
-            assert!((price - reprice).abs() < 5e-16);
+            assert!((price - reprice).abs() <= 2.0 * f64::EPSILON);
         }
     }
 
@@ -206,7 +206,7 @@ mod tests {
             let q = false;
             let sigma = implied_normal_volatility(price, f, k, t, q);
             let reprice = bachelier(f, k, sigma, t, q);
-            assert!((price - reprice).abs() < 5e-16);
+            assert!((price - reprice).abs() <= 2.0 * f64::EPSILON);
         }
     }
 
@@ -224,7 +224,7 @@ mod tests {
             let q = false;
             let sigma = implied_normal_volatility(price, f, k, t, q);
             let reprice = bachelier(f, k, sigma, t, q);
-            assert!((price - reprice).abs() < 5e-16);
+            assert!((price - reprice).abs() <= 2.0 * f64::EPSILON);
         }
     }
 }

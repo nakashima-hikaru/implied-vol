@@ -33,13 +33,13 @@
 //! assert_eq!(black_vol, 0.07011701801482094);
 //!
 //! let price = calculate_european_option_price_by_black_scholes(100.0, 90.0, 0.07011701801482094, 30.0, true);
-//! assert!((price - 20.0).abs() < 5e-16 * 20.0);
+//! assert!((price - 20.0).abs()<= 2.0 * f64::EPSILON * 20.0);
 //!
 //! let normal_vol = implied_normal_volatility(20.0, 100.0, 90.0, 30.0, true);
 //! assert_eq!(normal_vol, 6.614292466299764);
 //!
 //! let price = calculate_european_option_price_by_bachelier(100.0, 90.0, 6.614292466299764, 30.0, true);
-//! assert!((price - 20.0).abs() < 5e-16 * 20.0);
+//! assert!((price - 20.0).abs()<= 2.0 * f64::EPSILON * 20.0);
 //! ```
 mod erf_cody;
 mod normal_distribution;
@@ -93,7 +93,7 @@ pub fn implied_black_volatility(option_price: f64, forward: f64, strike: f64, ex
 /// ```
 /// use implied_vol::calculate_european_option_price_by_black_scholes;
 /// let price = calculate_european_option_price_by_black_scholes(100.0, 90.0, 0.07011701801482094, 30.0, true);
-/// assert!((price - 20.0).abs() < 5e-16 * 20.0);
+/// assert!((price - 20.0).abs()<= 2.0 * f64::EPSILON * 20.0);
 /// ```
 #[inline]
 pub fn calculate_european_option_price_by_black_scholes(forward: f64, strike: f64, volatility: f64, expiry: f64, is_call: bool) -> f64 {
@@ -144,7 +144,7 @@ pub fn implied_normal_volatility(option_price: f64, forward: f64, strike: f64, e
 /// ```
 /// use implied_vol::calculate_european_option_price_by_bachelier;
 /// let price = calculate_european_option_price_by_bachelier(100.0, 90.0, 6.614292466299764, 30.0, true);
-/// assert!((price - 20.0).abs() < 5e-16 * 20.0);
+/// assert!((price - 20.0).abs()<= 2.0 * f64::EPSILON * 20.0);
 /// ```
 #[inline]
 pub fn calculate_european_option_price_by_bachelier(forward: f64, strike: f64, volatility: f64, expiry: f64, is_call: bool) -> f64 {

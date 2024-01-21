@@ -4,7 +4,8 @@
 [![Actions status](https://github.com/nakashima-hikaru/implied-vol/actions/workflows/ci.yaml/badge.svg)](https://github.com/nakashima-hikaru/implied-vol/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-More information about this crate can be found in the [crate documentation](https://docs.rs/implied-vol/0.2/implied_vol/).
+More information about this crate can be found in
+the [crate documentation](https://docs.rs/implied-vol/0.2/implied_vol/).
 
 ## About
 
@@ -32,7 +33,17 @@ analysis using Clippy lint. This library stands out by offering:
 - Exceptional testability and maintainability due to its implementation in Rust.
 - Unit tests aiding error checking.
 
-And most importantly, `implied-vol` follows the original C++ implementations closely, maintaining the same output precision.
+### Performance
+
+Peter Jäckel, the author of the original paper, asserts that "the calculation of a single implied volatility is now down
+to just under 270 nanoseconds" based on his machine's benchmark measurements. By examining the benchmark measurements
+performed on this crate's [Github Actions](https://github.com/nakashima-hikaru/implied-vol/actions), it becomes clear
+that comparable performance is being achieved.
+
+### Precision
+
+On our machine, the absolute error for both implied Black volatility and implied normal
+volatility calculations is confirmed to be less than twice the machine epsilon in random tests.
 
 Community contributions are always welcome!
 

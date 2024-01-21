@@ -400,7 +400,7 @@ mod tests {
             let q = true;
             let sigma = implied_black_volatility(price, f, k, t, q);
             let reprice = black(f, k, sigma, t, q);
-            assert!((price - reprice).abs() < 5e-14);
+            assert!((price - reprice).abs() < 2.0 * f64::EPSILON * 100.0);
         }
     }
 
@@ -414,7 +414,7 @@ mod tests {
             let q = false;
             let sigma = implied_black_volatility(price, f, k, t, q);
             let reprice = black(f, k, sigma, t, q);
-            assert!((price - reprice).abs() < 5e-14);
+            assert!((price - reprice).abs() < 2.0 * f64::EPSILON * 100.0);
         }
     }
 
@@ -432,7 +432,7 @@ mod tests {
             let q = true;
             let sigma = implied_black_volatility(price, f, k, t, q);
             let reprice = black(f, k, sigma, t, q);
-            assert!((price - reprice).abs() < 5e-16);
+            assert!((price - reprice).abs() <= 2.0 * f64::EPSILON);
         }
     }
 
@@ -450,7 +450,7 @@ mod tests {
             let q = true;
             let sigma = implied_black_volatility(price, f, k, t, q);
             let reprice = black(f, k, sigma, t, q);
-            assert!((price - reprice).abs() < 5e-16);
+            assert!((price - reprice).abs() <= 2.0 * f64::EPSILON);
         }
     }
 
@@ -468,7 +468,7 @@ mod tests {
             let q = true;
             let sigma = implied_black_volatility(price, f, k, t, q);
             let reprice = black(f, k, sigma, t, q);
-            assert!((price - reprice).abs() < 5e-16);
+            assert!((price - reprice).abs() <= 2.0 * f64::EPSILON);
         }
     }
 
@@ -487,7 +487,7 @@ mod tests {
             let q = false;
             let sigma = implied_black_volatility(price, f, k, t, q);
             let reprice = black(f, k, sigma, t, q);
-            assert!((price - reprice).abs() < 5e-16);
+            assert!((price - reprice).abs() <= 2.0 * f64::EPSILON);
         }
     }
 
@@ -505,7 +505,7 @@ mod tests {
             let q = false;
             let sigma = implied_black_volatility(price, f, k, t, q);
             let reprice = black(f, k, sigma, t, q);
-            assert!((price - reprice).abs() < 5e-16);
+            assert!((price - reprice).abs() <= 2.0 * f64::EPSILON);
         }
     }
 }
