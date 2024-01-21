@@ -1,5 +1,5 @@
-use std::f64::consts::SQRT_2;
-use crate::constants::{DENORMALISATION_CUTOFF, FOURTH_ROOT_DBL_EPSILON, HALF_OF_LN_TWO_PI, SIXTEENTH_ROOT_DBL_EPSILON, SQRT_DBL_MAX, SQRT_MIN_POSITIVE, SQRT_ONE_OVER_THREE, SQRT_PI_OVER_TWO, SQRT_THREE, SQRT_THREE_OVER_THIRD_ROOT_TWO_PI, SQRT_TWO_PI, TWO_PI_OVER_SQRT_TWENTY_SEVEN, VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_ABOVE_MAXIMUM, VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_BELOW_INTRINSIC};
+use std::f64::consts::{FRAC_1_SQRT_2, SQRT_2};
+use crate::constants::{DENORMALISATION_CUTOFF, FOURTH_ROOT_DBL_EPSILON, HALF_OF_LN_TWO_PI, SIXTEENTH_ROOT_DBL_EPSILON, SQRT_DBL_MAX, SQRT_MIN_POSITIVE, ONE_OVER_SQRT_THREE, SQRT_PI_OVER_TWO, SQRT_THREE, SQRT_THREE_OVER_THIRD_ROOT_TWO_PI, SQRT_TWO_PI, TWO_PI_OVER_SQRT_TWENTY_SEVEN, VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_ABOVE_MAXIMUM, VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_BELOW_INTRINSIC, SQRT_TWO_OVER_PI};
 use crate::erf_cody::{erfc_cody, erfcx_cody};
 use crate::normal_distribution::{inverse_norm_cdf, norm_cdf, norm_pdf};
 use crate::rational_cubic::{convex_rational_cubic_control_parameter_to_fit_second_derivative_at_left_side, convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side, rational_cubic_interpolation};
@@ -62,7 +62,7 @@ fn asymptotic_expansion_of_normalised_black_call_over_vega(h: f64, t: f64) -> f6
 fn small_t_expansion_of_normalised_black_call_over_vega(h: f64, t: f64) -> f64 {
     let w = t * t;
     let h2 = h * h;
-    let a = 1_f64 + h * SQRT_PI_OVER_TWO * erfcx_cody(-SQRT_2.recip() * h);
+    let a = 1_f64 + h * SQRT_PI_OVER_TWO * erfcx_cody(-FRAC_1_SQRT_2 * h);
     let b_over_vega = 2.0 * t * (a + w * ((-1.0 + 3.0 * a + a * h2) / 6.0 + w * ((-7.0 + 15.0 * a + h2 * (-1.0 + 10.0 * a + a * h2)) / 120.0 + w * ((-57.0 + 105.0 * a + h2 * (-18.0 + 105.0 * a + h2 * (-1.0 + 21.0 * a + a * h2))) / 5040.0 + w * ((-561.0 + 945.0 * a + h2 * (-285.0 + 1260.0 * a + h2 * (-33.0 + 378.0 * a + h2 * (-1.0 + 36.0 * a + a * h2)))) / 362880.0 + w * ((-6555.0 + 10395.0 * a + h2 * (-4680.0 + 17325.0 * a + h2 * (-840.0 + 6930.0 * a + h2 * (-52.0 + 990.0 * a + h2 * (-1.0 + 55.0 * a + a * h2))))) / 39916800.0 + ((-89055.0 + 135135.0 * a + h2 * (-82845.0 + 270270.0 * a + h2 * (-20370.0 + 135135.0 * a + h2 * (-1926.0 + 25740.0 * a + h2 * (-75.0 + 2145.0 * a + h2 * (-1.0 + 78.0 * a + a * h2)))))) * w) / 6227020800.0))))));
     b_over_vega.max(0.0).abs()
 }
@@ -71,8 +71,8 @@ fn normalised_black_call_with_optimal_use_of_codys_functions(x: f64, s: f64) -> 
     const CODYS_THRESHOLD: f64 = 0.46875;
     let h = x / s;
     let t = 0.5 * s;
-    let q1 = -SQRT_2.recip() * (h + t);
-    let q2 = -SQRT_2.recip() * (h - t);
+    let q1 = -FRAC_1_SQRT_2 * (h + t);
+    let q2 = -FRAC_1_SQRT_2 * (h - t);
     let two_b: f64 =
         if q1 < CODYS_THRESHOLD {
             if q2 < CODYS_THRESHOLD {
@@ -160,7 +160,7 @@ pub(crate) fn black(f: f64, k: f64, sigma: f64, t: f64, q: bool) -> f64 {
 
 fn compute_f_lower_map_and_first_two_derivatives(x: f64, s: f64) -> (f64, f64, f64) {
     let ax = x.abs();
-    let z = SQRT_ONE_OVER_THREE * ax / s;
+    let z = ONE_OVER_SQRT_THREE * ax / s;
     let y = z * z;
     let s2 = s * s;
     let phi_m = norm_cdf(-z);
@@ -238,7 +238,7 @@ fn unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_wit
     let mut ds = f64::MIN;
     let mut s_left = f64::MIN_POSITIVE;
     let mut s_right = f64::MAX;
-    let s_c =  SQRT_2 * x.abs().sqrt();
+    let s_c = SQRT_2 * x.abs().sqrt();
     let b_c = normalised_black_call(x, s_c);
     let v_c = normalised_vega(x, s_c);
     if beta < b_c {
@@ -316,7 +316,7 @@ fn unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_wit
                 while iterations < n && ds.abs() > f64::EPSILON * s {
                     let h = x / s;
                     let t = s / 2.0;
-                    let gp = (2.0 / SQRT_TWO_PI) / (erfcx_cody((t + h) * SQRT_2.recip()) + erfcx_cody((t - h) * SQRT_2.recip()));
+                    let gp = SQRT_TWO_OVER_PI / (erfcx_cody((t + h) * FRAC_1_SQRT_2) + erfcx_cody((t - h) * FRAC_1_SQRT_2));
                     let b_bar = normalised_vega(x, s) / gp;
                     let g = (beta_bar / b_bar).ln();
                     let x_over_s_square = (h * h) / s;

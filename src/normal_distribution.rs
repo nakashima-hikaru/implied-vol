@@ -1,3 +1,4 @@
+use std::f64::consts::FRAC_1_SQRT_2;
 use crate::erf_cody::erfc_cody;
 
 const NORM_CDF_ASYMPTOTIC_EXPANSION_FIRST_THRESHOLD: f64 = -10.0;
@@ -37,7 +38,7 @@ pub(crate) fn norm_cdf(z: f64) -> f64 {
         }
         return -norm_pdf(z) * sum / z;
     }
-    0.5 * erfc_cody(-z * std::f64::consts::SQRT_2.recip())
+    0.5 * erfc_cody(-z * FRAC_1_SQRT_2)
 }
 
 
