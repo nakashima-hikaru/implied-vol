@@ -27,26 +27,26 @@
 //! Then, in your code, bring the functions you need into scope with:
 //!
 //! ```rust
-//! use implied_vol::{implied_black_volatility, calculate_european_option_price_by_black_scholes, implied_normal_volatility, calculate_european_option_price_by_bachelier};
-//!
-//! let black_vol = implied_black_volatility(20.0, 100.0, 90.0, 30.0, true);
+//! let black_vol = implied_vol::implied_black_volatility(20.0, 100.0, 90.0, 30.0, true);
 //! assert_eq!(black_vol, 0.07011701801482094);
 //!
-//! let price = calculate_european_option_price_by_black_scholes(100.0, 90.0, 0.07011701801482094, 30.0, true);
+//! let price = implied_vol::calculate_european_option_price_by_black_scholes(100.0, 90.0, 0.07011701801482094, 30.0, true);
 //! assert!((price - 20.0).abs()<= 2.0 * f64::EPSILON * 20.0);
 //!
-//! let normal_vol = implied_normal_volatility(20.0, 100.0, 90.0, 30.0, true);
+//! let normal_vol = implied_vol::implied_normal_volatility(20.0, 100.0, 90.0, 30.0, true);
 //! assert_eq!(normal_vol, 6.614292466299764);
 //!
-//! let price = calculate_european_option_price_by_bachelier(100.0, 90.0, 6.614292466299764, 30.0, true);
+//! let price = implied_vol::calculate_european_option_price_by_bachelier(100.0, 90.0, 6.614292466299764, 30.0, true);
 //! assert!((price - 20.0).abs()<= 2.0 * f64::EPSILON * 20.0);
 //! ```
+
+
 mod erf_cody;
 mod normal_distribution;
 mod rational_cubic;
-pub(crate) mod lets_be_rational;
-pub(crate) mod bachelier;
-pub(crate) mod constants;
+mod lets_be_rational;
+mod bachelier;
+mod constants;
 
 /// Calculates the implied black volatility using a transformed rational guess with limited iterations.
 ///
@@ -65,8 +65,7 @@ pub(crate) mod constants;
 /// # Examples
 ///
 /// ```
-/// use implied_vol::implied_black_volatility;
-/// let black_vol = implied_black_volatility(20.0, 100.0, 90.0, 30.0, true);
+/// let black_vol = implied_vol::implied_black_volatility(20.0, 100.0, 90.0, 30.0, true);
 /// assert_eq!(black_vol, 0.07011701801482094);
 /// ```
 #[inline]
@@ -91,8 +90,7 @@ pub fn implied_black_volatility(option_price: f64, forward: f64, strike: f64, ex
 /// # Examples
 ///
 /// ```
-/// use implied_vol::calculate_european_option_price_by_black_scholes;
-/// let price = calculate_european_option_price_by_black_scholes(100.0, 90.0, 0.07011701801482094, 30.0, true);
+/// let price = implied_vol::calculate_european_option_price_by_black_scholes(100.0, 90.0, 0.07011701801482094, 30.0, true);
 /// assert!((price - 20.0).abs()<= 2.0 * f64::EPSILON * 20.0);
 /// ```
 #[inline]
@@ -117,8 +115,7 @@ pub fn calculate_european_option_price_by_black_scholes(forward: f64, strike: f6
 /// # Examples
 ///
 /// ```
-/// use implied_vol::implied_normal_volatility;
-/// let normal_vol = implied_normal_volatility(20.0, 100.0, 90.0, 30.0, true);
+/// let normal_vol = implied_vol::implied_normal_volatility(20.0, 100.0, 90.0, 30.0, true);
 /// assert_eq!(normal_vol, 6.614292466299764);
 /// ```
 pub fn implied_normal_volatility(option_price: f64, forward: f64, strike: f64, expiry: f64, is_call: bool) -> f64 {
@@ -142,11 +139,126 @@ pub fn implied_normal_volatility(option_price: f64, forward: f64, strike: f64, e
 /// # Examples
 ///
 /// ```
-/// use implied_vol::calculate_european_option_price_by_bachelier;
-/// let price = calculate_european_option_price_by_bachelier(100.0, 90.0, 6.614292466299764, 30.0, true);
+/// let price = implied_vol::calculate_european_option_price_by_bachelier(100.0, 90.0, 6.614292466299764, 30.0, true);
 /// assert!((price - 20.0).abs()<= 2.0 * f64::EPSILON * 20.0);
 /// ```
 #[inline]
 pub fn calculate_european_option_price_by_bachelier(forward: f64, strike: f64, volatility: f64, expiry: f64, is_call: bool) -> f64 {
     bachelier::bachelier(forward, strike, volatility, expiry, is_call)
+}
+
+#[cfg(feature = "error-function")]
+/// Calculates the scaled complementary error function of `x`.
+///
+/// The scaled complementary error function is defined as: `erfcx(x) = exp(x^2) * erfc(x)`,
+/// where `erfc(x)` is the complementary error function.
+///
+/// # Arguments
+///
+/// * `x` - The input value to calculate the scaled complementary error function for.
+///
+/// # Returns
+///
+/// The result of calculating the scaled complementary error function of `x`.
+///
+/// # Example
+///
+/// ```
+/// let result = implied_vol::erfcx(0.5);
+/// assert!((result - 0.6156903441929259) / result <= f64::EPSILON);
+/// ```
+#[inline]
+pub fn erfcx(x: f64) -> f64 {
+    erf_cody::erfcx_cody(x)
+}
+
+#[cfg(feature = "error-function")]
+/// Calculates the complementary error function.
+///
+/// # Arguments
+///
+/// * `x` - The input number for which the complementary error function needs to be calculated.
+///
+/// # Returns
+///
+/// The result of the complementary error function calculation.
+///
+/// # Example
+///
+/// ```
+/// let result = implied_vol::erfc(0.5);
+/// assert!((result - 0.4795001221869535) / result <= f64::EPSILON);
+/// ```
+#[inline]
+pub fn erfc(x: f64) -> f64 {
+    erf_cody::erfc_cody(x)
+}
+
+/// Calculates the probability density function of a standard normal distribution.
+///
+/// # Arguments
+///
+/// * `x` - The value at which to calculate the probability density function.
+///
+/// # Returns
+///
+/// The probability density function value at the given `x` value.
+///
+/// # Examples
+///
+/// ```
+/// let pdf = implied_vol::norm_pdf(0.0);
+/// assert!((pdf - 0.3989422804014327) / pdf <= f64::EPSILON);
+/// ```
+#[cfg(feature = "normal-distribution")]
+#[inline]
+pub fn norm_pdf(x: f64) -> f64 {
+    normal_distribution::norm_pdf(x)
+}
+/// Calculates the cumulative distribution function (CDF) of the standard normal distribution.
+///
+/// # Arguments
+///
+/// * `x` - The value at which to calculate the CDF.
+///
+/// # Returns
+///
+/// The CDF value for `x` in the standard normal distribution, ranging from 0 to 1.
+///
+/// # Examples
+///
+/// ```
+/// let cdf = implied_vol::norm_cdf(1.5);
+/// assert!((cdf - 0.9331927987311419) / cdf <= f64::EPSILON);
+/// ```
+#[cfg(feature = "normal-distribution")]
+#[inline]
+pub fn norm_cdf(x: f64) -> f64 {
+    normal_distribution::norm_cdf(x)
+}
+
+#[cfg(feature = "normal-distribution")]
+/// Calculates the inverse cumulative distribution function (CDF).
+///
+/// The inverse CDF is also known as the quantile function or percent-point function.
+/// It returns the value x such that P(X < x) = probability, where X follows a standard normal distribution.
+///
+/// # Arguments
+///
+/// * `x` - The probability value between 0 and 1.
+///
+/// # Examples
+///
+/// ```
+/// let probability = 0.8;
+/// let inverse_cdf = implied_vol::inverse_norm_cdf(probability);
+/// assert!((inverse_cdf - 0.8416212335729144) / inverse_cdf <= f64::EPSILON);
+/// ```
+///
+/// # Panics
+///
+/// This function will panic if the given probability value is outside the range [0, 1].
+#[inline]
+pub fn inverse_norm_cdf(x: f64) -> f64 {
+    normal_distribution::inverse_norm_cdf(x)
 }

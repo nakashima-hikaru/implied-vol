@@ -24,28 +24,25 @@ Our library follows the methods presented in two pivotal papers by Peter Jäckel
 
 Both resources can be accessed at [Peter Jäckel's homepage](http://www.jaeckel.org/).
 
-## Features
-
-`implied-vol` gains the benefits of being implemented in Rust, such as cross-compilation with Cargo and powerful static
-analysis using Clippy lint. This library stands out by offering:
-
-- Rapid, precise calculations of both implied Black volatility and normal (Bachelier) implied volatility.
-- Exceptional testability and maintainability due to its implementation in Rust.
-- Unit tests aiding error checking.
-
-### Performance
+## Performance
 
 Peter Jäckel, the author of the original paper, asserts that "the calculation of a single implied volatility is now down
 to just under 270 nanoseconds" based on his machine's benchmark measurements. By examining the benchmark measurements
-performed on this crate's [Github Actions](https://github.com/nakashima-hikaru/implied-vol/actions), it becomes clear
+performed on this crate's [GitHub Actions](https://github.com/nakashima-hikaru/implied-vol/actions), it becomes clear
 that comparable performance is being achieved.
 
-### Precision
+## Precision
 
-On our machine, the absolute error for both implied Black volatility and implied normal
+On our machine, the relative error for both implied Black volatility and implied normal
 volatility calculations is confirmed to be less than twice the machine epsilon in random tests.
 
 Community contributions are always welcome!
+
+## Cargo Feature Flags
+
+- `normal-distribution`: Provide functions related to standard normal distribution used in calculation of implied
+  volatility
+- `error-function`: Provide functions related to error function used in calculation of implied volatility
 
 ## License
 

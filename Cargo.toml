@@ -9,6 +9,11 @@ license-file = "LICENSE"
 keywords = ["finance"]
 categories = ["finance"]
 
+[features]
+default = []
+error-function = []
+normal-distribution = []
+
 [dependencies]
 
 [dev-dependencies]
