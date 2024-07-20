@@ -3,7 +3,8 @@ name: CI
 on:
   push:
     branches: [ main ]
-
+  pull_request:
+    types: [opened, reopened]
 jobs:
   tests:
     runs-on: ubuntu-latest
