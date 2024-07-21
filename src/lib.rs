@@ -31,14 +31,23 @@
 //! assert_eq!(black_vol, 0.07011701801482094);
 //!
 //! let price = implied_vol::calculate_european_option_price_by_black_scholes(100.0, 90.0, 0.07011701801482094, 30.0, true);
-//! assert!((price - 20.0).abs()<= 2.0 * f64::EPSILON * 20.0);
+//! assert!(((price - 20.0) / price).abs() <= 2.0 * f64::EPSILON);
 //!
 //! let normal_vol = implied_vol::implied_normal_volatility(20.0, 100.0, 90.0, 30.0, true);
 //! assert_eq!(normal_vol, 6.614292466299764);
 //!
 //! let price = implied_vol::calculate_european_option_price_by_bachelier(100.0, 90.0, 6.614292466299764, 30.0, true);
-//! assert!((price - 20.0).abs()<= 2.0 * f64::EPSILON * 20.0);
+//! assert!(((price - 20.0) / price).abs()<= 2.0 * f64::EPSILON);
 //! ```
+//!
+//! Moreover, you can use some internal functions if you specify feature flags:
+//!
+//! ```toml
+//! [dependencies]
+//! implied-vol = { versions = "0.2.2", features = ["normal-distribution", "error-function"] }
+//! ```
+//!
+//! For detailed explanations of each feature, please refer to the README.md file.
 
 
 mod erf_cody;
