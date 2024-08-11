@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 More information about this crate can be found in
-the [crate documentation](https://docs.rs/implied-vol/0.2/implied_vol/).
+the [crate documentation](https://docs.rs/implied-vol/1.0/implied_vol/).
 
 ## About
 

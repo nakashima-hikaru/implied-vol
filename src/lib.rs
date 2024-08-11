@@ -21,7 +21,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! implied-vol = "0.2.2"
+//! implied-vol = "1.0.0"
 //! ```
 //!
 //! Then, in your code, bring the functions you need into scope with:
@@ -44,18 +44,17 @@
 //!
 //! ```toml
 //! [dependencies]
-//! implied-vol = { versions = "0.2.2", features = ["normal-distribution", "error-function"] }
+//! implied-vol = { versions = "1.0.0", features = ["normal-distribution", "error-function"] }
 //! ```
 //!
 //! For detailed explanations of each feature, please refer to the README.md file.
 
-
-mod erf_cody;
-mod normal_distribution;
-mod rational_cubic;
-mod lets_be_rational;
 mod bachelier;
 mod constants;
+mod erf_cody;
+mod lets_be_rational;
+mod normal_distribution;
+mod rational_cubic;
 
 /// Calculates the implied black volatility using a transformed rational guess with limited iterations.
 ///
@@ -78,7 +77,13 @@ mod constants;
 /// assert_eq!(black_vol, 0.07011701801482094);
 /// ```
 #[inline]
-pub fn implied_black_volatility(option_price: f64, forward: f64, strike: f64, expiry: f64, is_call: bool) -> f64 {
+pub fn implied_black_volatility(
+    option_price: f64,
+    forward: f64,
+    strike: f64,
+    expiry: f64,
+    is_call: bool,
+) -> f64 {
     lets_be_rational::implied_black_volatility(option_price, forward, strike, expiry, is_call)
 }
 
@@ -103,7 +108,13 @@ pub fn implied_black_volatility(option_price: f64, forward: f64, strike: f64, ex
 /// assert!((price - 20.0).abs()<= 2.0 * f64::EPSILON * 20.0);
 /// ```
 #[inline]
-pub fn calculate_european_option_price_by_black_scholes(forward: f64, strike: f64, volatility: f64, expiry: f64, is_call: bool) -> f64 {
+pub fn calculate_european_option_price_by_black_scholes(
+    forward: f64,
+    strike: f64,
+    volatility: f64,
+    expiry: f64,
+    is_call: bool,
+) -> f64 {
     lets_be_rational::black(forward, strike, volatility, expiry, is_call)
 }
 
@@ -127,7 +138,13 @@ pub fn calculate_european_option_price_by_black_scholes(forward: f64, strike: f6
 /// let normal_vol = implied_vol::implied_normal_volatility(20.0, 100.0, 90.0, 30.0, true);
 /// assert_eq!(normal_vol, 6.614292466299764);
 /// ```
-pub fn implied_normal_volatility(option_price: f64, forward: f64, strike: f64, expiry: f64, is_call: bool) -> f64 {
+pub fn implied_normal_volatility(
+    option_price: f64,
+    forward: f64,
+    strike: f64,
+    expiry: f64,
+    is_call: bool,
+) -> f64 {
     bachelier::implied_normal_volatility(option_price, forward, strike, expiry, is_call)
 }
 
@@ -152,7 +169,13 @@ pub fn implied_normal_volatility(option_price: f64, forward: f64, strike: f64, e
 /// assert!((price - 20.0).abs()<= 2.0 * f64::EPSILON * 20.0);
 /// ```
 #[inline]
-pub fn calculate_european_option_price_by_bachelier(forward: f64, strike: f64, volatility: f64, expiry: f64, is_call: bool) -> f64 {
+pub fn calculate_european_option_price_by_bachelier(
+    forward: f64,
+    strike: f64,
+    volatility: f64,
+    expiry: f64,
+    is_call: bool,
+) -> f64 {
     bachelier::bachelier(forward, strike, volatility, expiry, is_call)
 }
 

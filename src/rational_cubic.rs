@@ -191,25 +191,204 @@ mod tests {
 
     #[test]
     fn test_rational_cubic_interpolation() {
-        assert_eq!(rational_cubic_interpolation(0.5, 0.0, 1.0, 1.0, 2.0, 0.0, 0.0, MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE), 1.5);
-        assert_eq!(rational_cubic_interpolation(0.0, 0.0, 1.0, 1.0, 3.0, 0.0, 1.0, MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE), 1.0);
-        assert_eq!(rational_cubic_interpolation(0.2, 0.0, 1.0, 1.0, 2.0, 0.0, 0.0, MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE), 1.2000000000000002);
-        assert_eq!(rational_cubic_interpolation(0.0, 0.0, 1.0, 1.0, 2.0, 0.0, 2.0, MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE), 1.0);
-        assert_eq!(rational_cubic_interpolation(0.5, 0.5, 0.5, 1.0, 2.0, 0.0, 1.0, MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE), 1.5);
+        assert_eq!(
+            rational_cubic_interpolation(
+                0.5,
+                0.0,
+                1.0,
+                1.0,
+                2.0,
+                0.0,
+                0.0,
+                MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE
+            ),
+            1.5
+        );
+        assert_eq!(
+            rational_cubic_interpolation(
+                0.0,
+                0.0,
+                1.0,
+                1.0,
+                3.0,
+                0.0,
+                1.0,
+                MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE
+            ),
+            1.0
+        );
+        assert_eq!(
+            rational_cubic_interpolation(
+                0.2,
+                0.0,
+                1.0,
+                1.0,
+                2.0,
+                0.0,
+                0.0,
+                MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE
+            ),
+            1.2000000000000002
+        );
+        assert_eq!(
+            rational_cubic_interpolation(
+                0.0,
+                0.0,
+                1.0,
+                1.0,
+                2.0,
+                0.0,
+                2.0,
+                MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE
+            ),
+            1.0
+        );
+        assert_eq!(
+            rational_cubic_interpolation(
+                0.5,
+                0.5,
+                0.5,
+                1.0,
+                2.0,
+                0.0,
+                1.0,
+                MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE
+            ),
+            1.5
+        );
 
-        assert_eq!(rational_cubic_interpolation(0.5, 0.0, 1.0, 1.0, 2.0, 0.0, 0.0, MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE - f64::EPSILON), 1.5);
-        assert_eq!(rational_cubic_interpolation(0.0, 0.0, 1.0, 1.0, 3.0, 0.0, 1.0, MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE - f64::EPSILON), 1.0);
-        assert_eq!(rational_cubic_interpolation(0.2, 0.0, 1.0, 1.0, 2.0, 0.0, 0.0, MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE - f64::EPSILON), 1.2000000000000002);
-        assert_eq!(rational_cubic_interpolation(0.0, 0.0, 1.0, 1.0, 2.0, 0.0, 2.0, MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE) - f64::EPSILON, 0.9999999999999998);
-        assert_eq!(rational_cubic_interpolation(0.5, 0.5, 0.5, 1.0, 2.0, 0.0, 1.0, MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE) - f64::EPSILON, 1.4999999999999998);
+        assert_eq!(
+            rational_cubic_interpolation(
+                0.5,
+                0.0,
+                1.0,
+                1.0,
+                2.0,
+                0.0,
+                0.0,
+                MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE - f64::EPSILON
+            ),
+            1.5
+        );
+        assert_eq!(
+            rational_cubic_interpolation(
+                0.0,
+                0.0,
+                1.0,
+                1.0,
+                3.0,
+                0.0,
+                1.0,
+                MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE - f64::EPSILON
+            ),
+            1.0
+        );
+        assert_eq!(
+            rational_cubic_interpolation(
+                0.2,
+                0.0,
+                1.0,
+                1.0,
+                2.0,
+                0.0,
+                0.0,
+                MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE - f64::EPSILON
+            ),
+            1.2000000000000002
+        );
+        assert_eq!(
+            rational_cubic_interpolation(
+                0.0,
+                0.0,
+                1.0,
+                1.0,
+                2.0,
+                0.0,
+                2.0,
+                MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE
+            ) - f64::EPSILON,
+            0.9999999999999998
+        );
+        assert_eq!(
+            rational_cubic_interpolation(
+                0.5,
+                0.5,
+                0.5,
+                1.0,
+                2.0,
+                0.0,
+                1.0,
+                MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE
+            ) - f64::EPSILON,
+            1.4999999999999998
+        );
 
-        assert_eq!(rational_cubic_interpolation(0.5, 0.0, 1.0, 1.0, 2.0, 0.0, 0.0, MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE + f64::EPSILON), 1.5);
-        assert_eq!(rational_cubic_interpolation(0.0, 0.0, 1.0, 1.0, 3.0, 0.0, 1.0, MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE + f64::EPSILON), 1.0);
-        assert_eq!(rational_cubic_interpolation(0.2, 0.0, 1.0, 1.0, 2.0, 0.0, 0.0, MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE + f64::EPSILON), 1.2000000000000002);
-        assert_eq!(rational_cubic_interpolation(0.0, 0.0, 1.0, 1.0, 2.0, 0.0, 2.0, MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE) + f64::EPSILON, 1.0000000000000002);
-        assert_eq!(rational_cubic_interpolation(0.5, 0.5, 0.5, 1.0, 2.0, 0.0, 1.0, MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE) + f64::EPSILON, 1.5000000000000002);
+        assert_eq!(
+            rational_cubic_interpolation(
+                0.5,
+                0.0,
+                1.0,
+                1.0,
+                2.0,
+                0.0,
+                0.0,
+                MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE + f64::EPSILON
+            ),
+            1.5
+        );
+        assert_eq!(
+            rational_cubic_interpolation(
+                0.0,
+                0.0,
+                1.0,
+                1.0,
+                3.0,
+                0.0,
+                1.0,
+                MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE + f64::EPSILON
+            ),
+            1.0
+        );
+        assert_eq!(
+            rational_cubic_interpolation(
+                0.2,
+                0.0,
+                1.0,
+                1.0,
+                2.0,
+                0.0,
+                0.0,
+                MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE + f64::EPSILON
+            ),
+            1.2000000000000002
+        );
+        assert_eq!(
+            rational_cubic_interpolation(
+                0.0,
+                0.0,
+                1.0,
+                1.0,
+                2.0,
+                0.0,
+                2.0,
+                MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE
+            ) + f64::EPSILON,
+            1.0000000000000002
+        );
+        assert_eq!(
+            rational_cubic_interpolation(
+                0.5,
+                0.5,
+                0.5,
+                1.0,
+                2.0,
+                0.0,
+                1.0,
+                MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE
+            ) + f64::EPSILON,
+            1.5000000000000002
+        );
     }
-
 
     #[test]
     fn test_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side() {
@@ -221,7 +400,15 @@ mod tests {
         let d_r = 2.0;
         let second_derivative_r = 0.5;
 
-        let output = rational_cubic_control_parameter_to_fit_second_derivative_at_right_side(x_l, x_r, y_l, y_r, d_l, d_r, second_derivative_r);
+        let output = rational_cubic_control_parameter_to_fit_second_derivative_at_right_side(
+            x_l,
+            x_r,
+            y_l,
+            y_r,
+            d_l,
+            d_r,
+            second_derivative_r,
+        );
 
         assert_eq!(output, 1.25);
     }

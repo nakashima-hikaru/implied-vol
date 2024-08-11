@@ -216,9 +216,7 @@ pub(crate) fn erfcx_cody(x: f64) -> f64 {
 
 #[cfg(test)]
 mod tests {
-    use crate::erf_cody::{
-        erfc_cody, erfcx_cody, THRESH, XBIG, XHUGE, XMAX, XNEG,
-    };
+    use crate::erf_cody::{erfc_cody, erfcx_cody, THRESH, XBIG, XHUGE, XMAX, XNEG};
 
     #[test]
     fn calerf_1() {
