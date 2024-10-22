@@ -6,11 +6,12 @@ const NORM_CDF_ASYMPTOTIC_EXPANSION_SECOND_THRESHOLD: f64 = -67108864.0;
 // 1.0 / f64::sqrt(f64::EPSILON);
 const FRAC_SQRT_2_PI: f64 = 0.398_942_280_401_432_7;
 
-#[inline]
+#[inline(always)]
 pub(crate) fn norm_pdf(x: f64) -> f64 {
     FRAC_SQRT_2_PI * (-0.5 * x * x).exp()
 }
 
+#[inline(always)]
 pub(crate) fn norm_cdf(z: f64) -> f64 {
     if z <= NORM_CDF_ASYMPTOTIC_EXPANSION_FIRST_THRESHOLD {
         let mut sum = 1.0;
@@ -41,6 +42,7 @@ pub(crate) fn norm_cdf(z: f64) -> f64 {
     0.5 * erfc_cody(-z * FRAC_1_SQRT_2)
 }
 
+#[inline(always)]
 pub(crate) fn inverse_norm_cdf(u: f64) -> f64 {
     //
     // ALGORITHM AS241  APPL. STATIST. (1988) VOL. 37, NO. 3

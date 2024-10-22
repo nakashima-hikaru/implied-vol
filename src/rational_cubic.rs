@@ -1,12 +1,13 @@
 const MINIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE: f64 = -(1f64 - 0.000000014901161193847656);
 const MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE: f64 = 2f64 / (f64::EPSILON * f64::EPSILON);
 
-#[inline]
+#[inline(always)]
 fn is_zero(x: f64) -> bool {
     x.abs() < f64::MIN_POSITIVE
 }
 
 #[allow(clippy::too_many_arguments)]
+#[inline(always)]
 pub(crate) fn rational_cubic_interpolation(
     x: f64,
     x_l: f64,
@@ -35,6 +36,7 @@ pub(crate) fn rational_cubic_interpolation(
     y_r * t + y_l * (1.0 - t)
 }
 
+#[inline(always)]
 pub(crate) fn rational_cubic_control_parameter_to_fit_second_derivative_at_left_side(
     x_l: f64,
     x_r: f64,
@@ -61,6 +63,7 @@ pub(crate) fn rational_cubic_control_parameter_to_fit_second_derivative_at_left_
     }
 }
 
+#[inline(always)]
 pub(crate) fn rational_cubic_control_parameter_to_fit_second_derivative_at_right_side(
     x_l: f64,
     x_r: f64,
@@ -86,6 +89,7 @@ pub(crate) fn rational_cubic_control_parameter_to_fit_second_derivative_at_right
     numerator / denominator
 }
 
+#[inline(always)]
 pub(crate) fn minimum_rational_cubic_control_parameter(
     d_l: f64,
     d_r: f64,
@@ -128,6 +132,7 @@ pub(crate) fn minimum_rational_cubic_control_parameter(
 }
 
 #[allow(clippy::too_many_arguments)]
+#[inline(always)]
 pub(crate) fn convex_rational_cubic_control_parameter_to_fit_second_derivative_at_left_side(
     x_l: f64,
     x_r: f64,
@@ -157,6 +162,7 @@ pub(crate) fn convex_rational_cubic_control_parameter_to_fit_second_derivative_a
 }
 
 #[allow(clippy::too_many_arguments)]
+#[inline(always)]
 pub(crate) fn convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side(
     x_l: f64,
     x_r: f64,

@@ -5,12 +5,13 @@ use crate::normal_distribution::{inverse_norm_cdf, norm_cdf, norm_pdf};
 use crate::rational_cubic::{convex_rational_cubic_control_parameter_to_fit_second_derivative_at_left_side, convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side, rational_cubic_interpolation};
 
 
-#[inline]
+#[inline(always)]
 fn householder3_factor(v: f64, h2: f64, h3: f64) -> f64 { (1.0 + 0.5 * h2 * v) / (1.0 + v * (h2 + h3 * v / 6.0)) }
 
-#[inline]
+#[inline(always)]
 fn householder4_factor(v: f64, h2: f64, h3: f64, h4: f64) -> f64 { (1.0 + v * (h2 + v * h3 / 6.0)) / (1.0 + v * (1.5 * h2 + v * (h2 * h2 / 4.0 + h3 / 3.0 + v * h4 / 24.0))) }
 
+#[inline(always)]
 fn normalised_intrinsic(x: f64, q: bool) -> f64 {
     if (q && !x.is_sign_positive()) || (!q && !x.is_sign_negative()) {
         return 0.0;
@@ -34,12 +35,12 @@ fn normalised_intrinsic(x: f64, q: bool) -> f64 {
     }
 }
 
-#[inline]
+#[inline(always)]
 fn normalised_intrinsic_call(x: f64) -> f64 {
     normalised_intrinsic(x, true)
 }
 
-#[inline]
+#[inline(always)]
 fn square(x: f64) -> f64 {
     x * x
 }
@@ -47,6 +48,7 @@ fn square(x: f64) -> f64 {
 const ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD: f64 = -10.0;
 const SMALL_T_EXPANSION_OF_NORMALISED_BLACK_THRESHOLD: f64 = 2.0 * SIXTEENTH_ROOT_DBL_EPSILON;
 
+#[inline(always)]
 fn asymptotic_expansion_of_normalised_black_call_over_vega(h: f64, t: f64) -> f64 {
     assert!((h < -ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD.abs()) && (h + t < -(SMALL_T_EXPANSION_OF_NORMALISED_BLACK_THRESHOLD + ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD).abs()));
     let e = square(t / h);
@@ -59,6 +61,7 @@ fn asymptotic_expansion_of_normalised_black_call_over_vega(h: f64, t: f64) -> f6
     b_over_vega.max(0.0).abs()
 }
 
+#[inline(always)]
 fn small_t_expansion_of_normalised_black_call_over_vega(h: f64, t: f64) -> f64 {
     let w = t * t;
     let h2 = h * h;
@@ -67,6 +70,7 @@ fn small_t_expansion_of_normalised_black_call_over_vega(h: f64, t: f64) -> f64 {
     b_over_vega.max(0.0).abs()
 }
 
+#[inline(always)]
 fn normalised_black_call_with_optimal_use_of_codys_functions(x: f64, s: f64) -> f64 {
     const CODYS_THRESHOLD: f64 = 0.46875;
     let h = x / s;
@@ -88,6 +92,7 @@ fn normalised_black_call_with_optimal_use_of_codys_functions(x: f64, s: f64) -> 
     two_b.abs().max(0.0)
 }
 
+#[inline(always)]
 fn normalised_vega(x: f64, s: f64) -> f64 {
     let ax = x.abs();
     if ax <= 0.0 {
@@ -99,6 +104,7 @@ fn normalised_vega(x: f64, s: f64) -> f64 {
     }
 }
 
+#[inline(always)]
 fn ln_normalised_vega(x: f64, s: f64) -> f64 {
     let ax = x.abs();
     if ax <= 0.0 {
@@ -110,6 +116,7 @@ fn ln_normalised_vega(x: f64, s: f64) -> f64 {
     }
 }
 
+#[inline(always)]
 fn normalised_black_call(x: f64, s: f64) -> f64 {
     if x.is_sign_positive() {
         return normalised_intrinsic_call(x) + normalised_black_call(-x, s);
@@ -127,6 +134,7 @@ fn normalised_black_call(x: f64, s: f64) -> f64 {
 }
 
 
+#[inline(always)]
 fn normalised_black_call_over_vega_and_ln_vega(x: f64, s: f64) -> (f64, f64) {
     if x.is_sign_positive() {
         let (bx, ln_vega) = normalised_black_call_over_vega_and_ln_vega(-x, s);
@@ -145,11 +153,12 @@ fn normalised_black_call_over_vega_and_ln_vega(x: f64, s: f64) -> (f64, f64) {
     (normalised_black_call_with_optimal_use_of_codys_functions(x, s) * (-ln_vega).exp(), ln_vega)
 }
 
-#[inline]
+#[inline(always)]
 fn normalised_black(x: f64, s: f64, theta: bool) -> f64 {
     normalised_black_call(if !theta { -x } else { x }, s)
 }
 
+#[inline(always)]
 pub(crate) fn black(f: f64, k: f64, sigma: f64, t: f64, q: bool) -> f64 {
     let intrinsic = if !q { k - f } else { f - k }.max(0f64).abs();
     if (q && ((f - k).is_sign_positive())) || (!q && ((f - k).is_sign_negative())) {
@@ -158,6 +167,7 @@ pub(crate) fn black(f: f64, k: f64, sigma: f64, t: f64, q: bool) -> f64 {
     intrinsic.max((f.sqrt() * k.sqrt()) * normalised_black((f / k).ln(), sigma * t.sqrt(), q))
 }
 
+#[inline(always)]
 fn compute_f_lower_map_and_first_two_derivatives(x: f64, s: f64) -> (f64, f64, f64) {
     let ax = x.abs();
     let z = ONE_OVER_SQRT_THREE * ax / s;
@@ -182,6 +192,7 @@ fn compute_f_lower_map_and_first_two_derivatives(x: f64, s: f64) -> (f64, f64, f
 }
 
 
+#[inline(always)]
 fn inverse_f_lower_map(x: f64, f: f64) -> f64 {
     if f.is_subnormal() {
         0.0
@@ -190,6 +201,7 @@ fn inverse_f_lower_map(x: f64, f: f64) -> f64 {
     }
 }
 
+#[inline(always)]
 fn compute_f_upper_map_and_first_two_derivatives(x: f64, s: f64) -> (f64, f64, f64) {
     let f = norm_cdf(-0.5 * s);
     let (fp, fpp);
@@ -207,15 +219,18 @@ fn compute_f_upper_map_and_first_two_derivatives(x: f64, s: f64) -> (f64, f64, f
 }
 
 
+#[inline(always)]
 fn inverse_f_upper_map(f: f64) -> f64 {
     -2.0 * inverse_norm_cdf(f)
 }
 
+#[inline(always)]
 fn take_step(x_min: f64, x_max: f64, x: f64, dx: f64) -> (f64, f64) {
     let new_x = x_min.max(x_max.min(x + dx));
     (new_x, new_x - x)
 }
 
+#[inline(always)]
 fn unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(
     mut beta: f64, mut x: f64, q: bool, n: u8,
 ) -> f64 {
@@ -356,6 +371,7 @@ fn unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_wit
     s
 }
 
+#[inline(always)]
 fn implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(
     mut price: f64,
     f: f64,
@@ -389,6 +405,7 @@ fn implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(
     ) / t.sqrt()
 }
 
+#[inline(always)]
 pub(crate) fn implied_black_volatility(price: f64, f: f64, k: f64, t: f64, q: bool) -> f64 {
     implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(price, f, k, t, q, 2)
 }

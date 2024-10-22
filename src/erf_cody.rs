@@ -57,6 +57,7 @@ const XBIG: f64 = 26.543;
 const XHUGE: f64 = 6.71e7;
 const XMAX: f64 = 2.53e307;
 
+#[inline(always)]
 pub(crate) fn erfc_cody(x: f64) -> f64 {
     /* -------------------------------------------------------------------- */
     /* This subprogram computes approximate values for erfc(x). */
@@ -124,6 +125,7 @@ pub(crate) fn erfc_cody(x: f64) -> f64 {
     result
 }
 
+#[inline(always)]
 pub(crate) fn erfcx_cody(x: f64) -> f64 {
     /* ------------------------------------------------------------------ */
     /* This subprogram computes approximate values for exp(x*x) * erfc(x). */
@@ -207,7 +209,7 @@ pub(crate) fn erfcx_cody(x: f64) -> f64 {
         } else {
             let ysq = (x * 16.0).trunc() / 16.0;
             let del = (x - ysq) * (x + ysq);
-            let y = (ysq * ysq).exp() * del.exp();
+            let y = (ysq * ysq + del).exp();
             result = (y + y) - result;
         }
     }
