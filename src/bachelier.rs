@@ -2,7 +2,7 @@ use crate::constants::{ONE_OVER_SQRT_TWO_PI, SQRT_TWO_PI};
 use crate::normal_distribution::norm_pdf;
 use std::cmp::Ordering;
 
-#[inline]
+#[inline(always)]
 fn intrinsic_value(forward: f64, strike: f64, q: bool) -> f64 {
     (if !q {
         strike - forward
@@ -13,6 +13,7 @@ fn intrinsic_value(forward: f64, strike: f64, q: bool) -> f64 {
     .abs()
 }
 
+#[inline(always)]
 fn phi_tilde_times_x(x: f64) -> f64 {
     if x.abs() <= 0.612_003_180_962_480_7 {
         let h = (x * x - 1.872_739_467_540_974_8E-1) * 5.339_771_053_755_08;
@@ -69,10 +70,12 @@ fn phi_tilde_times_x(x: f64) -> f64 {
     ONE_OVER_SQRT_TWO_PI * (-0.5 * (x * x)).exp() * w * (1.0 - g * w)
 }
 
+#[inline(always)]
 fn phi_tilde(x: f64) -> f64 {
     phi_tilde_times_x(x) / x
 }
 
+#[inline(always)]
 fn inv_phi_tilde(phi_tilde_star: f64) -> f64 {
     if phi_tilde_star > 1.0 {
         return -inv_phi_tilde(1.0 - phi_tilde_star);
@@ -134,6 +137,7 @@ pub(crate) fn bachelier(forward: f64, strike: f64, sigma: f64, t: f64, q: bool) 
     s * phi_tilde_times_x(x)
 }
 
+#[inline(always)]
 pub(crate) fn implied_normal_volatility(
     price: f64,
     forward: f64,
@@ -196,7 +200,7 @@ mod tests {
         let seed: [u8; 32] = [13; 32];
         let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
         for _ in 0..n {
-            let (r, r2, r3): (f64, f64, f64) = rng.gen();
+            let (r, r2, r3): (f64, f64, f64) = rng.random();
             let price = 1e5 * r2;
             let f = r + 1e5 * r2;
             let k = f - price;
@@ -214,7 +218,7 @@ mod tests {
         let seed: [u8; 32] = [13; 32];
         let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
         for _ in 0..n {
-            let (r, r2, r3): (f64, f64, f64) = rng.gen();
+            let (r, r2, r3): (f64, f64, f64) = rng.random();
             let price = 1.0 * (1.0 - r) + 1.0 * r * r2;
             let f = 1.0;
             let k = 1.0 * r;
@@ -232,7 +236,7 @@ mod tests {
         let seed: [u8; 32] = [13; 32];
         let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
         for _ in 0..n {
-            let (r, r2, r3): (f64, f64, f64) = rng.gen();
+            let (r, r2, r3): (f64, f64, f64) = rng.random();
             let price = 1.0 * r * r2;
             let f = 1.0 * r;
             let k = 1.0;
@@ -250,7 +254,7 @@ mod tests {
         let seed: [u8; 32] = [13; 32];
         let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
         for _ in 0..n {
-            let (r, r2, r3): (f64, f64, f64) = rng.gen();
+            let (r, r2, r3): (f64, f64, f64) = rng.random();
             let price = 1.0 * r * r2;
             let f = 1.0;
             let k = 1.0 * r;
@@ -268,7 +272,7 @@ mod tests {
         let seed: [u8; 32] = [13; 32];
         let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
         for _ in 0..n {
-            let (r, r2, r3): (f64, f64, f64) = rng.gen();
+            let (r, r2, r3): (f64, f64, f64) = rng.random();
             let price = 1.0 * (1.0 - r) + 1.0 * r * r2;
             let f = 1.0 * r;
             let k = 1.0;

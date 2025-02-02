@@ -21,7 +21,7 @@ fn call_atm(b: &mut Bencher) {
 fn call_itm(b: &mut Bencher) {
     let seed: [u8; 32] = [13; 32];
     let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
-    let (r, r2, r3): (f64, f64, f64) = rng.gen();
+    let (r, r2, r3): (f64, f64, f64) = rng.random();
     let price = 1.0 * (1.0 - r) + 1.0 * r * r2;
     let f = 1.0;
     let k = 1.0 * r;
@@ -34,7 +34,7 @@ fn call_itm(b: &mut Bencher) {
 fn call_otm(b: &mut Bencher) {
     let seed: [u8; 32] = [13; 32];
     let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
-    let (r, r2, r3): (f64, f64, f64) = rng.gen();
+    let (r, r2, r3): (f64, f64, f64) = rng.random();
     let price = 1.0 * r * r2;
     let f = 1.0 * r;
     let k = 1.0;
@@ -56,7 +56,7 @@ fn put_atm(b: &mut Bencher) {
 fn put_itm(b: &mut Bencher) {
     let seed: [u8; 32] = [13; 32];
     let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
-    let (r, r2, r3): (f64, f64, f64) = rng.gen();
+    let (r, r2, r3): (f64, f64, f64) = rng.random();
     let price = 1.0 * r * r2;
     let f = 1.0;
     let k = 1.0 * r;
@@ -69,7 +69,7 @@ fn put_itm(b: &mut Bencher) {
 fn put_otm(b: &mut Bencher) {
     let seed: [u8; 32] = [13; 32];
     let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
-    let (r, r2, r3): (f64, f64, f64) = rng.gen();
+    let (r, r2, r3): (f64, f64, f64) = rng.random();
     let price = 1.0 * (1.0 - r) + 1.0 * r * r2;
     let f = 1.0 * r;
     let k = 1.0;
