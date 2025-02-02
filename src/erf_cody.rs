@@ -209,7 +209,7 @@ pub(crate) fn erfcx_cody(x: f64) -> f64 {
         } else {
             let ysq = (x * 16.0).trunc() / 16.0;
             let del = (x - ysq) * (x + ysq);
-            let y = (ysq * ysq + del).exp();
+            let y = (ysq * ysq).exp() * del.exp();
             result = (y + y) - result;
         }
     }
