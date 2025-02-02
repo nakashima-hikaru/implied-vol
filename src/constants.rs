@@ -1,5 +1,6 @@
 pub(crate) const SQRT_PI_OVER_TWO: f64 = 1.253_314_137_315_500_3;
 pub(crate) const SQRT_TWO_PI: f64 = 2.506_628_274_631_000_7;
+pub(crate) const FRAC_SQRT_TWO_PI: f64 = 0.398_942_280_401_432_7;
 pub(crate) const SQRT_THREE: f64 = 1.732_050_807_568_877_2;
 pub(crate) const SQRT_TWO_OVER_PI: f64 = 0.797_884_560_802_865_4;
 pub(crate) const ONE_OVER_SQRT_THREE: f64 = 0.577_350_269_189_625_7;

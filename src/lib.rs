@@ -28,7 +28,7 @@
 //!
 //! ```rust
 //! let black_vol = implied_vol::implied_black_volatility(20.0, 100.0, 90.0, 30.0, true);
-//! assert_eq!(black_vol, 0.07011701801482094);
+//! assert_eq!(black_vol, 0.07011701801482095);
 //!
 //! let price = implied_vol::calculate_european_option_price_by_black_scholes(100.0, 90.0, 0.07011701801482094, 30.0, true);
 //! assert!(((price - 20.0) / price).abs() <= 2.0 * f64::EPSILON);
@@ -74,7 +74,7 @@ mod rational_cubic;
 ///
 /// ```
 /// let black_vol = implied_vol::implied_black_volatility(20.0, 100.0, 90.0, 30.0, true);
-/// assert_eq!(black_vol, 0.07011701801482094);
+/// assert_eq!(black_vol, 0.07011701801482095);
 /// ```
 #[inline]
 pub fn implied_black_volatility(

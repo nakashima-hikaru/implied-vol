@@ -84,10 +84,7 @@ pub(crate) fn erfc_cody(x: f64) -> f64 {
             xnum = (xnum + A[i]) * ysq;
             xden = (xden + B[i]) * ysq;
         }
-        result = x * (xnum + A[3]) / (xden + B[3]);
-
-        result = 1.0 - result;
-        return result;
+        return 1.0 - x * (xnum + A[3]) / (xden + B[3]);
     } else if y <= 4.0 {
         xnum = C[8] * y;
         xden = y;
@@ -190,7 +187,7 @@ pub(crate) fn erfcx_cody(x: f64) -> f64 {
             return result;
         }
     } else {
-        let ysq = (y * y).recip();
+        let ysq = y.powi(2).recip();
         let mut xnum = P[5] * ysq;
         let mut xden = ysq;
 

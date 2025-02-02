@@ -200,7 +200,7 @@ mod tests {
         let seed: [u8; 32] = [13; 32];
         let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
         for _ in 0..n {
-            let (r, r2, r3): (f64, f64, f64) = rng.gen();
+            let (r, r2, r3): (f64, f64, f64) = rng.random();
             let price = 1e5 * r2;
             let f = r + 1e5 * r2;
             let k = f - price;
@@ -218,7 +218,7 @@ mod tests {
         let seed: [u8; 32] = [13; 32];
         let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
         for _ in 0..n {
-            let (r, r2, r3): (f64, f64, f64) = rng.gen();
+            let (r, r2, r3): (f64, f64, f64) = rng.random();
             let price = 1.0 * (1.0 - r) + 1.0 * r * r2;
             let f = 1.0;
             let k = 1.0 * r;
@@ -236,7 +236,7 @@ mod tests {
         let seed: [u8; 32] = [13; 32];
         let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
         for _ in 0..n {
-            let (r, r2, r3): (f64, f64, f64) = rng.gen();
+            let (r, r2, r3): (f64, f64, f64) = rng.random();
             let price = 1.0 * r * r2;
             let f = 1.0 * r;
             let k = 1.0;
@@ -254,7 +254,7 @@ mod tests {
         let seed: [u8; 32] = [13; 32];
         let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
         for _ in 0..n {
-            let (r, r2, r3): (f64, f64, f64) = rng.gen();
+            let (r, r2, r3): (f64, f64, f64) = rng.random();
             let price = 1.0 * r * r2;
             let f = 1.0;
             let k = 1.0 * r;
@@ -272,7 +272,7 @@ mod tests {
         let seed: [u8; 32] = [13; 32];
         let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
         for _ in 0..n {
-            let (r, r2, r3): (f64, f64, f64) = rng.gen();
+            let (r, r2, r3): (f64, f64, f64) = rng.random();
             let price = 1.0 * (1.0 - r) + 1.0 * r * r2;
             let f = 1.0 * r;
             let k = 1.0;

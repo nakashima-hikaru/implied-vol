@@ -1,5 +1,5 @@
 use std::f64::consts::{FRAC_1_SQRT_2, SQRT_2};
-use crate::constants::{DENORMALISATION_CUTOFF, FOURTH_ROOT_DBL_EPSILON, HALF_OF_LN_TWO_PI, SIXTEENTH_ROOT_DBL_EPSILON, SQRT_DBL_MAX, SQRT_MIN_POSITIVE, ONE_OVER_SQRT_THREE, SQRT_PI_OVER_TWO, SQRT_THREE, SQRT_THREE_OVER_THIRD_ROOT_TWO_PI, SQRT_TWO_PI, TWO_PI_OVER_SQRT_TWENTY_SEVEN, VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_ABOVE_MAXIMUM, VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_BELOW_INTRINSIC, SQRT_TWO_OVER_PI};
+use crate::constants::{DENORMALISATION_CUTOFF, FOURTH_ROOT_DBL_EPSILON, FRAC_SQRT_TWO_PI, HALF_OF_LN_TWO_PI, ONE_OVER_SQRT_THREE, SIXTEENTH_ROOT_DBL_EPSILON, SQRT_DBL_MAX, SQRT_MIN_POSITIVE, SQRT_PI_OVER_TWO, SQRT_THREE, SQRT_THREE_OVER_THIRD_ROOT_TWO_PI, SQRT_TWO_OVER_PI, TWO_PI_OVER_SQRT_TWENTY_SEVEN, VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_ABOVE_MAXIMUM, VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_BELOW_INTRINSIC};
 use crate::erf_cody::{erfc_cody, erfcx_cody};
 use crate::normal_distribution::{inverse_norm_cdf, norm_cdf, norm_pdf};
 use crate::rational_cubic::{convex_rational_cubic_control_parameter_to_fit_second_derivative_at_left_side, convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side, rational_cubic_interpolation};
@@ -16,7 +16,7 @@ fn normalised_intrinsic(x: f64, q: bool) -> f64 {
     if (q && !x.is_sign_positive()) || (!q && !x.is_sign_negative()) {
         return 0.0;
     }
-    let x2 = x * x;
+    let x2 = x.powi(2);
     if x2 < 98.0 * FOURTH_ROOT_DBL_EPSILON {
         let ret = x * (1.0 + x2 * ((1.0 / 24.0) + x2 * ((1.0 / 1920.0) + x2 * ((1.0 / 322560.0) + (1.0 / 92897280.0) * x2)))).abs().max(0.0);
         return if q {
@@ -91,11 +91,11 @@ fn normalised_black_call_with_optimal_use_of_codys_functions(x: f64, s: f64) -> 
 fn normalised_vega(x: f64, s: f64) -> f64 {
     let ax = x.abs();
     if ax <= 0.0 {
-        (1.0 / SQRT_TWO_PI) * (-0.125 * s * s).exp()
+        FRAC_SQRT_TWO_PI * (-0.125 * s.powi(2)).exp()
     } else if s <= 0.0 || s <= ax * SQRT_MIN_POSITIVE {
         0.0
     } else {
-        (1.0 / SQRT_TWO_PI) * (-0.5 * ((x / s).powi(2) + (0.5 * s).powi(2))).exp()
+        FRAC_SQRT_TWO_PI * (-0.5 * ((x / s).powi(2) + (0.5 * s).powi(2))).exp()
     }
 }
 
@@ -139,7 +139,7 @@ fn normalised_black_call_over_vega_and_ln_vega(x: f64, s: f64) -> (f64, f64) {
     if s <= x.abs() * DENORMALISATION_CUTOFF {
         return (normalised_intrinsic_call(x) * (-ln_vega).exp(), ln_vega);
     }
-    if x < s * ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD && 0.5 * s * s + x < s * (SMALL_T_EXPANSION_OF_NORMALISED_BLACK_THRESHOLD + ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD) {
+    if x < s * ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD && 0.5 * s.powi(2) + x < s * (SMALL_T_EXPANSION_OF_NORMALISED_BLACK_THRESHOLD + ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD) {
         return (asymptotic_expansion_of_normalised_black_call_over_vega(x / s, 0.5 * s), ln_vega);
     }
     if 0.5 * s < SMALL_T_EXPANSION_OF_NORMALISED_BLACK_THRESHOLD {
@@ -166,16 +166,16 @@ pub(crate) fn black(f: f64, k: f64, sigma: f64, t: f64, q: bool) -> f64 {
 fn compute_f_lower_map_and_first_two_derivatives(x: f64, s: f64) -> (f64, f64, f64) {
     let ax = x.abs();
     let z = ONE_OVER_SQRT_THREE * ax / s;
-    let y = z * z;
-    let s2 = s * s;
+    let y = z.powi(2);
+    let s2 = s.powi(2);
     let phi_m = norm_cdf(-z);
     let phi = norm_pdf(z);
     let fpp = std::f64::consts::FRAC_PI_6 * y / (s2 * s) * phi_m * (8.0 * SQRT_THREE * s * ax + (3.0 * s2 * (s2 - 8.0) - 8.0 * x.powi(2)) * phi_m / phi) * (2.0 * y + 0.25 * s2).exp();
     let (fp, f) = if s.is_subnormal() {
         (1.0, 0.0)
     } else {
-        let phi2 = phi_m * phi_m;
-        let fp_val = std::f64::consts::TAU * y * phi2 * (y + 0.125 * s * s).exp();
+        let phi2 = phi_m.powi(2);
+        let fp_val = std::f64::consts::TAU * y * phi2 * (y + 0.125 * s.powi(2)).exp();
         let f_val = if x.is_subnormal() {
             0.0
         } else {
@@ -199,16 +199,13 @@ fn inverse_f_lower_map(x: f64, f: f64) -> f64 {
 #[inline(always)]
 fn compute_f_upper_map_and_first_two_derivatives(x: f64, s: f64) -> (f64, f64, f64) {
     let f = norm_cdf(-0.5 * s);
-    let (fp, fpp);
-
-    if x.is_subnormal() {
-        fp = -0.5;
-        fpp = 0.0;
+    let (fp, fpp) = if x.is_subnormal() {
+        (-0.5, 0.0)
     } else {
         let w = (x / s).powi(2);
-        fp = -0.5 * (0.5 * w).exp();
-        fpp = SQRT_PI_OVER_TWO * ((w + 0.125 * s * s).exp()) * w / s;
-    }
+        (-0.5 * (0.5 * w).exp(),
+        SQRT_PI_OVER_TWO * ((w + 0.125 * s.powi(2)).exp()) * w / s)
+    };
 
     (f, fp, fpp)
 }
@@ -275,7 +272,7 @@ fn unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_wit
                 let b_h2 = (h.powi(2) / s) - s / 4.0;
                 let nu = (ln_beta - ln_b) * ln_b / ln_beta / bpob;
                 let lambda = ln_b.recip();
-                let otlambda = 1.0 + 2.0 * lambda;
+                let otlambda = lambda.mul_add(2.0, 1.0);
                 let h2 = b_h2 - bpob * otlambda;
                 let c = 3.0 * (h / s).powi(2);
                 let b_h3 = b_h2.powi(2) - c - 0.25;
@@ -337,7 +334,7 @@ fn unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_wit
                     let h2 = b_h2 + gp;
                     let h3 = b_h3 + gp * (2.0 * gp + 3.0 * b_h2);
                     ds = if x < -580.0 {
-                        nu * householder4_factor(nu, h2, h3, (b_h2 * (b_h3 - 0.5) - (b_h2 - 2.0 / s) * 2.0 * c) + gp * (6.0 * gp * (gp + 2.0 * b_h2) + 3.0 * b_h2 * b_h2 + 4.0 * b_h3))
+                        nu * householder4_factor(nu, h2, h3, (b_h2 * (b_h3 - 0.5) - (b_h2 - 2.0 / s) * 2.0 * c) + gp * (6.0 * gp * b_h2.mul_add(2.0,  gp) + 3.0 * b_h2 * b_h2 + 4.0 * b_h3))
                     } else {
                         nu * householder3_factor(nu, h2, h3)
                     };
@@ -421,7 +418,7 @@ mod tests {
             let q = true;
             let sigma = implied_black_volatility(price, f, k, t, q);
             let reprice = black(f, k, sigma, t, q);
-            assert!((price - reprice).abs() < 2.0 * f64::EPSILON * 100.0);
+            assert!((price - reprice).abs() < f64::EPSILON * 100.0);
         }
     }
 
@@ -435,7 +432,7 @@ mod tests {
             let q = false;
             let sigma = implied_black_volatility(price, f, k, t, q);
             let reprice = black(f, k, sigma, t, q);
-            assert!((price - reprice).abs() < 2.0 * f64::EPSILON * 100.0);
+            assert!((price - reprice).abs() < f64::EPSILON * 100.0);
         }
     }
 
@@ -445,7 +442,7 @@ mod tests {
         let seed: [u8; 32] = [13; 32];
         let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
         for _ in 0..n {
-            let (r, r2, r3): (f64, f64, f64) = rng.gen();
+            let (r, r2, r3): (f64, f64, f64) = rng.random();
             let price = 1e5 * r2;
             let f = r + 1e5 * r2;
             let k = f - price;
@@ -453,7 +450,7 @@ mod tests {
             let q = true;
             let sigma = implied_black_volatility(price, f, k, t, q);
             let reprice = black(f, k, sigma, t, q);
-            assert!((price - reprice).abs() <= 2.0 * f64::EPSILON);
+            assert!((price - reprice).abs() <= f64::EPSILON);
         }
     }
 
@@ -463,7 +460,7 @@ mod tests {
         let seed: [u8; 32] = [13; 32];
         let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
         for _ in 0..n {
-            let (r, r2, r3): (f64, f64, f64) = rng.gen();
+            let (r, r2, r3): (f64, f64, f64) = rng.random();
             let price = 1.0 * (1.0 - r) + 1.0 * r * r2;
             let f = 1.0;
             let k = 1.0 * r;
@@ -481,7 +478,7 @@ mod tests {
         let seed: [u8; 32] = [13; 32];
         let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
         for _ in 0..n {
-            let (r, r2, r3): (f64, f64, f64) = rng.gen();
+            let (r, r2, r3): (f64, f64, f64) = rng.random();
             let price = 1.0 * r * r2;
             let f = 1.0 * r;
             let k = 1.0;
@@ -500,7 +497,7 @@ mod tests {
         let seed: [u8; 32] = [13; 32];
         let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
         for _ in 0..n {
-            let (r, r2, r3): (f64, f64, f64) = rng.gen();
+            let (r, r2, r3): (f64, f64, f64) = rng.random();
             let price = 1.0 * r * r2;
             let f = 1.0;
             let k = 1.0 * r;
@@ -518,7 +515,7 @@ mod tests {
         let seed: [u8; 32] = [13; 32];
         let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
         for _ in 0..n {
-            let (r, r2, r3): (f64, f64, f64) = rng.gen();
+            let (r, r2, r3): (f64, f64, f64) = rng.random();
             let price = 1.0 * (1.0 - r) + 1.0 * r * r2;
             let f = 1.0 * r;
             let k = 1.0;
