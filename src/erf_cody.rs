@@ -73,7 +73,6 @@ pub(crate) fn erfc_cody(x: f64) -> f64 {
     let y = x.abs();
     let mut xden;
     let mut xnum;
-    let mut result = 0.0;
 
     if y <= THRESH {
         let ysq = if y > XSMALL { y.powi(2) } else { 0.0 };
@@ -84,7 +83,7 @@ pub(crate) fn erfc_cody(x: f64) -> f64 {
             xnum = (xnum + A[i]) * ysq;
             xden = (xden + B[i]) * ysq;
         }
-        return 1.0 - x * (xnum + A[3]) / (xden + B[3]);
+        1.0 - x * (xnum + A[3]) / (xden + B[3])
     } else if y <= 4.0 {
         xnum = C[8] * y;
         xden = y;
@@ -93,14 +92,18 @@ pub(crate) fn erfc_cody(x: f64) -> f64 {
             xnum = (xnum + C[i]) * y;
             xden = (xden + D[i]) * y;
         }
-        result = (xnum + C[7]) / (xden + D[7]);
+        let mut result = (xnum + C[7]) / (xden + D[7]) * finalize(y);
 
-        result *= finalize(y);
-    } else if y >= XBIG {
         if x.is_sign_negative() {
             result = 2.0 - result;
         }
-        return result;
+        result
+    } else if y >= XBIG {
+        if x.is_sign_negative() {
+            2.0
+        } else {
+            0.0
+        }
     } else {
         let ysq = y.powi(2).recip();
         xnum = P[5] * ysq;
@@ -110,15 +113,12 @@ pub(crate) fn erfc_cody(x: f64) -> f64 {
             xnum = (xnum + P[i]) * ysq;
             xden = (xden + Q[i]) * ysq;
         }
-        result = ysq * (xnum + P[4]) / (xden + Q[4]);
-        result = (SQRPI - result) / y;
-
-        result *= finalize(y);
+        let mut result = (SQRPI - (ysq * (xnum + P[4]) / (xden + Q[4]))) / y * finalize(y);
+        if x.is_sign_negative() {
+            result = 2.0 - result;
+        }
+        result
     }
-    if x.is_sign_negative() {
-        result = 2.0 - result;
-    }
-    result
 }
 
 #[inline(always)]

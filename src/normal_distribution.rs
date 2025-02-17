@@ -21,9 +21,8 @@ pub(crate) fn norm_cdf(z: f64) -> f64 {
             let mut i: usize = 4;
             let mut g = 1.0;
             let mut a = f64::MAX;
-            let mut lasta;
             loop {
-                lasta = a;
+                let lasta = a;
                 let x = (i - 3) as f64 / zsqr;
                 let y = x * ((i - 1) as f64 / zsqr);
                 a = g * (x - y);
