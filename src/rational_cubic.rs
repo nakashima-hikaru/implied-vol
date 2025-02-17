@@ -100,28 +100,26 @@ pub(crate) fn minimum_rational_cubic_control_parameter(
     let d_r_m_d_l = d_r - d_l;
     let d_r_m_s = d_r - s;
     let s_m_d_l = s - d_l;
-    let r1;
-    if monotonic && s != 0.0 {
-        r1 = (d_r + d_l) / s;
+    let r1= if monotonic && s != 0.0 {
+        (d_r + d_l) / s
     } else if monotonic && s == 0.0 && prefer_shape_preservation_over_smoothness {
-        r1 = MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE;
+        MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE
     } else {
-        r1 = f64::MIN;
-    }
-    let r2;
-    if convex || concave {
+        f64::MIN
+    };
+    let r2= if convex || concave {
         if s_m_d_l != 0.0 && d_r_m_s != 0.0 {
-            r2 = (d_r_m_d_l / d_r_m_s).abs().max((d_r_m_d_l / s_m_d_l).abs());
+            (d_r_m_d_l / d_r_m_s).abs().max((d_r_m_d_l / s_m_d_l).abs())
         } else if prefer_shape_preservation_over_smoothness {
-            r2 = MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE;
+            MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE
         } else {
-            r2 = f64::MIN;
+            f64::MIN
         }
     } else if monotonic && prefer_shape_preservation_over_smoothness {
-        r2 = MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE;
+        MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE
     } else {
-        r2 = f64::MIN;
-    }
+        f64::MIN
+    };
     r1.max(r2)
         .max(MINIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE)
 }

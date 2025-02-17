@@ -68,7 +68,7 @@ pub(crate) fn erfc_cody(x: f64) -> f64 {
     fn finalize(y: f64) -> f64 {
         let ysq = (y * 16.0).trunc() / 16.0;
         let del = (y - ysq) * (y + ysq);
-        (-ysq * ysq).exp() * (-del).exp()
+        (-ysq.powi(2)).exp() * (-del).exp()
     }
     let y = x.abs();
     let mut xden;
