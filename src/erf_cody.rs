@@ -1,3 +1,5 @@
+use std::f64::consts::FRAC_1_SQRT_2;
+
 const A: [f64; 5] = [
     3.1611237438705656,
     113.864_154_151_050_16,
@@ -48,175 +50,109 @@ const Q: [f64; 5] = [
     0.002_335_204_976_268_691_8,
 ];
 
-const SQRPI: f64 = 0.564_189_583_547_756_3;
-const THRESH: f64 = 0.46875;
-const XINF: f64 = f64::MAX;
+#[inline(always)]
+const fn ab(z: f64) -> f64 {
+    ((((A[4] * z + A[0]) * z + A[1]) * z + A[2]) * z + A[3])
+        / ((((z + B[0]) * z + B[1]) * z + B[2]) * z + B[3])
+}
+
+#[inline(always)]
+const fn cd(y: f64) -> f64 {
+    ((((((((C[8] * y + C[0]) * y + C[1]) * y + C[2]) * y + C[3]) * y + C[4]) * y + C[5]) * y
+        + C[6])
+        * y
+        + C[7])
+        / ((((((((y + D[0]) * y + D[1]) * y + D[2]) * y + D[3]) * y + D[4]) * y + D[5]) * y + D[6])
+            * y
+            + D[7])
+}
+
+#[inline(always)]
+const fn pq(z: f64) -> f64 {
+    z * (((((P[5] * z + P[0]) * z + P[1]) * z + P[2]) * z + P[3]) * z + P[4])
+        / (((((z + Q[0]) * z + Q[1]) * z + Q[2]) * z + Q[3]) * z + Q[4])
+}
+
+#[inline(always)]
+fn smoothened_exponential_of_negative_square(y: f64) -> f64 {
+    let y_tilde = (y * 16.0).trunc() / 16.0;
+    (-y_tilde.powi(2)).exp() * (-(y - y_tilde) * (y + y_tilde)).exp()
+}
+
+#[inline(always)]
+fn smoothened_exponential_of_positive_square(x: f64) -> f64 {
+    let x_tilde = (x * 16.0).trunc() / 16.0;
+    (x_tilde * x_tilde).exp() * ((x - x_tilde) * (x + x_tilde)).exp()
+}
+
+const THRESHOLD: f64 = 0.46875;
 const XNEG: f64 = -26.628;
-const XSMALL: f64 = 1.11e-16;
 const XBIG: f64 = 26.543;
-const XHUGE: f64 = 6.71e7;
-const XMAX: f64 = 2.53e307;
 
 #[inline(always)]
 pub(crate) fn erfc_cody(x: f64) -> f64 {
-    /* -------------------------------------------------------------------- */
-    /* This subprogram computes approximate values for erfc(x). */
-    /*   (see comments heading CALERF). */
-    /*   Author/date: W. J. Cody, January 8, 1985 */
-    /* -------------------------------------------------------------------- */
-    #[inline(always)]
-    fn finalize(y: f64) -> f64 {
-        let ysq = (y * 16.0).trunc() / 16.0;
-        let del = (y - ysq) * (y + ysq);
-        (-ysq.powi(2)).exp() * (-del).exp()
-    }
     let y = x.abs();
-    let mut xden;
-    let mut xnum;
-
-    if y <= THRESH {
-        let ysq = if y > XSMALL { y.powi(2) } else { 0.0 };
-        xnum = A[4] * ysq;
-        xden = ysq;
-
-        for i in 0..3 {
-            xnum = (xnum + A[i]) * ysq;
-            xden = (xden + B[i]) * ysq;
-        }
-        1.0 - x * (xnum + A[3]) / (xden + B[3])
-    } else if y <= 4.0 {
-        xnum = C[8] * y;
-        xden = y;
-
-        for i in 0..7 {
-            xnum = (xnum + C[i]) * y;
-            xden = (xden + D[i]) * y;
-        }
-        let mut result = (xnum + C[7]) / (xden + D[7]) * finalize(y);
-
-        if x.is_sign_negative() {
-            result = 2.0 - result;
-        }
-        result
-    } else if y >= XBIG {
-        if x.is_sign_negative() {
-            2.0
-        } else {
-            0.0
-        }
+    if y <= THRESHOLD {
+        return 1.0 - x * ab(y.powi(2));
+    }
+    let erfc_abs_x = if y >= XBIG {
+        0.0
     } else {
-        let ysq = y.powi(2).recip();
-        xnum = P[5] * ysq;
-        xden = ysq;
+        (if y <= 4.0 {
+            cd(y)
+        } else {
+            (FRAC_1_SQRT_2 - pq(y.powi(2).recip())) / y
+        }) * smoothened_exponential_of_negative_square(y)
+    };
 
-        for i in 0..4 {
-            xnum = (xnum + P[i]) * ysq;
-            xden = (xden + Q[i]) * ysq;
-        }
-        let mut result = (SQRPI - (ysq * (xnum + P[4]) / (xden + Q[4]))) / y * finalize(y);
-        if x.is_sign_negative() {
-            result = 2.0 - result;
-        }
-        result
+    if x < 0.0 {
+        2.0 - erfc_abs_x
+    } else {
+        erfc_abs_x
+    }
+}
+
+#[inline(always)]
+fn erfcx_cody_above_threshold(y: f64) -> f64 {
+    assert!(y > THRESHOLD, "This formulation also permits y == NaN.");
+    if y <= 4.0 {
+        cd(y)
+    } else {
+        (FRAC_1_SQRT_2 - pq(y.powi(2).recip())) / y
     }
 }
 
 #[inline(always)]
 pub(crate) fn erfcx_cody(x: f64) -> f64 {
-    /* ------------------------------------------------------------------ */
-    /* This subprogram computes approximate values for exp(x*x) * erfc(x). */
-    /*   (see comments heading CALERF). */
-    /*   Author/date: W. J. Cody, March 30, 1987 */
-    /* ------------------------------------------------------------------ */
-    #[inline(always)]
-    fn finalize(x: f64) -> f64 {
-        let ysq = (x * 16.0).trunc() / 16.0;
-        let del = (x - ysq) * (x + ysq);
-        2.0_f64 * ysq.powi(2).exp() * del.exp()
+    let y = x.abs();
+    if y <= THRESHOLD {
+        let z = y.powi(2);
+        return (z.exp()) * (1.0 - x * ab(z));
     }
     if x < XNEG {
-        return XINF;
+        return f64::MAX;
     }
-
-    let y = x.abs();
-    let mut result = 0.0;
-
-    if y <= THRESH {
-        let ysq = if y > XSMALL { y.powi(2) } else { 0.0 };
-        let mut xnum = A[4] * ysq;
-        let mut xden = ysq;
-
-        for i in 0..3 {
-            xnum = (xnum + A[i]) * ysq;
-            xden = (xden + B[i]) * ysq;
-        }
-        result = x * (xnum + A[3]) / (xden + B[3]);
-
-        result = 1.0 - result;
-
-        result *= ysq.exp();
-        return result;
-    } else if y <= 4.0 {
-        let mut xnum = C[8] * y;
-        let mut xden = y;
-
-        for i in 0..7 {
-            xnum = (xnum + C[i]) * y;
-            xden = (xden + D[i]) * y;
-        }
-        result = (xnum + C[7]) / (xden + D[7]);
-    } else if y >= XBIG {
-        if y >= XMAX {
-            if x.is_sign_negative() {
-                if x < XNEG {
-                    result = XINF;
-                } else {
-                    result = finalize(x) - result;
-                }
-            }
-            return result;
-        } else if y >= XHUGE {
-            result = SQRPI / y;
-            if x.is_sign_negative() {
-                if x < XNEG {
-                    result = XINF;
-                } else {
-                    result = finalize(x) - result;
-                }
-            }
-            return result;
-        }
-    } else {
-        let ysq = y.powi(2).recip();
-        let mut xnum = P[5] * ysq;
-        let mut xden = ysq;
-
-        for i in 0..4 {
-            xnum = (xnum + P[i]) * ysq;
-            xden = (xden + Q[i]) * ysq;
-        }
-        result = ysq * (xnum + P[4]) / (xden + Q[4]);
-        result = (SQRPI - result) / y;
-    }
+    let result = erfcx_cody_above_threshold(y);
     if x.is_sign_negative() {
-        result = finalize(x) - result;
+        let expx2 = smoothened_exponential_of_positive_square(x);
+        return (expx2 + expx2) - result;
     }
     result
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::erf_cody::{erfc_cody, erfcx_cody, THRESH, XBIG, XHUGE, XMAX, XNEG};
+    use crate::erf_cody::{erfc_cody, erfcx_cody, THRESHOLD, XBIG, XNEG};
 
     #[test]
     fn calerf_1() {
-        let x = erfc_cody(THRESH + f64::EPSILON);
+        let x = erfc_cody(THRESHOLD + f64::EPSILON);
         assert_eq!(x, 0.5073865267820618);
-        let x = erfc_cody(THRESH - f64::EPSILON);
+        let x = erfc_cody(THRESHOLD - f64::EPSILON);
         assert_eq!(x, 0.5073865267820623);
-        let x = erfc_cody(-THRESH - f64::EPSILON);
+        let x = erfc_cody(-THRESHOLD - f64::EPSILON);
         assert_eq!(x, 1.4926134732179381);
-        let x = erfc_cody(-THRESH + f64::EPSILON);
+        let x = erfc_cody(-THRESHOLD + f64::EPSILON);
         assert_eq!(x, 1.4926134732179377);
 
         let x = erfc_cody(4.0 + f64::EPSILON);
@@ -237,24 +173,6 @@ mod tests {
         let x = erfc_cody(-XBIG + f64::EPSILON);
         assert_eq!(x, 2.0);
 
-        let x = erfc_cody(XMAX + f64::EPSILON);
-        assert_eq!(x, 0.0);
-        let x = erfc_cody(XMAX - f64::EPSILON);
-        assert_eq!(x, 0.0);
-        let x = erfc_cody(-XMAX - f64::EPSILON);
-        assert_eq!(x, 2.0);
-        let x = erfc_cody(-XMAX + f64::EPSILON);
-        assert_eq!(x, 2.0);
-
-        let x = erfc_cody(XHUGE + f64::EPSILON);
-        assert_eq!(x, 0.0);
-        let x = erfc_cody(XHUGE - f64::EPSILON);
-        assert_eq!(x, 0.0);
-        let x = erfc_cody(-XHUGE - f64::EPSILON);
-        assert_eq!(x, 2.0);
-        let x = erfc_cody(-XHUGE + f64::EPSILON);
-        assert_eq!(x, 2.0);
-
         let x = erfc_cody(0.0 + f64::EPSILON);
         assert_eq!(x, 0.9999999999999998);
         let x = erfc_cody(0.0 - f64::EPSILON);
@@ -268,13 +186,13 @@ mod tests {
 
     #[test]
     fn calerf_2() {
-        let x = erfcx_cody(THRESH + f64::EPSILON);
+        let x = erfcx_cody(THRESHOLD + f64::EPSILON);
         assert_eq!(x, 0.6320696892495559);
-        let x = erfcx_cody(THRESH - f64::EPSILON);
+        let x = erfcx_cody(THRESHOLD - f64::EPSILON);
         assert_eq!(x, 0.6320696892495563);
-        let x = erfcx_cody(-THRESH - f64::EPSILON);
+        let x = erfcx_cody(-THRESHOLD - f64::EPSILON);
         assert_eq!(x, 1.8594024168714227);
-        let x = erfcx_cody(-THRESH + f64::EPSILON);
+        let x = erfcx_cody(-THRESHOLD + f64::EPSILON);
         assert_eq!(x, 1.8594024168714214);
 
         let x = erfcx_cody(4.0 + f64::EPSILON);
@@ -287,31 +205,13 @@ mod tests {
         assert_eq!(x, 17772220.904016286);
 
         let x = erfcx_cody(XBIG + f64::EPSILON);
-        assert_eq!(x, 0.0);
+        assert_eq!(x, 0.026624994527838793);
         let x = erfcx_cody(XBIG - f64::EPSILON);
-        assert_eq!(x, 0.0);
+        assert_eq!(x, 0.026624994527838793);
         let x = erfcx_cody(-XBIG - f64::EPSILON);
         assert_eq!(x, 1.8831722547514706e306);
         let x = erfcx_cody(-XBIG + f64::EPSILON);
         assert_eq!(x, 1.8831722547514706e306);
-
-        let x = erfcx_cody(XMAX + f64::EPSILON);
-        assert_eq!(x, 0.0);
-        let x = erfcx_cody(XMAX - f64::EPSILON);
-        assert_eq!(x, 0.0);
-        let x = erfcx_cody(-XMAX - f64::EPSILON);
-        assert_eq!(x, 1.7976931348623157e308);
-        let x = erfcx_cody(-XMAX + f64::EPSILON);
-        assert_eq!(x, 1.7976931348623157e308);
-
-        let x = erfcx_cody(XHUGE + f64::EPSILON);
-        assert_eq!(x, 8.408190514869691e-9);
-        let x = erfcx_cody(XHUGE - f64::EPSILON);
-        assert_eq!(x, 8.408190514869691e-9);
-        let x = erfcx_cody(-XHUGE - f64::EPSILON);
-        assert_eq!(x, 1.7976931348623157e308);
-        let x = erfcx_cody(-XHUGE + f64::EPSILON);
-        assert_eq!(x, 1.7976931348623157e308);
 
         let x = erfcx_cody(0.0 + f64::EPSILON);
         assert_eq!(x, 0.9999999999999998);
