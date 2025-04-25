@@ -9,6 +9,7 @@ use test::Bencher;
 
 #[bench]
 fn call_atm(b: &mut Bencher) {
+    
     let price = 0.01;
     
     let f = 100.0;
