@@ -116,7 +116,7 @@ const XBIG: f64 = 26.543;
 pub(crate) fn erfc_cody(x: f64) -> f64 {
     let y = x.abs();
     if y <= THRESHOLD {
-        return 1.0 - x * ab(y.powi(2));
+        return ab(y.powi(2)).neg().mul_add(x, 1.0);
     }
     let erfc_abs_x = if y >= XBIG {
         0.0
@@ -128,7 +128,7 @@ pub(crate) fn erfc_cody(x: f64) -> f64 {
         }) * smoothened_exponential_of_negative_square(y)
     };
 
-    if x < 0.0 {
+    if x.is_sign_negative() {
         2.0 - erfc_abs_x
     } else {
         erfc_abs_x
