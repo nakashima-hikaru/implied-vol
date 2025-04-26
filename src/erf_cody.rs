@@ -1,4 +1,6 @@
 use std::f64::consts::FRAC_1_SQRT_2;
+use std::ops::Neg;
+use crate::MulAdd;
 
 const A: [f64; 5] = [
     3.1611237438705656,
@@ -51,38 +53,60 @@ const Q: [f64; 5] = [
 ];
 
 #[inline(always)]
-const fn ab(z: f64) -> f64 {
-    ((((A[4] * z + A[0]) * z + A[1]) * z + A[2]) * z + A[3])
-        / ((((z + B[0]) * z + B[1]) * z + B[2]) * z + B[3])
+fn ab(z: f64) -> f64 {
+    z.mul_add2(A[4], A[0])
+        .mul_add2(z, A[1])
+        .mul_add2(z, A[2])
+        .mul_add2(z, A[3])
+        / z.mul_add2(1.0, B[0])
+            .mul_add2(z, B[1])
+            .mul_add2(z, B[2])
+            .mul_add2(z, B[3])
 }
 
 #[inline(always)]
-const fn cd(y: f64) -> f64 {
-    ((((((((C[8] * y + C[0]) * y + C[1]) * y + C[2]) * y + C[3]) * y + C[4]) * y + C[5]) * y
-        + C[6])
-        * y
-        + C[7])
-        / ((((((((y + D[0]) * y + D[1]) * y + D[2]) * y + D[3]) * y + D[4]) * y + D[5]) * y + D[6])
-            * y
-            + D[7])
+fn cd(y: f64) -> f64 {
+    C[8].mul_add2(y, C[0])
+        .mul_add2(y, C[1])
+        .mul_add2(y, C[2])
+        .mul_add2(y, C[3])
+        .mul_add2(y, C[4])
+        .mul_add2(y, C[5])
+        .mul_add2(y, C[6])
+        .mul_add2(y, C[7])
+        / (y + D[0])
+            .mul_add2(y, D[1])
+            .mul_add2(y, D[2])
+            .mul_add2(y, D[3])
+            .mul_add2(y, D[4])
+            .mul_add2(y, D[5])
+            .mul_add2(y, D[6])
+            .mul_add2(y, D[7])
 }
 
 #[inline(always)]
-const fn pq(z: f64) -> f64 {
-    z * (((((P[5] * z + P[0]) * z + P[1]) * z + P[2]) * z + P[3]) * z + P[4])
-        / (((((z + Q[0]) * z + Q[1]) * z + Q[2]) * z + Q[3]) * z + Q[4])
+fn pq(z: f64) -> f64 {
+z * (P[5].mul_add2(z, P[0])
+    .mul_add2(z, P[1])
+    .mul_add2(z, P[2])
+    .mul_add2(z, P[3])
+    .mul_add2(z, P[4]))
+    / ((z + Q[0]).mul_add2(z, Q[1])
+    .mul_add2(z, Q[2])
+    .mul_add2(z, Q[3])
+    .mul_add2(z, Q[4]))
 }
 
 #[inline(always)]
 fn smoothened_exponential_of_negative_square(y: f64) -> f64 {
     let y_tilde = (y * 16.0).trunc() / 16.0;
-    (-y_tilde.powi(2)).exp() * (-(y - y_tilde) * (y + y_tilde)).exp()
+    y_tilde.powi(2).neg().exp() * (-(y - y_tilde) * (y + y_tilde)).exp()
 }
 
 #[inline(always)]
 fn smoothened_exponential_of_positive_square(x: f64) -> f64 {
     let x_tilde = (x * 16.0).trunc() / 16.0;
-    (x_tilde * x_tilde).exp() * ((x - x_tilde) * (x + x_tilde)).exp()
+    x_tilde.powi(2).exp() * ((x - x_tilde) * (x + x_tilde)).exp()
 }
 
 const THRESHOLD: f64 = 0.46875;
@@ -93,7 +117,7 @@ const XBIG: f64 = 26.543;
 pub(crate) fn erfc_cody(x: f64) -> f64 {
     let y = x.abs();
     if y <= THRESHOLD {
-        return 1.0 - x * ab(y.powi(2));
+        return ab(y.powi(2)).neg().mul_add2(x, 1.0);
     }
     let erfc_abs_x = if y >= XBIG {
         0.0
@@ -105,7 +129,7 @@ pub(crate) fn erfc_cody(x: f64) -> f64 {
         }) * smoothened_exponential_of_negative_square(y)
     };
 
-    if x < 0.0 {
+    if x.is_sign_negative() {
         2.0 - erfc_abs_x
     } else {
         erfc_abs_x
@@ -127,7 +151,7 @@ pub(crate) fn erfcx_cody(x: f64) -> f64 {
     let y = x.abs();
     if y <= THRESHOLD {
         let z = y.powi(2);
-        return (z.exp()) * (1.0 - x * ab(z));
+        return z.exp() * (ab(z).neg().mul_add2(x, 1.0));
     }
     if x < XNEG {
         return f64::MAX;
