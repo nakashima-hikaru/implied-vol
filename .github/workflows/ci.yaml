@@ -21,7 +21,7 @@ jobs:
       - run: cargo check --all-features --workspace
       - run: cargo clippy --all-features -- -D warnings
       - run: cargo test --all-features --doc -- --show-output
-      - run: cargo nextest run
+      - run: cargo nextest run --all-features
 
   benchmarks:
     name: Run benchmarks
