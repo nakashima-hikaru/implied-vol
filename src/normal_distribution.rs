@@ -1,5 +1,7 @@
 use crate::erf_cody::erfc_cody;
-use std::{f64::consts::FRAC_1_SQRT_2, ops::Neg};
+use std::f64::consts::FRAC_1_SQRT_2;
+use std::ops::Neg;
+use crate::MulAdd;
 
 const NORM_CDF_ASYMPTOTIC_EXPANSION_FIRST_THRESHOLD: f64 = -10.0;
 const NORM_CDF_ASYMPTOTIC_EXPANSION_SECOND_THRESHOLD: f64 = -67108864.0;
@@ -40,130 +42,203 @@ pub(crate) fn norm_cdf(z: f64) -> f64 {
     0.5 * erfc_cody(-z * FRAC_1_SQRT_2)
 }
 
+const U_MAX: f64 = 0.3413447460685429;
+const U_MAX2: f64 = U_MAX * U_MAX;
 #[inline(always)]
-fn expand(r: f64, x: [f64; 15]) -> f64 {
-    r.mul_add(
-        r.mul_add(
-            r.mul_add(
-                r.mul_add(
-                    r.mul_add(r.mul_add(r.mul_add(x[7], x[6]), x[5]), x[4]),
-                    x[3],
+fn inverse_norm_cdfm_half_for_midrange_probabilities(u: f64) -> f64 {
+    assert!(u.abs() <= U_MAX);
+    let s = U_MAX2 - u.powi(2);
+    u * (s.mul_add2(
+        s.mul_add2(
+            s.mul_add2(
+                s.mul_add2(
+                    s.mul_add2(
+                        s.mul_add2(-7.589_398_814_012_592_5, 1.342_332_435_026_538_6E2),
+                        6.904_892_420_614_086E2,
+                    ),
+                    7.499_778_145_665_792E2,
                 ),
-                x[2],
+                3.018_705_419_229_339E2,
             ),
-            x[1],
+            5.026_057_216_730_31E1,
         ),
-        x[0],
-    ) / r.mul_add(
-        r.mul_add(
-            r.mul_add(
-                r.mul_add(
-                    r.mul_add(r.mul_add(r.mul_add(x[14], x[13]), x[12]), x[11]),
-                    x[10],
+        2.929_589_546_983_088,
+    ) / s.mul_add2(
+        s.mul_add2(
+            s.mul_add2(
+                s.mul_add2(
+                    s.mul_add2(1.792_270_085_081_026E2, 4.791_239_145_097_567_3E2),
+                    3.868_212_085_404_174_4E2,
                 ),
-                x[9],
+                1.294_041_204_487_553E2,
             ),
-            x[8],
+            1.891_853_807_457_46E1,
         ),
         1.0,
-    )
+    ))
 }
 
-const SPLIT1: f64 = 0.425;
-const SPLIT2: f64 = 5.0;
-const CONST1: f64 = 0.180625;
-const CONST2: f64 = 1.6;
-
-// Coefficients for P close to 0.5
-const A: [f64; 15] = [
-    3.387_132_872_796_366_5,
-    1.331_416_678_917_843_8E2,
-    1.971_590_950_306_551_3E3,
-    1.373_169_376_550_946E4,
-    4.592_195_393_154_987E4,
-    6.726_577_092_700_87E4,
-    3.343_057_558_358_813E4,
-    2.509_080_928_730_122_7E3,
-    4.231_333_070_160_091E1,
-    6.871_870_074_920_579E2,
-    5.394_196_021_424_751E3,
-    2.121_379_430_158_659_7E4,
-    3.930_789_580_009_271E4,
-    2.872_908_573_572_194_3E4,
-    5.226_495_278_852_854E3,
-];
-// Coefficients for P not close to 0, 0.5 or 1.
-const C: [f64; 15] = [
-    1.423_437_110_749_683_5,
-    4.630_337_846_156_546,
-    5.769_497_221_460_691,
-    3.647_848_324_763_204_5,
-    1.270_458_252_452_368_4,
-    2.417_807_251_774_506E-1,
-    2.272_384_498_926_918_4E-2,
-    7.745_450_142_783_414E-4,
-    2.053_191_626_637_759,
-    1.676_384_830_183_803_8,
-    6.897_673_349_851E-1,
-    1.481_039_764_274_800_8E-1,
-    1.519_866_656_361_645_7E-2,
-    5.475_938_084_995_345E-4,
-    1.050_750_071_644_416_9E-9,
-];
-// Coefficients for P very close to 0 or 1
-const E: [f64; 15] = [
-    6.657_904_643_501_103,
-    5.463_784_911_164_114,
-    1.784_826_539_917_291_3,
-    2.965_605_718_285_048_7E-1,
-    2.653_218_952_657_612_4E-2,
-    1.242_660_947_388_078_4E-3,
-    2.711_555_568_743_487_6E-5,
-    2.010_334_399_292_288_1E-7,
-    5.998_322_065_558_88E-1,
-    1.369_298_809_227_358E-1,
-    1.487_536_129_085_061_5E-2,
-    7.868_691_311_456_133E-4,
-    1.846_318_317_510_054_8E-5,
-    1.421_511_758_316_446E-7,
-    2.044_263_103_389_939_7E-15,
-];
+#[inline(always)]
+fn inverse_norm_cdf_for_low_probabilities(p: f64) -> f64 {
+    assert!(p <= 0.15865525393146);
+    let r = p.ln().neg().sqrt();
+    if r < 6.7 {
+        if r < 3.41 {
+            if r < 2.05 {
+                // Branch I: Accuracy better than 7.6E-17
+                r.mul_add2(
+                    r.mul_add2(
+                        r.mul_add2(
+                            r.mul_add2(
+                                r.mul_add2(-13.054_072_340_494_093, -83.383_894_003_636_97),
+                                -74.594_687_726_045_93,
+                            ),
+                            65.451_292_110_261_45,
+                        ),
+                        47.170_590_600_740_69,
+                    ),
+                    3.691_562_302_945_566,
+                ) / r.mul_add2(
+                    r.mul_add2(
+                        r.mul_add2(
+                            r.mul_add2(
+                                r.mul_add2(0.000_182_951_748_520_535_3, 9.221_688_797_873_743),
+                                59.270_122_556_046_076,
+                            ),
+                            71.813_812_182_579_26,
+                        ),
+                        20.837_211_328_697_755,
+                    ),
+                    1.0,
+                )
+            } else {
+                // Branch II: Accuracy better than 9.4E-17
+                r.mul_add2(
+                    r.mul_add2(
+                        r.mul_add2(
+                            r.mul_add2(
+                                r.mul_add2(-1.201_314_787_943_552_6, -10.059_163_395_686_461),
+                                -18.125_442_779_178_92,
+                            ),
+                            0.683_973_702_565_915_3,
+                        ),
+                        14.491_778_286_891_22,
+                    ),
+                    3.234_017_911_631_797,
+                ) / r.mul_add2(
+                    r.mul_add2(
+                        r.mul_add2(
+                            r.mul_add2(
+                                r.mul_add2(0.000_010_957_576_098_829_594, 0.848_848_921_991_492_5),
+                                7.136_981_105_610_977,
+                            ),
+                            14.656_370_665_176_8,
+                        ),
+                        8.882_093_177_330_434,
+                    ),
+                    1.0,
+                )
+            }
+        } else {
+            // Branch III: Accuracy better than 9.1E-17
+            r.mul_add2(
+                r.mul_add2(
+                    r.mul_add2(
+                        r.mul_add2(
+                            r.mul_add2(-0.154_143_194_940_135_98, -2.869_906_133_588_252_8),
+                            -11.070_534_689_309_367,
+                        ),
+                        -5.163_392_911_552_553,
+                    ),
+                    9.948_372_431_703_657,
+                ),
+                3.125_223_578_008_758_3,
+            ) / r.mul_add2(
+                r.mul_add2(
+                    r.mul_add2(
+                        r.mul_add2(
+                            r.mul_add2(
+                                r.mul_add2(0.000_000_135_659_835_644_412_97, 0.108_979_722_341_318_3),
+                                0.000_000_003_084_809_357_096_678_6,
+                            ),
+                            2.030_707_606_430_904,
+                        ),
+                        8.108_634_112_236_153,
+                    ),
+                    7.076_769_154_309_171,
+                ),
+                1.0,
+            )
+        }
+    } else if r < 12.9 {
+        // Branch IV: Accuracy better than 9E-17
+        r.mul_add2(
+            r.mul_add2(
+                r.mul_add2(
+                    r.mul_add2(
+                        r.mul_add2(
+                            r.mul_add2(-0.016_123_033_183_901_45, -0.475_951_695_467_832_17),
+                            -2.964_425_135_315_060_4,
+                        ),
+                        -0.065_127_593_753_781_67,
+                    ),
+                    -3.688_196_041_019_692,
+                ),
+                2.250_881_388_987_032,
+            ),
+            2.616_126_495_089_728_3,
+        ) / r.mul_add2(
+            r.mul_add2(
+                r.mul_add2(
+                    r.mul_add2(
+                        r.mul_add2(0.000_000_003_084_809_357_096_678_6, 0.011_400_087_282_177_594),
+                        0.336_637_464_056_264,
+                    ),
+                    2.128_203_027_215_319,
+                ),
+                3.251_745_516_903_592,
+            ),
+            1.0,
+        )
+    } else {
+        // Branch V: Accuracy better than 9.5E-17
+        r.mul_add2(
+            r.mul_add2(
+                r.mul_add2(
+                    r.mul_add2(
+                        r.mul_add2(-0.001_056_635_772_720_258_4, -0.065_127_593_753_781_67),
+                        -0.863_851_812_192_137_6,
+                    ),
+                    -2.589_445_156_846_573,
+                ),
+                -0.042_799_650_734_502_09,
+            ),
+            2.322_684_904_787_23,
+        ) / r.mul_add2(
+            r.mul_add2(
+                r.mul_add2(
+                    r.mul_add2(
+                        r.mul_add2(0.000000000023135343206304888, 0.000_747_144_799_216_722_6),
+                        0.046_054_974_512_474_44,
+                    ),
+                    0.613_208_413_291_975,
+                ),
+                1.936_131_611_925_441_3,
+            ),
+            1.0,
+        )
+    }
+}
 
 #[inline(always)]
-pub(crate) fn inverse_norm_cdf(u: f64) -> f64 {
-    //
-    // ALGORITHM AS241  APPL. STATIST. (1988) VOL. 37, NO. 3
-    //
-    // Produces the normal deviate Z corresponding to a given lower
-    // tail area of u; Z is accurate to about 1 part in 10**16.
-    // see http://lib.stat.cmu.edu/apstat/241
-    //
-
-    if u <= 0.0 {
-        return u.ln();
-    } else if u >= 1.0 {
-        return (1.0 - u).ln();
+pub(crate) fn inverse_norm_cdf(p: f64) -> f64 {
+    let u = p - 0.5;
+    if u.abs() < U_MAX {
+        return inverse_norm_cdfm_half_for_midrange_probabilities(u);
     }
-
-    let q = u - 0.5;
-    if q.abs() <= SPLIT1 {
-        let r = CONST1 - q.powi(2);
-        q * expand(r, A)
+    if u.is_sign_positive() {
+        -inverse_norm_cdf_for_low_probabilities(1.0 - p)
     } else {
-        let mut r = if q.is_sign_negative() { u } else { 1.0 - u };
-        r = r.ln().neg().sqrt();
-        let ret = if r < SPLIT2 {
-            r -= CONST2;
-
-            expand(r, C)
-        } else {
-            r -= SPLIT2;
-            expand(r, E)
-        };
-        if q.is_sign_negative() {
-            -ret
-        } else {
-            ret
-        }
+        inverse_norm_cdf_for_low_probabilities(p)
     }
 }

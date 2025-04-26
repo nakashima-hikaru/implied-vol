@@ -18,9 +18,9 @@ jobs:
         run: |
           curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
 #      - run: cargo fmt --all --check
-      - run: cargo check --workspace
+      - run: cargo check --all-features --workspace
       - run: cargo clippy --all-features -- -D warnings
-      - run: cargo test --doc -- --show-output
+      - run: cargo test --all-features --doc -- --show-output
       - run: cargo nextest run
 
   benchmarks:
@@ -36,6 +36,6 @@ jobs:
         uses: dtolnay/rust-toolchain@nightly
 
       - name: Run benchmarks
-        run: cargo +nightly bench
+        run: cargo +nightly bench --all-features
         env:
           RUSTFLAGS: --cfg=bench

@@ -1,5 +1,6 @@
 use std::f64::consts::FRAC_1_SQRT_2;
 use std::ops::Neg;
+use crate::MulAdd;
 
 const A: [f64; 5] = [
     3.1611237438705656,
@@ -53,47 +54,47 @@ const Q: [f64; 5] = [
 
 #[inline(always)]
 fn ab(z: f64) -> f64 {
-    z.mul_add(A[4], A[0])
-        .mul_add(z, A[1])
-        .mul_add(z, A[2])
-        .mul_add(z, A[3])
-        / z.mul_add(1.0, B[0])
-            .mul_add(z, B[1])
-            .mul_add(z, B[2])
-            .mul_add(z, B[3])
+    z.mul_add2(A[4], A[0])
+        .mul_add2(z, A[1])
+        .mul_add2(z, A[2])
+        .mul_add2(z, A[3])
+        / z.mul_add2(1.0, B[0])
+            .mul_add2(z, B[1])
+            .mul_add2(z, B[2])
+            .mul_add2(z, B[3])
 }
 
 #[inline(always)]
 fn cd(y: f64) -> f64 {
-    C[8].mul_add(y, C[0])
-        .mul_add(y, C[1])
-        .mul_add(y, C[2])
-        .mul_add(y, C[3])
-        .mul_add(y, C[4])
-        .mul_add(y, C[5])
-        .mul_add(y, C[6])
-        .mul_add(y, C[7])
+    C[8].mul_add2(y, C[0])
+        .mul_add2(y, C[1])
+        .mul_add2(y, C[2])
+        .mul_add2(y, C[3])
+        .mul_add2(y, C[4])
+        .mul_add2(y, C[5])
+        .mul_add2(y, C[6])
+        .mul_add2(y, C[7])
         / (y + D[0])
-            .mul_add(y, D[1])
-            .mul_add(y, D[2])
-            .mul_add(y, D[3])
-            .mul_add(y, D[4])
-            .mul_add(y, D[5])
-            .mul_add(y, D[6])
-            .mul_add(y, D[7])
+            .mul_add2(y, D[1])
+            .mul_add2(y, D[2])
+            .mul_add2(y, D[3])
+            .mul_add2(y, D[4])
+            .mul_add2(y, D[5])
+            .mul_add2(y, D[6])
+            .mul_add2(y, D[7])
 }
 
 #[inline(always)]
 fn pq(z: f64) -> f64 {
-z * (P[5].mul_add(z, P[0])
-    .mul_add(z, P[1])
-    .mul_add(z, P[2])
-    .mul_add(z, P[3])
-    .mul_add(z, P[4]))
-    / ((z + Q[0]).mul_add(z, Q[1])
-    .mul_add(z, Q[2])
-    .mul_add(z, Q[3])
-    .mul_add(z, Q[4]))
+z * (P[5].mul_add2(z, P[0])
+    .mul_add2(z, P[1])
+    .mul_add2(z, P[2])
+    .mul_add2(z, P[3])
+    .mul_add2(z, P[4]))
+    / ((z + Q[0]).mul_add2(z, Q[1])
+    .mul_add2(z, Q[2])
+    .mul_add2(z, Q[3])
+    .mul_add2(z, Q[4]))
 }
 
 #[inline(always)]
@@ -116,7 +117,7 @@ const XBIG: f64 = 26.543;
 pub(crate) fn erfc_cody(x: f64) -> f64 {
     let y = x.abs();
     if y <= THRESHOLD {
-        return ab(y.powi(2)).neg().mul_add(x, 1.0);
+        return ab(y.powi(2)).neg().mul_add2(x, 1.0);
     }
     let erfc_abs_x = if y >= XBIG {
         0.0
@@ -150,7 +151,7 @@ pub(crate) fn erfcx_cody(x: f64) -> f64 {
     let y = x.abs();
     if y <= THRESHOLD {
         let z = y.powi(2);
-        return z.exp() * (ab(z).neg().mul_add(x, 1.0));
+        return z.exp() * (ab(z).neg().mul_add2(x, 1.0));
     }
     if x < XNEG {
         return f64::MAX;

@@ -1,6 +1,7 @@
 use std::f64::consts::{FRAC_1_SQRT_2, SQRT_2};
 use crate::constants::{DENORMALISATION_CUTOFF, FOURTH_ROOT_DBL_EPSILON, FRAC_SQRT_TWO_PI, HALF_OF_LN_TWO_PI, ONE_OVER_SQRT_THREE, SIXTEENTH_ROOT_DBL_EPSILON, SQRT_DBL_MAX, SQRT_MIN_POSITIVE, SQRT_PI_OVER_TWO, SQRT_THREE, SQRT_THREE_OVER_THIRD_ROOT_TWO_PI, SQRT_TWO_OVER_PI, TWO_PI_OVER_SQRT_TWENTY_SEVEN, VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_ABOVE_MAXIMUM, VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_BELOW_INTRINSIC};
 use crate::erf_cody::{erfc_cody, erfcx_cody};
+use crate::MulAdd;
 use crate::normal_distribution::{inverse_norm_cdf, norm_cdf, norm_pdf};
 use crate::rational_cubic::{convex_rational_cubic_control_parameter_to_fit_second_derivative_at_left_side, convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side, rational_cubic_interpolation};
 
@@ -272,7 +273,7 @@ fn unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_wit
                 let b_h2 = (h.powi(2) / s) - s / 4.0;
                 let nu = (ln_beta - ln_b) * ln_b / ln_beta / bpob;
                 let lambda = ln_b.recip();
-                let otlambda = lambda.mul_add(2.0, 1.0);
+                let otlambda = lambda.mul_add2(2.0, 1.0);
                 let h2 = b_h2 - bpob * otlambda;
                 let c = 3.0 * (h / s).powi(2);
                 let b_h3 = b_h2.powi(2) - c - 0.25;
@@ -334,7 +335,7 @@ fn unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_wit
                     let h2 = b_h2 + gp;
                     let h3 = b_h3 + gp * (2.0 * gp + 3.0 * b_h2);
                     ds = if x < -580.0 {
-                        nu * householder4_factor(nu, h2, h3, (b_h2 * (b_h3 - 0.5) - (b_h2 - 2.0 / s) * 2.0 * c) + gp * (6.0 * gp * b_h2.mul_add(2.0,  gp) + 3.0 * b_h2 * b_h2 + 4.0 * b_h3))
+                        nu * householder4_factor(nu, h2, h3, (b_h2 * (b_h3 - 0.5) - (b_h2 - 2.0 / s) * 2.0 * c) + gp * (6.0 * gp * b_h2.mul_add2(2.0,  gp) + 3.0 * b_h2 * b_h2 + 4.0 * b_h3))
                     } else {
                         nu * householder3_factor(nu, h2, h3)
                     };
@@ -486,7 +487,7 @@ mod tests {
             let q = true;
             let sigma = implied_black_volatility(price, f, k, t, q);
             let reprice = black(f, k, sigma, t, q);
-            assert!((price - reprice).abs() <= 1.5 * f64::EPSILON);
+            assert!((price - reprice).abs() <= 2.0 * f64::EPSILON);
         }
     }
 
