@@ -20,17 +20,17 @@ pub(crate) fn norm_cdf(z: f64) -> f64 {
         let mut sum = 1.0;
         if z >= NORM_CDF_ASYMPTOTIC_EXPANSION_SECOND_THRESHOLD {
             let zsqr = z.powi(2);
-            let mut i: usize = 4;
+            let mut i = 4.0_f64;
             let mut g = 1.0;
             let mut a = f64::MAX;
             loop {
                 let lasta = a;
-                let x = (i - 3) as f64 / zsqr;
-                let y = x * ((i - 1) as f64 / zsqr);
+                let x = (i - 3.0) / zsqr;
+                let y = x * ((i - 1.0) / zsqr);
                 a = g * (x - y);
                 sum -= a;
                 g *= y;
-                i += 4;
+                i += 4.0;
                 a = a.abs();
                 if !(lasta > a && a >= (sum * f64::EPSILON).abs()) {
                     break;
