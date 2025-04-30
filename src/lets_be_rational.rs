@@ -219,7 +219,7 @@ fn inverse_f_upper_map(f: f64) -> f64 {
 
 #[inline(always)]
 fn take_step(x_min: f64, x_max: f64, x: f64, dx: f64) -> (f64, f64) {
-    let new_x = x_min.max(x_max.min(x + dx));
+    let new_x = (x + dx).clamp(x_min, x_max);
     (new_x, new_x - x)
 }
 
