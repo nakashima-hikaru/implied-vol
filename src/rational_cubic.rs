@@ -92,22 +92,21 @@ pub(crate) fn minimum_rational_cubic_control_parameter(
     prefer_shape_preservation_over_smoothness: bool,
 ) -> f64 {
     let monotonic = d_l * s >= 0.0 && d_r * s >= 0.0;
-    let convex = d_l <= s && s <= d_r;
-    let concave = d_l >= s && s >= d_r;
-    if !monotonic && !convex && !concave {
+    let convex_or_concave = (d_l <= s && s <= d_r) || (d_l >= s && s >= d_r);
+    if !monotonic && !convex_or_concave {
         return MINIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE;
     }
     let d_r_m_d_l = d_r - d_l;
     let d_r_m_s = d_r - s;
     let s_m_d_l = s - d_l;
-    let r1= if monotonic && s != 0.0 {
+    let r1 = if monotonic && s != 0.0 {
         (d_r + d_l) / s
     } else if monotonic && s == 0.0 && prefer_shape_preservation_over_smoothness {
         MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE
     } else {
         f64::MIN
     };
-    let r2= if convex || concave {
+    let r2 = if convex_or_concave {
         if s_m_d_l != 0.0 && d_r_m_s != 0.0 {
             (d_r_m_d_l / d_r_m_s.min(s_m_d_l)).abs()
         } else if prefer_shape_preservation_over_smoothness {
