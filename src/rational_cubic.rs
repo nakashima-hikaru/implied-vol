@@ -14,7 +14,7 @@ pub(crate) fn rational_cubic_interpolation(
     r: f64,
 ) -> f64 {
     let h = x_r - x_l;
-    if h == 0.0 {
+    if h == 0.0_f64 {
         return 0.5 * (y_l + y_r);
     }
     let t = (x - x_l) / h;
@@ -109,7 +109,7 @@ pub(crate) fn minimum_rational_cubic_control_parameter(
     };
     let r2= if convex || concave {
         if s_m_d_l != 0.0 && d_r_m_s != 0.0 {
-            (d_r_m_d_l / d_r_m_s).abs().max((d_r_m_d_l / s_m_d_l).abs())
+            (d_r_m_d_l / d_r_m_s.min(s_m_d_l)).abs()
         } else if prefer_shape_preservation_over_smoothness {
             MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE
         } else {

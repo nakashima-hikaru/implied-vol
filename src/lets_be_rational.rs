@@ -270,7 +270,7 @@ fn unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_wit
                 let bpob = bx.recip();
                 let h = x / s;
                 let b_h2 = (h.powi(2) / s) - s / 4.0;
-                let nu = (ln_beta - ln_b) * ln_b / ln_beta / bpob;
+                let nu = (ln_beta - ln_b) * ln_b / ln_beta * bx;
                 let lambda = ln_b.recip();
                 let otlambda = lambda.mul_add2(2.0, 1.0);
                 let h2 = b_h2 - bpob * otlambda;
@@ -289,14 +289,14 @@ fn unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_wit
             }
             return s;
         } else {
-            let v1 = normalised_vega(x, s1);
-            let r_im = convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side(b1, b_c, s1, s_c, v1.recip(), v_c.recip(), 0.0, false);
-            s = rational_cubic_interpolation(beta, b1, b_c, s1, s_c, v1.recip(), v_c.recip(), r_im);
+            let v1_recip = normalised_vega(x, s1).recip();
+            let r_im = convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side(b1, b_c, s1, s_c, v1_recip, v_c.recip(), 0.0, false);
+            s = rational_cubic_interpolation(beta, b1, b_c, s1, s_c, v1_recip, v_c.recip(), r_im);
             s_left = s1;
             s_right = s_c;
         }
     } else {
-        let s_u = if v_c > f64::MIN_POSITIVE { s_c + (b_max - b_c) / v_c } else { s_c };
+        let s_u = if v_c.is_sign_positive() { s_c + (b_max - b_c) / v_c } else { s_c };
         let b_u = normalised_black_call(x, s_u);
         if beta <= b_u {
             let v_u = normalised_vega(x, s_u);
