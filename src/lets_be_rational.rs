@@ -13,32 +13,18 @@ fn householder3_factor(v: f64, h2: f64, h3: f64) -> f64 { (1.0 + 0.5 * h2 * v) /
 fn householder4_factor(v: f64, h2: f64, h3: f64, h4: f64) -> f64 { (1.0 + v * (h2 + v * h3 / 6.0)) / (1.0 + v * (1.5 * h2 + v * (h2 * h2 / 4.0 + h3 / 3.0 + v * h4 / 24.0))) }
 
 #[inline(always)]
-fn normalised_intrinsic(x: f64, q: bool) -> f64 {
-    if (q && !x.is_sign_positive()) || (!q && !x.is_sign_negative()) {
+fn normalised_intrinsic(x: f64) -> f64 {
+    if !x.is_sign_positive() {
         return 0.0;
     }
-    let x2 = x.powi(2);
+    let x2 = x * x;
     if x2 < 98.0 * FOURTH_ROOT_DBL_EPSILON {
         let ret = x * (1.0 + x2 * ((1.0 / 24.0) + x2 * ((1.0 / 1920.0) + x2 * ((1.0 / 322560.0) + (1.0 / 92897280.0) * x2)))).abs().max(0.0);
-        return if q {
-            ret
-        } else {
-            -ret
-        };
+        return ret
     }
     let b_max = (0.5 * x).exp();
     let one_over_b_max = b_max.recip();
-    let ret = (b_max - one_over_b_max).abs().max(0.0);
-    if q {
-        ret
-    } else {
-        -ret
-    }
-}
-
-#[inline(always)]
-fn normalised_intrinsic_call(x: f64) -> f64 {
-    normalised_intrinsic(x, true)
+    (b_max - one_over_b_max).abs().max(0.0)
 }
 
 const ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD: f64 = -10.0;
@@ -46,14 +32,74 @@ const SMALL_T_EXPANSION_OF_NORMALISED_BLACK_THRESHOLD: f64 = 2.0 * SIXTEENTH_ROO
 
 #[inline(always)]
 fn asymptotic_expansion_of_normalised_black_call_over_vega(h: f64, t: f64) -> f64 {
+    const fn a0(_e: f64) -> f64 {2.0}
+    const fn a1(e: f64) -> f64 {-6.0-2.0*e}
+    const fn a2(e: f64) -> f64 {30.0+e*(60.0+6.0*e)}
+    const fn a3(e: f64) -> f64 { -2.1E2+e*(-1.05E3+e*(-6.3E2-30.0*e))}
+    const fn a4(e: f64) -> f64 { 1.89E3+e*(1.764E4+e*(2.646E4+e*(7.56E3+2.1E2*e)))}
+    const fn a5(e: f64) -> f64 {-2.079E4+e*(-3.1185E5+e*(-8.7318E5+e*(-6.237E5+e*(-1.0395E5-1.89E3*e))))}
+    const fn a6(e: f64) -> f64 {2.7027E5+e*(5.94594E6+e*(2.675673E7+e*(3.567564E7+e*(1.486485E7+e*(1.62162E6+2.079E4*e)))))}
+    const fn a7(e: f64) -> f64 {-4.05405E6+e*(-1.2297285E8+e*(-8.1162081E8+e*(-1.73918745E9+e*(-1.35270135E9+e*(-3.6891855E8+e*(-2.837835E7-2.7027E5*e))))))}
+    const fn a8(e: f64) -> f64 {6.891885E7+e*(2.756754E9+e*(2.50864614E10+e*(7.88431644E10+e*(9.85539555E10+e*(5.01729228E10+e*(9.648639E9+e*(5.513508E8+4.05405E6*e)))))))}
+    const fn a9(e: f64) -> f64 {-1.30945815E9+e*(-6.678236565E10+e*(-8.013883878E11+e*(-3.4726830138E12+e*(-6.3665855253E12+e*(-5.2090245207E12+e*(-1.8699062382E12+e*(-2.671294626E11+e*(-1.178512335E10-6.891885E7*e))))))))}
+    const fn a10(e: f64) -> f64 {2.749862115E10+e*(1.7415793395E12+e*(2.664616389435E13+e*(1.52263793682E14+e*(3.848890340295E14+e*(4.618668408354E14+e*(2.664616389435E14+e*(7.10564370516E13+e*(7.83710702775E12+e*(2.749862115E11+1.30945815E9*e)))))))))}
+    const fn a11(e: f64) -> f64 {-6.3246828645E11+e*(-4.870005805665E13+e*(-9.2530110307635E14+e*(-6.74147946527055E15+e*(-2.24715982175685E16+e*(-3.71802806872497E16+e*(-3.14602375045959E16+e*(-1.34829589305411E16+e*(-2.77590330922905E15+e*(-2.4350029028325E14+e*(-6.95715115095E12-2.749862115E10*e))))))))))}
+    const fn a12(e: f64) -> f64 {1.581170716125E13+e*(1.454677058835E15+e*(3.36030400590885E16+e*(3.04027505296515E17+e*(1.29211689751018875E18+e*(2.81916414002223E18+e*(3.289024830025935E18+e*(2.067387036016302E18+e*(6.8406188691715875E17+e*(1.12010133530295E17+e*(8.0007238235925E15+e*(1.89740485935E14+6.3246828645E11*e)))))))))))}
+    const fn a13(e: f64) -> f64 {-4.2691609335375E14+e*(-4.624924344665625E16+e*(-1.2764791191277125E18+e*(-1.40412703104048375E19+e*(-7.41067044160255312E19+e*(-2.06151377739125569E20+e*(-3.17155965752500875E20+e*(-2.74868503652167425E20+e*(-1.33392067948845956E20+e*(-3.51031757760120938E19+e*(-4.6804234368016125E18+e*(-2.774954606799375E17+e*(-5.54990921359875E15-1.581170716125E13*e))))))))))))}
+    const fn a14(e: f64) -> f64 {1.238056670725875E16+e*(1.5599514051146025E18+e*(5.06984206662245812E19+e*(6.66322100184665925E20+e*(4.27556680951827302E21+e*(1.47701398874267613E22+e*(2.89721974714909549E22+e*(3.31110828245610914E22+e*(2.2155209831140142E22+e*(8.55113361903654604E21+e*(1.83238577550783129E21+e*(2.02793682664898325E20+e*(1.01396841332449162E19+e*(1.733279339016225E17+4.2691609335375E14*e)))))))))))))}
+    const fn a15(e: f64) -> f64 {-3.8379756792502125E17+e*(-5.56506473491280812E19+e*(-2.10359446979704147E21+e*(-3.25556286992399275E22+e*(-2.49593153360839444E23+e*(-1.04829124411552567E24+e*(-2.55352995361474201E24+e*(-3.72085793241005264E24+e*(-3.28310994036181115E24+e*(-1.74715207352587611E24+e*(-5.49104937393846778E23+e*(-9.76668860977197826E22+e*(-9.11557603578717971E21+e*(-3.89554531443896569E20+e*(-5.75696351887531875E18-1.238056670725875E16*e))))))))))))))}
+    const fn a16(e: f64) -> f64 {1.26653197415257012E19+e*(2.09399953059891594E21+e*(9.10889795810528434E22+e*(1.63960163245895118E24+e*(1.48019591819210871E25+e*(7.42789224401858187E25+e*(2.19979885688242617E26+e*(3.98058840769200926E26+e*(4.47816195865351041E26+e*(3.1425697955463231E26+e*(1.36178024473674001E26+e*(3.55247020366106089E25+e*(5.32870530549159134E24+e*(4.25081904711579936E23+e*(1.57049964794918696E22+e*(2.0264511586441122E20+3.8379756792502125E17*e)))))))))))))))}
+    const THRESHOLDS: [f64; 12] = [12.347, 12.958, 13.729, 14.718, 16.016, 17.769, 20.221, 23.816, 29.419, 38.93, 57.171, 99.347];
+
     assert!((h < -ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD.abs()) && (h + t < -(SMALL_T_EXPANSION_OF_NORMALISED_BLACK_THRESHOLD + ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD).abs()));
     let e = (t / h).powi(2);
     let r = (h + t) * (h - t);
     let q = (h / r).powi(2);
-    let asymptotic_expansion_sum = 2.0 + q * (-6.0E0 - 2.0 * e + 3.0 * q * (1.0E1 + e * (2.0E1 + 2.0 * e) + 5.0 * q * (-1.4E1 + e * (-7.0E1 + e * (-4.2E1 - 2.0 * e)) + 7.0 * q * (1.8E1 + e * (1.68E2 + e * (2.52E2 + e * (7.2E1 + 2.0 * e))) + 9.0 * q * (-2.2E1 + e * (-3.3E2 + e * (-9.24E2 + e * (-6.6E2 + e * (-1.1E2 - 2.0 * e)))) + 1.1E1 * q * (2.6E1 + e * (5.72E2 + e * (2.574E3 + e * (3.432E3 + e * (1.43E3 + e * (1.56E2 + 2.0 * e))))) + 1.3E1 * q * (-3.0E1 + e * (-9.1E2 + e * (-6.006E3 + e * (-1.287E4 + e * (-1.001E4 + e * (-2.73E3 + e * (-2.1E2 - 2.0 * e)))))) + 1.5E1 * q * (3.4E1 + e * (1.36E3 + e * (1.2376E4 + e * (3.8896E4 + e * (4.862E4 + e * (2.4752E4 + e * (4.76E3 + e * (2.72E2 + 2.0 * e))))))) + 1.7E1 * q * (-3.8E1 + e * (-1.938E3 + e * (-2.3256E4 + e * (-1.00776E5 + e * (-1.84756E5 + e * (-1.51164E5 + e * (-5.4264E4 + e * (-7.752E3 + e * (-3.42E2 - 2.0 * e)))))))) + 1.9E1 * q * (4.2E1 + e * (2.66E3 + e * (4.0698E4 + e * (2.3256E5 + e * (5.8786E5 + e * (7.05432E5 + e * (4.0698E5 + e * (1.08528E5 + e * (1.197E4 + e * (4.2E2 + 2.0 * e))))))))) + 2.1E1 * q * (-4.6E1 + e * (-3.542E3 + e * (-6.7298E4 + e * (-4.90314E5 + e * (-1.63438E6 + e * (-2.704156E6 + e * (-2.288132E6 + e * (-9.80628E5 + e * (-2.01894E5 + e * (-1.771E4 + e * (-5.06E2 - 2.0 * e)))))))))) + 2.3E1 * q * (5.0E1 + e * (4.6E3 + e * (1.0626E5 + e * (9.614E5 + e * (4.08595E6 + e * (8.9148E6 + e * (1.04006E7 + e * (6.53752E6 + e * (2.16315E6 + e * (3.542E5 + e * (2.53E4 + e * (6.0E2 + 2.0 * e))))))))))) + 2.5E1 * q * (-5.4E1 + e * (-5.85E3 + e * (-1.6146E5 + e * (-1.77606E6 + e * (-9.37365E6 + e * (-2.607579E7 + e * (-4.01166E7 + e * (-3.476772E7 + e * (-1.687257E7 + e * (-4.44015E6 + e * (-5.9202E5 + e * (-3.51E4 + e * (-7.02E2 - 2.0 * e)))))))))))) + 2.7E1 * q * (5.8E1 + e * (7.308E3 + e * (2.3751E5 + e * (3.12156E6 + e * (2.003001E7 + e * (6.919458E7 + e * (1.3572783E8 + e * (1.5511752E8 + e * (1.0379187E8 + e * (4.006002E7 + e * (8.58429E6 + e * (9.5004E5 + e * (4.7502E4 + e * (8.12E2 + 2.0 * e))))))))))))) + 2.9E1 * q * (-6.2E1 + e * (-8.99E3 + e * (-3.39822E5 + e * (-5.25915E6 + e * (-4.032015E7 + e * (-1.6934463E8 + e * (-4.1250615E8 + e * (-6.0108039E8 + e * (-5.3036505E8 + e * (-2.8224105E8 + e * (-8.870433E7 + e * (-1.577745E7 + e * (-1.472562E6 + e * (-6.293E4 + e * (-9.3E2 - 2.0 * e)))))))))))))) + 3.1E1 * q * (6.6E1 + e * (1.0912E4 + e * (4.74672E5 + e * (8.544096E6 + e * (7.71342E7 + e * (3.8707344E8 + e * (1.14633288E9 + e * (2.07431664E9 + e * (2.33360622E9 + e * (1.6376184E9 + e * (7.0963464E8 + e * (1.8512208E8 + e * (2.7768312E7 + e * (2.215136E6 + e * (8.184E4 + e * (1.056E3 + 2.0 * e))))))))))))))) + 3.3E1 * (-7.0E1 + e * (-1.309E4 + e * (-6.49264E5 + e * (-1.344904E7 + e * (-1.4121492E8 + e * (-8.344518E8 + e * (-2.9526756E9 + e * (-6.49588632E9 + e * (-9.0751353E9 + e * (-8.1198579E9 + e * (-4.6399188E9 + e * (-1.6689036E9 + e * (-3.67158792E8 + e * (-4.707164E7 + e * (-3.24632E6 + e * (-1.0472E5 + e * (-1.19E3 - 2.0 * e))))))))))))))))) * q))))))))))))))));
 
-    let b_over_vega = (t / r) * asymptotic_expansion_sum;
-    b_over_vega.max(0.0).abs()
+    let idx = THRESHOLDS.partition_point(|&x| x<=-h - t + SMALL_T_EXPANSION_OF_NORMALISED_BLACK_THRESHOLD);
+    let omega = if idx == 12 {
+        return a0(e) + q * (a1(e) + q * (a2(e) + q * (a3(e) + q * a4(e))));
+    } else {
+        let mut omega = 0.0;
+        if idx == 0 {
+            omega = q * (a16(e) + omega);
+        }
+        if idx <= 1 {
+            omega = q * (a15(e) + omega);
+        }
+        if idx <= 2 {
+            omega = q * (a14(e) + omega);
+        }
+        if idx <= 3 {
+            omega = q * (a13(e) + omega);
+        }
+        if idx <= 4 {
+            omega = q * (a12(e) + omega);
+        }
+        if idx <= 5 {
+            omega = q * (a11(e) + omega);
+        }
+        if idx <= 6 {
+            omega = q * (a10(e) + omega);
+        }
+        if idx <= 7 {
+            omega = q * (a9(e) + omega);
+        }
+        if idx <= 8 {
+            omega = q * (a8(e) + omega);
+        }
+        if idx <= 9 {
+            omega = q * (a7(e) + omega);
+        }
+        if idx <= 10 {
+            omega = q * (a6(e) + omega);
+        }
+        if idx <= 11 {
+            omega = q * (a5(e) + omega);
+        }
+        omega
+    };
+    (t / r) * omega
 }
 
 #[inline(always)]
@@ -114,10 +160,10 @@ fn ln_normalised_vega(x: f64, s: f64) -> f64 {
 #[inline(always)]
 fn normalised_black_call(x: f64, s: f64) -> f64 {
     if x.is_sign_positive() {
-        return normalised_intrinsic_call(x) + normalised_black_call(-x, s);
+        return normalised_intrinsic(x) + normalised_black_call(-x, s);
     }
     if s <= x.abs() * DENORMALISATION_CUTOFF {
-        return normalised_intrinsic_call(x);
+        return normalised_intrinsic(x);
     }
     if x < s * ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD && (0.5 * s).powi(2) + x < s * (SMALL_T_EXPANSION_OF_NORMALISED_BLACK_THRESHOLD + ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD) {
         return asymptotic_expansion_of_normalised_black_call_over_vega(x / s, 0.5 * s) * normalised_vega(x, s);
@@ -133,11 +179,11 @@ fn normalised_black_call(x: f64, s: f64) -> f64 {
 fn normalised_black_call_over_vega_and_ln_vega(x: f64, s: f64) -> (f64, f64) {
     if x.is_sign_positive() {
         let (bx, ln_vega) = normalised_black_call_over_vega_and_ln_vega(-x, s);
-        return (normalised_intrinsic_call(x) * (-ln_vega).exp() + bx, ln_vega);
+        return (normalised_intrinsic(x) * (-ln_vega).exp() + bx, ln_vega);
     }
     let ln_vega = ln_normalised_vega(x, s);
     if s <= x.abs() * DENORMALISATION_CUTOFF {
-        return (normalised_intrinsic_call(x) * (-ln_vega).exp(), ln_vega);
+        return (normalised_intrinsic(x) * (-ln_vega).exp(), ln_vega);
     }
     if x < s * ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD && 0.5 * s.powi(2) + x < s * (SMALL_T_EXPANSION_OF_NORMALISED_BLACK_THRESHOLD + ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD) {
         return (asymptotic_expansion_of_normalised_black_call_over_vega(x / s, 0.5 * s), ln_vega);
@@ -227,7 +273,7 @@ fn unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_wit
     mut beta: f64, mut x: f64, q: bool, n: u8,
 ) -> f64 {
     if (q && (x.is_sign_positive())) || (!q && (x.is_sign_negative())) {
-        beta = (beta - normalised_intrinsic(x, q)).max(0.).abs();
+        beta = (beta - normalised_intrinsic(x)).max(0.).abs();
     }
     if !q {
         x = -x;
