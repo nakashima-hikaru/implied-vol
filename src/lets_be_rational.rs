@@ -3,7 +3,7 @@ use std::ops::Neg;
 use crate::constants::{DENORMALISATION_CUTOFF, FOURTH_ROOT_DBL_EPSILON, HALF_OF_LN_TWO_PI, ONE_OVER_SQRT_THREE, SIXTEENTH_ROOT_DBL_EPSILON, SQRT_DBL_MAX, SQRT_PI_OVER_TWO, SQRT_THREE, SQRT_THREE_OVER_THIRD_ROOT_TWO_PI, SQRT_TWO_OVER_PI, SQRT_TWO_PI, TWO_PI_OVER_SQRT_TWENTY_SEVEN, VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_ABOVE_MAXIMUM, VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_BELOW_INTRINSIC};
 use crate::erf_cody::{erf_cody, erfc_cody, erfcx_cody};
 use crate::MulAdd;
-use crate::normal_distribution::{inverse_norm_cdf, norm_cdf, norm_pdf};
+use crate::normal_distribution::{erfinv, inverse_norm_cdf, norm_cdf, norm_pdf};
 use crate::rational_cubic::{convex_rational_cubic_control_parameter_to_fit_second_derivative_at_left_side, convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side, rational_cubic_interpolation};
 
 
@@ -334,6 +334,11 @@ fn one_minus_erfcx(x: f64) -> f64 {
 }
 
 #[inline(always)]
+fn implied_normalised_volatility_atm(beta: f64) -> f64 {
+    2.0 * SQRT_2 * erfinv(beta)
+}
+
+#[inline(always)]
 fn lets_be_rational(
     beta: f64, x: f64, n: u8,
 ) -> f64 {
@@ -345,6 +350,10 @@ fn lets_be_rational(
     if beta >= b_max {
         return VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_ABOVE_MAXIMUM;
     }
+    if x == 0.0 {
+        return implied_normalised_volatility_atm(beta);
+    }
+
     let mut iterations = 0;
     let mut f = f64::MIN;
     let mut s;
@@ -550,7 +559,7 @@ mod tests {
             let q = true;
             let sigma = implied_black_volatility(price, f, k, t, q);
             let reprice = black(f, k, sigma, t, q);
-            assert!((price - reprice).abs() <= 2.0 * f64::EPSILON);
+            assert!((price - reprice).abs() <= 2.0 * f64::EPSILON, "{f},{k},{t},{sigma},{price},{reprice},{}", (price - reprice).abs() / f64::EPSILON);
         }
     }
 
