@@ -378,14 +378,14 @@ fn lets_be_rational(
                 let ln_b = bx.ln() + ln_vega;
                 let bpob = bx.recip();
                 let h = x / s;
-                let b_h2 = (h.powi(2) / s) - s / 4.0;
+                let b_h2 = ((h * h) / s) - s / 4.0;
                 let nu = (ln_beta - ln_b) * ln_b / ln_beta * bx;
                 let lambda = ln_b.recip();
                 let otlambda = lambda.mul_add2(2.0, 1.0);
                 let h2 = b_h2 - bpob * otlambda;
                 let c = 3.0 * (h / s).powi(2);
-                let b_h3 = b_h2.powi(2) - c - 0.25;
-                let sq_bpob = bpob.powi(2);
+                let b_h3 = b_h2 * b_h2 - c - 0.25;
+                let sq_bpob = bpob * bpob;
                 let mu = 6.0 * lambda * (1.0 + lambda);
                 let h3 = b_h3 + sq_bpob * (2.0 + mu) - (b_h2 * bpob * 3.0 * otlambda);
                 ds = if x < -190.0 {
