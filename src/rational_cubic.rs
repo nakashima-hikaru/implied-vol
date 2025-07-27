@@ -3,7 +3,7 @@ const MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE: f64 = 2f64 / (f64::EPSILON
 
 #[allow(clippy::too_many_arguments)]
 #[inline(always)]
-pub(crate) fn rational_cubic_interpolation(
+pub(crate) const fn rational_cubic_interpolation(
     x: f64,
     x_l: f64,
     x_r: f64,
@@ -20,8 +20,8 @@ pub(crate) fn rational_cubic_interpolation(
     let t = (x - x_l) / h;
     if r < MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE {
         let omt = 1.0 - t;
-        let t2 = t.powi(2);
-        let omt2 = omt.powi(2);
+        let t2 = t * t;
+        let omt2 = omt * omt;
         return (y_r * t2 * t
             + (r * y_r - h * d_r) * t2 * omt
             + (r * y_l + h * d_l) * t * omt2
@@ -32,7 +32,7 @@ pub(crate) fn rational_cubic_interpolation(
 }
 
 #[inline(always)]
-pub(crate) fn rational_cubic_control_parameter_to_fit_second_derivative_at_left_side(
+pub(crate) const fn rational_cubic_control_parameter_to_fit_second_derivative_at_left_side(
     x_l: f64,
     x_r: f64,
     y_l: f64,
@@ -59,7 +59,7 @@ pub(crate) fn rational_cubic_control_parameter_to_fit_second_derivative_at_left_
 }
 
 #[inline(always)]
-pub(crate) fn rational_cubic_control_parameter_to_fit_second_derivative_at_right_side(
+pub(crate) const fn rational_cubic_control_parameter_to_fit_second_derivative_at_right_side(
     x_l: f64,
     x_r: f64,
     y_l: f64,
@@ -85,7 +85,7 @@ pub(crate) fn rational_cubic_control_parameter_to_fit_second_derivative_at_right
 }
 
 #[inline(always)]
-pub(crate) fn minimum_rational_cubic_control_parameter(
+pub(crate) const fn minimum_rational_cubic_control_parameter(
     d_l: f64,
     d_r: f64,
     s: f64,
@@ -125,7 +125,7 @@ pub(crate) fn minimum_rational_cubic_control_parameter(
 
 #[allow(clippy::too_many_arguments)]
 #[inline(always)]
-pub(crate) fn convex_rational_cubic_control_parameter_to_fit_second_derivative_at_left_side(
+pub(crate) const fn convex_rational_cubic_control_parameter_to_fit_second_derivative_at_left_side(
     x_l: f64,
     x_r: f64,
     y_l: f64,
@@ -155,7 +155,7 @@ pub(crate) fn convex_rational_cubic_control_parameter_to_fit_second_derivative_a
 
 #[allow(clippy::too_many_arguments)]
 #[inline(always)]
-pub(crate) fn convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side(
+pub(crate) const fn convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side(
     x_l: f64,
     x_r: f64,
     y_l: f64,

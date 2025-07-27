@@ -1,7 +1,7 @@
+use crate::MulAdd;
 use crate::erf_cody::erfc_cody;
 use std::f64::consts::FRAC_1_SQRT_2;
 use std::ops::Neg;
-use crate::MulAdd;
 
 const NORM_CDF_ASYMPTOTIC_EXPANSION_FIRST_THRESHOLD: f64 = -10.0;
 const NORM_CDF_ASYMPTOTIC_EXPANSION_SECOND_THRESHOLD: f64 = -67108864.0;
@@ -11,7 +11,7 @@ const FRAC_SQRT_2_PI: f64 = f64::from_bits(0x3fd9884533d43651);
 
 #[inline(always)]
 pub(crate) fn norm_pdf(x: f64) -> f64 {
-    FRAC_SQRT_2_PI * (-0.5 * x.powi(2)).exp()
+    FRAC_SQRT_2_PI * (-0.5 * x * x).exp()
 }
 
 #[inline(always)]
@@ -19,7 +19,7 @@ pub(crate) fn norm_cdf(z: f64) -> f64 {
     if z <= NORM_CDF_ASYMPTOTIC_EXPANSION_FIRST_THRESHOLD {
         let mut sum = 1.0;
         if z >= NORM_CDF_ASYMPTOTIC_EXPANSION_SECOND_THRESHOLD {
-            let zsqr = z.powi(2);
+            let zsqr = z * z;
             let mut i = 4.0_f64;
             let mut g = 1.0;
             let mut a = f64::MAX;
@@ -158,7 +158,10 @@ fn inverse_norm_cdf_for_low_probabilities(p: f64) -> f64 {
                     r.mul_add2(
                         r.mul_add2(
                             r.mul_add2(
-                                r.mul_add2(0.000_000_135_659_835_644_412_97, 0.108_979_722_341_318_3),
+                                r.mul_add2(
+                                    0.000_000_135_659_835_644_412_97,
+                                    0.108_979_722_341_318_3,
+                                ),
                                 0.000_000_003_084_809_357_096_678_6,
                             ),
                             2.030_707_606_430_904,
@@ -191,7 +194,10 @@ fn inverse_norm_cdf_for_low_probabilities(p: f64) -> f64 {
             r.mul_add2(
                 r.mul_add2(
                     r.mul_add2(
-                        r.mul_add2(0.000_000_003_084_809_357_096_678_6, 0.011_400_087_282_177_594),
+                        r.mul_add2(
+                            0.000_000_003_084_809_357_096_678_6,
+                            0.011_400_087_282_177_594,
+                        ),
                         0.336_637_464_056_264,
                     ),
                     2.128_203_027_215_319,

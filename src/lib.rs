@@ -48,7 +48,6 @@
 //! ```
 //!
 //! For detailed explanations of each feature, please refer to the README.md file.
-
 mod bachelier;
 mod constants;
 mod erf_cody;
@@ -61,13 +60,13 @@ trait MulAdd {
 }
 #[cfg(feature = "fma")]
 #[inline(always)]
-fn fma_function(r: f64, a: f64, b: f64) -> f64 {
+const fn fma_function(r: f64, a: f64, b: f64) -> f64 {
     r.mul_add(a, b)
 }
 
 #[cfg(not(feature = "fma"))]
 #[inline(always)]
-fn fma_function(r: f64, a: f64, b: f64) -> f64 {
+const fn fma_function(r: f64, a: f64, b: f64) -> f64 {
     a * r + b
 }
 impl MulAdd for f64 {
