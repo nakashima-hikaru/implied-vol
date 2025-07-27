@@ -1,6 +1,6 @@
 use std::f64::consts::{FRAC_1_SQRT_2, SQRT_2};
 use std::ops::Neg;
-use crate::constants::{DENORMALISATION_CUTOFF, FOURTH_ROOT_DBL_EPSILON, HALF_OF_LN_TWO_PI, ONE_OVER_SQRT_THREE, SIXTEENTH_ROOT_DBL_EPSILON, SQRT_DBL_MAX, SQRT_PI_OVER_TWO, SQRT_THREE, SQRT_THREE_OVER_THIRD_ROOT_TWO_PI, SQRT_TWO_OVER_PI, SQRT_TWO_PI, TWO_PI_OVER_SQRT_TWENTY_SEVEN, VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_ABOVE_MAXIMUM, VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_BELOW_INTRINSIC};
+use crate::constants::{HALF_OF_LN_TWO_PI, ONE_OVER_SQRT_THREE, SIXTEENTH_ROOT_DBL_EPSILON, SQRT_DBL_MAX, SQRT_PI_OVER_TWO, SQRT_THREE, SQRT_THREE_OVER_THIRD_ROOT_TWO_PI, SQRT_TWO_OVER_PI, SQRT_TWO_PI, TWO_PI_OVER_SQRT_TWENTY_SEVEN, VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_ABOVE_MAXIMUM, VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_BELOW_INTRINSIC};
 use crate::erf_cody::{erf_cody, erfc_cody, erfcx_cody};
 use crate::MulAdd;
 use crate::normal_distribution::{erfinv, inverse_norm_cdf, norm_cdf, norm_pdf};
@@ -13,23 +13,8 @@ fn householder3_factor(v: f64, h2: f64, h3: f64) -> f64 { (1.0 + 0.5 * h2 * v) /
 #[inline(always)]
 fn householder4_factor(v: f64, h2: f64, h3: f64, h4: f64) -> f64 { (1.0 + v * (h2 + v * h3 / 6.0)) / (1.0 + v * (1.5 * h2 + v * (h2 * h2 / 4.0 + h3 / 3.0 + v * h4 / 24.0))) }
 
-#[inline(always)]
-fn normalised_intrinsic(x: f64) -> f64 {
-    if !x.is_sign_positive() {
-        return 0.0;
-    }
-    let x2 = x * x;
-    if x2 < 98.0 * FOURTH_ROOT_DBL_EPSILON {
-        let ret = x * (1.0 + x2 * ((1.0 / 24.0) + x2 * ((1.0 / 1920.0) + x2 * ((1.0 / 322560.0) + (1.0 / 92897280.0) * x2)))).abs().max(0.0);
-        return ret
-    }
-    let b_max = (0.5 * x).exp();
-    let one_over_b_max = b_max.recip();
-    (b_max - one_over_b_max).abs().max(0.0)
-}
-
 const ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD: f64 = -10.0;
-const SMALL_T_EXPANSION_OF_NORMALISED_BLACK_THRESHOLD: f64 = 2.0 * SIXTEENTH_ROOT_DBL_EPSILON;
+const TAU: f64 = 2.0 * SIXTEENTH_ROOT_DBL_EPSILON;
 
 #[inline(always)]
 fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
@@ -69,12 +54,12 @@ fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
     const fn a16(e: f64) -> f64 {1.266_531_974_152_57E19+e*(2.093_999_530_598_916E21+e*(9.108_897_958_105_285E22+e*(1.639_601_632_458_951_2E24+e*(1.480_195_918_192_108_6E25+e*(7.427_892_244_018_582E25+e*(2.199_798_856_882_426E26+e*(3.980_588_407_692_009_4E26+e*(4.478_161_958_653_511E26+e*(3.142_569_795_546_323E26+e*(1.361_780_244_736_74E26+e*(3.552_470_203_661_060_7E25+e*(5.328_705_305_491_592E24+e*(4.250_819_047_115_799E23+e*(1.570_499_647_949_187E22+e*(2.026_451_158_644_112E20+3.8379756792502125E17*e)))))))))))))))}
     const THRESHOLDS: [f64; 12] = [12.347, 12.958, 13.729, 14.718, 16.016, 17.769, 20.221, 23.816, 29.419, 38.93, 57.171, 99.347];
 
-    assert!((h < -ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD.abs()) && (h + t < -(SMALL_T_EXPANSION_OF_NORMALISED_BLACK_THRESHOLD + ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD).abs()));
+    assert!((h < -ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD.abs()) && (h + t < -(TAU + ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD).abs()));
     let e = (t / h).powi(2);
     let r = (h + t) * (h - t);
     let q = (h / r).powi(2);
 
-    let idx = THRESHOLDS.partition_point(|&x| x<=-h - t + SMALL_T_EXPANSION_OF_NORMALISED_BLACK_THRESHOLD);
+    let idx = THRESHOLDS.partition_point(|&x| x<=-h - t + TAU);
     let omega = if idx == 12 {
         return a0(e) + q * (a1(e) + q * (a2(e) + q * (a3(e) + q * a4(e))));
     } else {
@@ -122,7 +107,7 @@ fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
 
 #[cfg(not(feature = "use_original_taylor_expansion"))]
 #[inline(always)]
-fn yprime_tail_expansion_rational_function_part(w: f64) -> f64 {
+fn y_prime_tail_expansion_rational_function_part(w: f64) -> f64 {
     w * (-2.9999999999994663866 + w * (-1.7556263323542206288E2 + w * (-3.4735035445495633334E3 + w * (-2.7805745693864308643E4 + w * (-8.3836021460741980839E4 - 6.6818249032616849037E4 * w))))) / (1.0 + w * (6.3520877744831739102E1 + w * (1.4404389037604337538E3 + w * (1.4562545638507033944E4 + w * (6.6886794165651675684E4 + w * (1.2569970380923908488E5 + 6.9286518679803751694E4 * w))))))
 }
 
@@ -133,8 +118,8 @@ fn y_prime(h: f64) -> f64 {
     if h < -4.0 {
         // Nonlinear-Remez optimized minimax rational function of order (5,6) for g(w) := (Y'(h)/h²-1)/h² with w:=1/h².
         // The relative accuracy of Y'(h) ≈ w·(1+w·g(w)) is better than 9.8E-17 (in perfect arithmetic) on h in [-∞,-4] (i.e., on w in [0,1/16]).
-        let w = 1.0 / (h * h);
-        w * (1.0 + yprime_tail_expansion_rational_function_part(w))
+        let w = (h * h).recip();
+        w * (1.0 + y_prime_tail_expansion_rational_function_part(w))
     }
     else if h <= -0.46875 {
         // Remez-optimized minimax rational function of order (7,7) of relative accuracy better than 1.6E-16 (in perfect arithmetic) on h in [-4,-0.46875].
@@ -169,10 +154,10 @@ fn small_t_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
 #[cfg(feature = "use_original_taylor_expansion")]
 #[inline(always)]
 fn small_t_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
-    let w = t * t;
-    let h2 = h * h;
+    let zeta = t * t;
+    let g = h * h;
     let a = 1_f64 + h * SQRT_PI_OVER_TWO * erfcx_cody(-FRAC_1_SQRT_2 * h);
-    let b_over_vega = 2.0 * t * (a + w * ((-1.0 + 3.0 * a + a * h2) / 6.0 + w * ((-7.0 + 15.0 * a + h2 * (-1.0 + 10.0 * a + a * h2)) / 120.0 + w * ((-57.0 + 105.0 * a + h2 * (-18.0 + 105.0 * a + h2 * (-1.0 + 21.0 * a + a * h2))) / 5040.0 + w * ((-561.0 + 945.0 * a + h2 * (-285.0 + 1260.0 * a + h2 * (-33.0 + 378.0 * a + h2 * (-1.0 + 36.0 * a + a * h2)))) / 362880.0 + w * ((-6555.0 + 10395.0 * a + h2 * (-4680.0 + 17325.0 * a + h2 * (-840.0 + 6930.0 * a + h2 * (-52.0 + 990.0 * a + h2 * (-1.0 + 55.0 * a + a * h2))))) / 39916800.0 + ((-89055.0 + 135135.0 * a + h2 * (-82845.0 + 270270.0 * a + h2 * (-20370.0 + 135135.0 * a + h2 * (-1926.0 + 25740.0 * a + h2 * (-75.0 + 2145.0 * a + h2 * (-1.0 + 78.0 * a + a * h2)))))) * w) / 6227020800.0))))));
+    let b_over_vega = 2.0 * t * (a + zeta * ((-1.0 + 3.0 * a + a * g) / 6.0 + zeta * ((-7.0 + 15.0 * a + g * (-1.0 + 10.0 * a + a * g)) / 120.0 + zeta * ((-57.0 + 105.0 * a + g * (-18.0 + 105.0 * a + g * (-1.0 + 21.0 * a + a * g))) / 5040.0 + zeta * ((-561.0 + 945.0 * a + g * (-285.0 + 1260.0 * a + g * (-33.0 + 378.0 * a + g * (-1.0 + 36.0 * a + a * g)))) / 362880.0 + zeta * ((-6555.0 + 10395.0 * a + g * (-4680.0 + 17325.0 * a + g * (-840.0 + 6930.0 * a + g * (-52.0 + 990.0 * a + g * (-1.0 + 55.0 * a + a * g))))) / 39916800.0 + ((-89055.0 + 135135.0 * a + g * (-82845.0 + 270270.0 * a + g * (-20370.0 + 135135.0 * a + g * (-1926.0 + 25740.0 * a + g * (-75.0 + 2145.0 * a + g * (-1.0 + 78.0 * a + a * g)))))) * zeta) / 6227020800.0))))));
     b_over_vega.max(0.0).abs()
 }
 
@@ -228,35 +213,40 @@ fn ln_normalised_vega(x: f64, s: f64) -> f64 {
 
 #[inline(always)]
 fn normalised_black(x: f64, s: f64) -> f64 {
-    assert!(x <= 0.0, "x: {}", x);
+    assert!(x < 0.0, "x: {}", x);
     assert!(s > 0.0, "s: {}", s);
-    if x < s * ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD && (0.5 * s).powi(2) + x < s * (SMALL_T_EXPANSION_OF_NORMALISED_BLACK_THRESHOLD + ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD) {
-        return asymptotic_expansion_of_scaled_normalised_black(x / s, 0.5 * s) * normalised_vega(x, s);
+    if is_region1(x, s) {
+        asymptotic_expansion_of_scaled_normalised_black(x / s, 0.5 * s) * normalised_vega(x, s)
+    }else if is_region2(x, s) {
+        small_t_expansion_of_scaled_normalised_black(x / s, 0.5 * s) * normalised_vega(x, s)
+    }else {
+        normalised_black_call_with_optimal_use_of_codys_functions(x, s)
     }
-    if 0.5 * s < SMALL_T_EXPANSION_OF_NORMALISED_BLACK_THRESHOLD {
-        return small_t_expansion_of_scaled_normalised_black(x / s, 0.5 * s) * normalised_vega(x, s);
-    }
-    normalised_black_call_with_optimal_use_of_codys_functions(x, s)
 }
 
+const ETA: f64 = -13.0;
+#[inline(always)]
+fn is_region1(x: f64, s: f64) -> bool {
+    x < s * ETA && s * (0.5 * s - (TAU + 0.5 + ETA)) + x < 0.0
+}
+#[inline(always)]
+fn is_region2(x: f64, s: f64) -> bool {
+    s * (s - (2.0 * TAU)) - x / ETA < 0.0
+}
 
 #[inline(always)]
-fn normalised_black_call_over_vega_and_ln_vega(x: f64, s: f64) -> (f64, f64) {
-    if x.is_sign_positive() {
-        let (bx, ln_vega) = normalised_black_call_over_vega_and_ln_vega(-x, s);
-        return (normalised_intrinsic(x) * (-ln_vega).exp() + bx, ln_vega);
-    }
+fn scaled_normalised_black_and_ln_vega(x: f64, s: f64) -> (f64, f64) {
+    assert!(x < 0.0, "x must be negative, got: {}", x);
+    assert!(s > 0.0, "s must be positive, got: {}", s);
     let ln_vega = ln_normalised_vega(x, s);
-    if s <= x.abs() * DENORMALISATION_CUTOFF {
-        return (normalised_intrinsic(x) * (-ln_vega).exp(), ln_vega);
+    if is_region1(x, s) {
+        (asymptotic_expansion_of_scaled_normalised_black(x / s, 0.5 * s), ln_vega)
     }
-    if x < s * ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD && 0.5 * s.powi(2) + x < s * (SMALL_T_EXPANSION_OF_NORMALISED_BLACK_THRESHOLD + ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD) {
-        return (asymptotic_expansion_of_scaled_normalised_black(x / s, 0.5 * s), ln_vega);
+    else if is_region2(x, s) {
+        (small_t_expansion_of_scaled_normalised_black(x / s, 0.5 * s), ln_vega)
+    } else {
+        (normalised_black_call_with_optimal_use_of_codys_functions(x, s) * (-ln_vega).exp(), ln_vega)
     }
-    if 0.5 * s < SMALL_T_EXPANSION_OF_NORMALISED_BLACK_THRESHOLD {
-        return (small_t_expansion_of_scaled_normalised_black(x / s, 0.5 * s), ln_vega);
-    }
-    (normalised_black_call_with_optimal_use_of_codys_functions(x, s) * (-ln_vega).exp(), ln_vega)
 }
 
 #[inline(always)]
@@ -383,7 +373,7 @@ fn lets_be_rational(
 
             ds = 1.0_f64;
             while iterations < n && ds.abs() > f64::EPSILON * s {
-                let (bx, ln_vega) = normalised_black_call_over_vega_and_ln_vega(x, s);
+                let (bx, ln_vega) = scaled_normalised_black_and_ln_vega(x, s);
                 let ln_b = bx.ln() + ln_vega;
                 let bpob = bx.recip();
                 let h = x / s;
