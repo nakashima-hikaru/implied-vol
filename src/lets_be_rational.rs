@@ -32,7 +32,7 @@ const ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD: f64 = -10.0;
 const SMALL_T_EXPANSION_OF_NORMALISED_BLACK_THRESHOLD: f64 = 2.0 * SIXTEENTH_ROOT_DBL_EPSILON;
 
 #[inline(always)]
-fn asymptotic_expansion_of_normalised_black_call_over_vega(h: f64, t: f64) -> f64 {
+fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
     const fn a0(_e: f64) -> f64 {2.0}
     const fn a1(e: f64) -> f64 {-6.0-2.0*e}
     const fn a2(e: f64) -> f64 {30.0+e*(60.0+6.0*e)}
@@ -202,7 +202,7 @@ fn normalised_black(x: f64, s: f64) -> f64 {
     assert!(x <= 0.0, "x: {}", x);
     assert!(s > 0.0, "s: {}", s);
     if x < s * ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD && (0.5 * s).powi(2) + x < s * (SMALL_T_EXPANSION_OF_NORMALISED_BLACK_THRESHOLD + ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD) {
-        return asymptotic_expansion_of_normalised_black_call_over_vega(x / s, 0.5 * s) * normalised_vega(x, s);
+        return asymptotic_expansion_of_scaled_normalised_black(x / s, 0.5 * s) * normalised_vega(x, s);
     }
     if 0.5 * s < SMALL_T_EXPANSION_OF_NORMALISED_BLACK_THRESHOLD {
         return small_t_expansion_of_normalised_black_call_over_vega(x / s, 0.5 * s) * normalised_vega(x, s);
@@ -222,7 +222,7 @@ fn normalised_black_call_over_vega_and_ln_vega(x: f64, s: f64) -> (f64, f64) {
         return (normalised_intrinsic(x) * (-ln_vega).exp(), ln_vega);
     }
     if x < s * ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD && 0.5 * s.powi(2) + x < s * (SMALL_T_EXPANSION_OF_NORMALISED_BLACK_THRESHOLD + ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD) {
-        return (asymptotic_expansion_of_normalised_black_call_over_vega(x / s, 0.5 * s), ln_vega);
+        return (asymptotic_expansion_of_scaled_normalised_black(x / s, 0.5 * s), ln_vega);
     }
     if 0.5 * s < SMALL_T_EXPANSION_OF_NORMALISED_BLACK_THRESHOLD {
         return (small_t_expansion_of_normalised_black_call_over_vega(x / s, 0.5 * s), ln_vega);
@@ -233,7 +233,7 @@ fn normalised_black_call_over_vega_and_ln_vega(x: f64, s: f64) -> (f64, f64) {
 #[inline(always)]
 pub(crate) fn black(f: f64, k: f64, sigma: f64, t: f64, q: bool) -> f64 {
     let s = sigma * t.sqrt();
-    if k == f{
+    if k == f {
         f * erf_cody((0.5 / SQRT_2) * s)
     }else{
         (if q { f- k } else {k - f}).max(0.0) + (if s <= 0.0 {0.0} else {
