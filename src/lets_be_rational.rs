@@ -185,7 +185,7 @@ fn normalised_black_call_with_optimal_use_of_codys_functions(x: f64, s: f64) -> 
 
 #[inline(always)]
 fn normalised_vega(x: f64, s: f64) -> f64 {
-    assert!(s > 0.0, "s must be positive, got: {}", s);
+    assert!(s > 0.0, "s must be positive, got: {s}");
     let h = x / s;
     let t = 0.5 * s;
     SQRT_TWO_PI.recip() * (-0.5 * (h *  h + t * t)).exp()
@@ -193,7 +193,7 @@ fn normalised_vega(x: f64, s: f64) -> f64 {
 
 #[inline(always)]
 fn inv_normalised_vega(x: f64, s: f64) -> f64 {
-    assert!(s > 0.0, "s must be positive, got: {}", s);
+    assert!(s > 0.0, "s must be positive, got: {s}");
     let h = x / s;
     let t = 0.5 * s;
     SQRT_TWO_PI * (0.5 * (h *  h + t * t)).exp()
@@ -213,8 +213,8 @@ fn ln_normalised_vega(x: f64, s: f64) -> f64 {
 
 #[inline(always)]
 fn normalised_black(x: f64, s: f64) -> f64 {
-    assert!(x < 0.0, "x: {}", x);
-    assert!(s > 0.0, "s: {}", s);
+    assert!(x < 0.0, "x: {x}");
+    assert!(s > 0.0, "s: {s}");
     if is_region1(x, s) {
         asymptotic_expansion_of_scaled_normalised_black(x / s, 0.5 * s) * normalised_vega(x, s)
     }else if is_region2(x, s) {
@@ -236,8 +236,8 @@ fn is_region2(x: f64, s: f64) -> bool {
 
 #[inline(always)]
 fn scaled_normalised_black_and_ln_vega(x: f64, s: f64) -> (f64, f64) {
-    assert!(x < 0.0, "x must be negative, got: {}", x);
-    assert!(s > 0.0, "s must be positive, got: {}", s);
+    assert!(x < 0.0, "x must be negative, got: {x}");
+    assert!(s > 0.0, "s must be positive, got: {s}");
     let ln_vega = ln_normalised_vega(x, s);
     if is_region1(x, s) {
         (asymptotic_expansion_of_scaled_normalised_black(x / s, 0.5 * s), ln_vega)
@@ -332,7 +332,7 @@ fn implied_normalised_volatility_atm(beta: f64) -> f64 {
 fn lets_be_rational(
     beta: f64, x: f64, n: u8,
 ) -> f64 {
-    assert!(x  <= 0.0, "x must be non-positive, but got {}", x);
+    assert!(x  <= 0.0, "x must be non-positive, but got {x}");
     if beta <= 0. {
         return if beta == 0.0 {0.0} else {VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_BELOW_INTRINSIC};
     }
@@ -354,9 +354,9 @@ fn lets_be_rational(
     let ome = one_minus_erfcx(sqrt_ax);
     let b_c = 0.5 * b_max * ome;
     if beta < b_c {
-        assert!(x < 0.0, "x must be negative, but got {}", x);
+        assert!(x < 0.0, "x must be negative, but got {x}");
         let s_l = s_c - SQRT_PI_OVER_TWO * ome;
-        debug_assert!(s_l > 0.0, "s_l must be positive, but got {}", s_l);
+        debug_assert!(s_l > 0.0, "s_l must be positive, but got {s_l}");
         let b_l = normalised_black(x, s_l);
         // let b_l = b_l_over_b_max(s_c) * b_max;
         if beta < b_l {
@@ -368,7 +368,7 @@ fn lets_be_rational(
                 f = (f_lower_map_l * t + b_l * (1.0 - t)) * t;
             }
             s = inverse_f_lower_map(x, f);
-            assert!(s > 0.0, "s must be positive, but got {}", s);
+            assert!(s > 0.0, "s must be positive, but got {s}");
             let ln_beta = beta.ln();
 
             ds = 1.0_f64;
@@ -393,7 +393,7 @@ fn lets_be_rational(
                     nu * householder3_factor(nu, h2, h3)
                 };
                 s += ds;
-                assert!(s > 0.0, "s must be positive, but got {}", s);
+                assert!(s > 0.0, "s must be positive, but got {s}");
                 iterations += 1;
             }
             return s;
@@ -402,11 +402,11 @@ fn lets_be_rational(
             let inv_v_l = inv_normalised_vega(x, s_l);
             let r_im = convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side(b_l, b_c, s_l, s_c, inv_v_l, inv_v_c, 0.0, false);
             s = rational_cubic_interpolation(beta, b_l, b_c, s_l, s_c, inv_v_l, inv_v_c, r_im);
-            assert!(s > 0.0, "s must be positive, but got {}", s);
+            assert!(s > 0.0, "s must be positive, but got {s}");
         }
     } else {
         let s_u = s_c + SQRT_PI_OVER_TWO * (2.0 - ome);
-        assert!(s_u > 0.0, "s_u must be positive, but got {}", s_u);
+        assert!(s_u > 0.0, "s_u must be positive, but got {s_u}");
         let b_u = normalised_black(x, s_u);
         if beta <= b_u {
             let inv_v_c = SQRT_TWO_PI / b_max;
@@ -415,7 +415,7 @@ fn lets_be_rational(
             let r_u_m = convex_rational_cubic_control_parameter_to_fit_second_derivative_at_left_side(
                 b_c, b_u, s_c, s_u, inv_v_c, inv_v_u, 0.0, false);
             s = rational_cubic_interpolation(beta, b_c, b_u, s_c, s_u, inv_v_c, inv_v_u, r_u_m);
-            assert!(s > 0.0, "s must be positive, but got {}", s);
+            assert!(s > 0.0, "s must be positive, but got {s}");
         } else {
             let (f_upper_map_h, d_f_upper_map_h_d_beta, d2_f_upper_map_h_d_beta2) = compute_f_upper_map_and_first_two_derivatives(x, s_u);
 
