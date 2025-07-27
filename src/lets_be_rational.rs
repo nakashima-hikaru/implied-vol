@@ -1,6 +1,7 @@
 use std::f64::consts::{FRAC_1_SQRT_2, SQRT_2};
-use crate::constants::{DENORMALISATION_CUTOFF, FOURTH_ROOT_DBL_EPSILON, FRAC_SQRT_TWO_PI, HALF_OF_LN_TWO_PI, ONE_OVER_SQRT_THREE, SIXTEENTH_ROOT_DBL_EPSILON, SQRT_DBL_MAX, SQRT_MIN_POSITIVE, SQRT_PI_OVER_TWO, SQRT_THREE, SQRT_THREE_OVER_THIRD_ROOT_TWO_PI, SQRT_TWO_OVER_PI, TWO_PI_OVER_SQRT_TWENTY_SEVEN, VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_ABOVE_MAXIMUM, VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_BELOW_INTRINSIC};
-use crate::erf_cody::{erfc_cody, erfcx_cody};
+use std::ops::Neg;
+use crate::constants::{DENORMALISATION_CUTOFF, FOURTH_ROOT_DBL_EPSILON, FRAC_SQRT_TWO_PI, HALF_OF_LN_TWO_PI, ONE_OVER_SQRT_THREE, SIXTEENTH_ROOT_DBL_EPSILON, SQRT_DBL_MAX, SQRT_MIN_POSITIVE, SQRT_PI_OVER_TWO, SQRT_THREE, SQRT_THREE_OVER_THIRD_ROOT_TWO_PI, SQRT_TWO_OVER_PI, SQRT_TWO_PI, TWO_PI_OVER_SQRT_TWENTY_SEVEN, VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_ABOVE_MAXIMUM, VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_BELOW_INTRINSIC};
+use crate::erf_cody::{erf_cody, erfc_cody, erfcx_cody};
 use crate::MulAdd;
 use crate::normal_distribution::{inverse_norm_cdf, norm_cdf, norm_pdf};
 use crate::rational_cubic::{convex_rational_cubic_control_parameter_to_fit_second_derivative_at_left_side, convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side, rational_cubic_interpolation};
@@ -170,14 +171,18 @@ fn normalised_black_call_with_optimal_use_of_codys_functions(x: f64, s: f64) -> 
 
 #[inline(always)]
 fn normalised_vega(x: f64, s: f64) -> f64 {
-    let ax = x.abs();
-    if ax <= 0.0 {
-        FRAC_SQRT_TWO_PI * (-0.125 * s.powi(2)).exp()
-    } else if s <= 0.0 || s <= ax * SQRT_MIN_POSITIVE {
-        0.0
-    } else {
-        FRAC_SQRT_TWO_PI * (-0.5 * ((x / s).powi(2) + (0.5 * s).powi(2))).exp()
-    }
+    assert!(s > 0.0, "s must be positive, got: {}", s);
+    let h = x / s;
+    let t = 0.5 * s;
+    SQRT_TWO_PI.recip() * (-0.5 * (h *  h + t * t)).exp()
+}
+
+#[inline(always)]
+fn inv_normalised_vega(x: f64, s: f64) -> f64 {
+    assert!(s > 0.0, "s must be positive, got: {}", s);
+    let h = x / s;
+    let t = 0.5 * s;
+    SQRT_TWO_PI * (0.5 * (h *  h + t * t)).exp()
 }
 
 #[inline(always)]
@@ -194,12 +199,8 @@ fn ln_normalised_vega(x: f64, s: f64) -> f64 {
 
 #[inline(always)]
 fn normalised_black_call(x: f64, s: f64) -> f64 {
-    if x.is_sign_positive() {
-        return normalised_intrinsic(x) + normalised_black_call(-x, s);
-    }
-    if s <= x.abs() * DENORMALISATION_CUTOFF {
-        return normalised_intrinsic(x);
-    }
+    assert!(x <= 0.0, "x: {}", x);
+    assert!(s > 0.0, "s: {}", s);
     if x < s * ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD && (0.5 * s).powi(2) + x < s * (SMALL_T_EXPANSION_OF_NORMALISED_BLACK_THRESHOLD + ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD) {
         return asymptotic_expansion_of_normalised_black_call_over_vega(x / s, 0.5 * s) * normalised_vega(x, s);
     }
@@ -231,16 +232,23 @@ fn normalised_black_call_over_vega_and_ln_vega(x: f64, s: f64) -> (f64, f64) {
 
 #[inline(always)]
 fn normalised_black(x: f64, s: f64, theta: bool) -> f64 {
-    normalised_black_call(if !theta { -x } else { x }, s)
+    if 0.0 == x {
+        erf_cody((0.5 / SQRT_2) * s)
+    }else {
+        normalised_black_call(if !theta { -x } else { x }, s)
+    }
 }
 
 #[inline(always)]
 pub(crate) fn black(f: f64, k: f64, sigma: f64, t: f64, q: bool) -> f64 {
-    let intrinsic = if !q { k - f } else { f - k }.max(0f64).abs();
-    if (q && ((f - k).is_sign_positive())) || (!q && ((f - k).is_sign_negative())) {
-        return intrinsic + black(f, k, sigma, t, !q);
+    let s = sigma * t.sqrt();
+    if k == f{
+        f * erf_cody((0.5 / SQRT_2) * s)
+    }else{
+        (if q { f- k } else {k - f}).max(0.0) + (if s <= 0.0 {0.0} else {
+            f.sqrt() * k.sqrt() * normalised_black_call((f / k).ln().abs().neg(), s)
+        })
     }
-    intrinsic.max(((f * k).sqrt()) * normalised_black((f / k).ln(), sigma * t.sqrt(), q))
 }
 
 #[inline(always)]
@@ -297,24 +305,21 @@ fn inverse_f_upper_map(f: f64) -> f64 {
     -2.0 * inverse_norm_cdf(f)
 }
 
-#[inline(always)]
-fn take_step(x_min: f64, x_max: f64, x: f64, dx: f64) -> (f64, f64) {
-    let new_x = (x + dx).clamp(x_min, x_max);
-    (new_x, new_x - x)
+fn one_minus_erfcx(x: f64) -> f64 {
+    if x < -1.0 / 5.0 || x > 1.0 / 3.0 {
+        1.0 - erfcx_cody(x)
+    } else {
+        x * (std::f64::consts::FRAC_2_SQRT_PI - x * (1.0000000000000002 + x * (1.1514967181784756 + x * (5.7689001208873741E-1 + x * (1.4069188744609651E-1 + 1.4069285713634565E-2 * x)))) / (1.0 + x * (1.9037494962421563 + x * (1.5089908593742723 + x * (6.2486081658640257E-1 + x * (1.358008134514386E-1 + 1.2463320728346347E-2 * x))))))
+    }
 }
 
 #[inline(always)]
-fn unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(
-    mut beta: f64, mut x: f64, q: bool, n: u8,
+fn lets_be_rational(
+    beta: f64, x: f64, n: u8,
 ) -> f64 {
-    if (q && (x.is_sign_positive())) || (!q && (x.is_sign_negative())) {
-        beta = (beta - normalised_intrinsic(x)).max(0.).abs();
-    }
-    if !q {
-        x = -x;
-    }
-    if beta <= 0. || beta < DENORMALISATION_CUTOFF {
-        return 0.0;
+    assert!(x  <= 0.0, "x must be non-positive, but got {}", x);
+    if beta <= 0. {
+        return if beta == 0.0 {0.0} else {VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_BELOW_INTRINSIC};
     }
     let b_max = (0.5 * x).exp();
     if beta >= b_max {
@@ -324,24 +329,27 @@ fn unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_wit
     let mut f = f64::MIN;
     let mut s;
     let mut ds = f64::MIN;
-    let mut s_left = f64::MIN_POSITIVE;
-    let mut s_right = f64::MAX;
-    let s_c = SQRT_2 * x.abs().sqrt();
-    let b_c = normalised_black_call(x, s_c);
-    let v_c = normalised_vega(x, s_c);
+
+    let sqrt_ax = x.neg().sqrt();
+    let s_c = SQRT_2 * sqrt_ax;
+    let ome = one_minus_erfcx(sqrt_ax);
+    let b_c = 0.5 * b_max * ome;
     if beta < b_c {
-        let s1 = s_c - b_c / v_c;
-        let b1 = normalised_black_call(x, s1);
-        if beta < b1 {
-            let (f_lower_map_l, d_f_lower_map_l_d_beta, d2_f_lower_map_l_d_beta2) = compute_f_lower_map_and_first_two_derivatives(x, s1);
-            let r2 = convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side(0.0, b1, 0.0, f_lower_map_l, 1.0, d_f_lower_map_l_d_beta, d2_f_lower_map_l_d_beta2, true);
-            f = rational_cubic_interpolation(beta, 0.0, b1, 0.0, f_lower_map_l, 1.0, d_f_lower_map_l_d_beta, r2);
-            if f <= 0.0 {
-                let t = beta / b1;
-                f = (f_lower_map_l * t + b1 * (1.0 - t)) * t;
+        assert!(x < 0.0, "x must be negative, but got {}", x);
+        let s_l = s_c - SQRT_PI_OVER_TWO * ome;
+        debug_assert!(s_l > 0.0, "s_l must be positive, but got {}", s_l);
+        let b_l = normalised_black_call(x, s_l);
+        // let b_l = b_l_over_b_max(s_c) * b_max;
+        if beta < b_l {
+            let (f_lower_map_l, d_f_lower_map_l_d_beta, d2_f_lower_map_l_d_beta2) = compute_f_lower_map_and_first_two_derivatives(x, s_l);
+            let r2 = convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side(0.0, b_l, 0.0, f_lower_map_l, 1.0, d_f_lower_map_l_d_beta, d2_f_lower_map_l_d_beta2, true);
+            f = rational_cubic_interpolation(beta, 0.0, b_l, 0.0, f_lower_map_l, 1.0, d_f_lower_map_l_d_beta, r2);
+            if !(f > 0.0) {
+                let t = beta / b_l;
+                f = (f_lower_map_l * t + b_l * (1.0 - t)) * t;
             }
             s = inverse_f_lower_map(x, f);
-            s_right = s1;
+            assert!(s > 0.0, "s must be positive, but got {}", s);
             let ln_beta = beta.ln();
 
             ds = 1.0_f64;
@@ -365,27 +373,30 @@ fn unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_wit
                 } else {
                     nu * householder3_factor(nu, h2, h3)
                 };
-                (s, ds) = take_step(s_left, s_right, s, ds);
+                s += ds;
+                assert!(s > 0.0, "s must be positive, but got {}", s);
                 iterations += 1;
             }
             return s;
         } else {
-            let v1_recip = normalised_vega(x, s1).recip();
-            let r_im = convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side(b1, b_c, s1, s_c, v1_recip, v_c.recip(), 0.0, false);
-            s = rational_cubic_interpolation(beta, b1, b_c, s1, s_c, v1_recip, v_c.recip(), r_im);
-            s_left = s1;
-            s_right = s_c;
+            let inv_v_c = SQRT_TWO_PI / b_max;
+            let inv_v_l = inv_normalised_vega(x, s_l);
+            let r_im = convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side(b_l, b_c, s_l, s_c, inv_v_l, inv_v_c, 0.0, false);
+            s = rational_cubic_interpolation(beta, b_l, b_c, s_l, s_c, inv_v_l, inv_v_c, r_im);
+            assert!(s > 0.0, "s must be positive, but got {}", s);
         }
     } else {
-        let s_u = if v_c.is_sign_positive() { s_c + (b_max - b_c) / v_c } else { s_c };
+        let s_u = s_c + SQRT_PI_OVER_TWO * (2.0 - ome);
+        assert!(s_u > 0.0, "s_u must be positive, but got {}", s_u);
         let b_u = normalised_black_call(x, s_u);
         if beta <= b_u {
-            let v_u = normalised_vega(x, s_u);
+            let inv_v_c = SQRT_TWO_PI / b_max;
+
+            let inv_v_u = inv_normalised_vega(x, s_u);
             let r_u_m = convex_rational_cubic_control_parameter_to_fit_second_derivative_at_left_side(
-                b_c, b_u, s_c, s_u, v_c.recip(), v_u.recip(), 0.0, false);
-            s = rational_cubic_interpolation(beta, b_c, b_u, s_c, s_u, v_c.recip(), v_u.recip(), r_u_m);
-            s_left = s_c;
-            s_right = s_u;
+                b_c, b_u, s_c, s_u, inv_v_c, inv_v_u, 0.0, false);
+            s = rational_cubic_interpolation(beta, b_c, b_u, s_c, s_u, inv_v_c, inv_v_u, r_u_m);
+            assert!(s > 0.0, "s must be positive, but got {}", s);
         } else {
             let (f_upper_map_h, d_f_upper_map_h_d_beta, d2_f_upper_map_h_d_beta2) = compute_f_upper_map_and_first_two_derivatives(x, s_u);
 
@@ -393,12 +404,12 @@ fn unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_wit
                 let r_uu = convex_rational_cubic_control_parameter_to_fit_second_derivative_at_left_side(b_u, b_max, f_upper_map_h, 0.0, d_f_upper_map_h_d_beta, -0.5, d2_f_upper_map_h_d_beta2, true);
                 f = rational_cubic_interpolation(beta, b_u, b_max, f_upper_map_h, 0.0, d_f_upper_map_h_d_beta, -0.5, r_uu);
             }
-            if !f.is_sign_positive() {
+            if f <= 0.0 {
                 let h = b_max - b_u;
                 let t = (beta - b_u) / h;
                 f = (f_upper_map_h * (1.0 - t) + 0.5 * h * t) * (1.0 - t);
             }
-            (s, s_left) = (inverse_f_upper_map(f), s_u);
+            s = inverse_f_upper_map(f);
             if beta > 0.5 * b_max {
                 let beta_bar = b_max - beta;
                 while iterations < n && ds.abs() > f64::EPSILON * s {
@@ -419,7 +430,7 @@ fn unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_wit
                     } else {
                         nu * householder3_factor(nu, h2, h3)
                     };
-                    (s, ds) = take_step(s_left, s_right, s, ds);
+                    s += ds;
                     iterations += 1;
                 }
                 return s;
@@ -439,48 +450,18 @@ fn unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_wit
         let h3 = h2 * h2 - 3.0 * (h / s).powi(2) - 0.25;
         ds = nu * householder3_factor(nu, h2, h3);
         // Never leave the branch (or bracket)
-        (s, ds) = take_step(s_left, s_right, s, ds);
+        s += ds;
     }
     s
 }
 
 #[inline(always)]
-fn implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(
-    mut price: f64,
-    f: f64,
-    k: f64,
-    t: f64,
-    mut q: bool,
-    n: u8,
-) -> f64 {
-    let intrinsic = (if !q { k - f } else { f - k }).max(0.0).abs();
-    if price < intrinsic {
-        return
-            VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_BELOW_INTRINSIC;
-    }
-    let max_price = if !q { k } else { f };
-    if price >= max_price {
-        return
-            VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_ABOVE_MAXIMUM;
-    }
-    let x = (f / k).ln();
-    // Map in-the-money to out-of-the-money
-    if (q && (x.is_sign_positive())) || (!q && (x.is_sign_negative())) {
-        price = (price - intrinsic).max(0.0).abs();
-        q = !q;
-    }
-
-    unchecked_normalised_implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(
-        price / ((f * k).sqrt()),
-        x,
-        q,
-        n,
-    ) / t.sqrt()
-}
-
-#[inline(always)]
 pub(crate) fn implied_black_volatility(price: f64, f: f64, k: f64, t: f64, q: bool) -> f64 {
-    implied_volatility_from_a_transformed_rational_guess_with_limited_iterations(price, f, k, t, q, 2)
+    if price >= if q { f } else { k } {
+        return VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_ABOVE_MAXIMUM;
+    }
+    let mu = if q { f - k } else { k - f };
+    lets_be_rational(if mu > 0.0 {price - mu} else {price} / (f.sqrt() * k.sqrt()), (f / k).ln().abs().neg(), 2) / t.sqrt()
 }
 
 
@@ -499,7 +480,7 @@ mod tests {
             let q = true;
             let sigma = implied_black_volatility(price, f, k, t, q);
             let reprice = black(f, k, sigma, t, q);
-            assert!((price - reprice).abs() < f64::EPSILON * 100.0);
+            assert!((price - reprice).abs() < f64::EPSILON * 100.0, "{}", (price - reprice).abs() / 100.0);
         }
     }
 

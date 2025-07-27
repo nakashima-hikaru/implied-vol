@@ -163,7 +163,7 @@ pub(crate) fn erfc_cody(x: f64) -> f64 {
 
 #[inline(always)]
 fn erfcx_cody_above_threshold(y: f64) -> f64 {
-    assert!(y > THRESHOLD, "This formulation also permits y == NaN.");
+    assert!(y > THRESHOLD, "{} exceeds threshold", y);
     if y <= 4.0 {
         cd(y)
     } else {
