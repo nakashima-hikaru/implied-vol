@@ -1,6 +1,6 @@
+use crate::MulAdd;
 use std::f64::consts::FRAC_1_SQRT_2;
 use std::ops::Neg;
-use crate::MulAdd;
 
 const A: [f64; 5] = [
     3.1611237438705656,
@@ -86,15 +86,17 @@ fn cd(y: f64) -> f64 {
 
 #[inline(always)]
 fn pq(z: f64) -> f64 {
-z * (P[5].mul_add2(z, P[0])
-    .mul_add2(z, P[1])
-    .mul_add2(z, P[2])
-    .mul_add2(z, P[3])
-    .mul_add2(z, P[4]))
-    / ((z + Q[0]).mul_add2(z, Q[1])
-    .mul_add2(z, Q[2])
-    .mul_add2(z, Q[3])
-    .mul_add2(z, Q[4]))
+    z * (P[5]
+        .mul_add2(z, P[0])
+        .mul_add2(z, P[1])
+        .mul_add2(z, P[2])
+        .mul_add2(z, P[3])
+        .mul_add2(z, P[4]))
+        / ((z + Q[0])
+            .mul_add2(z, Q[1])
+            .mul_add2(z, Q[2])
+            .mul_add2(z, Q[3])
+            .mul_add2(z, Q[4]))
 }
 
 #[inline(always)]
@@ -117,7 +119,7 @@ const XBIG: f64 = 26.543;
 pub(crate) fn erfc_cody(x: f64) -> f64 {
     let y = x.abs();
     if y <= THRESHOLD {
-        return ab(y.powi(2)).neg().mul_add2(x, 1.0);
+        return ab(y * y).neg().mul_add2(x, 1.0);
     }
     let erfc_abs_x = if y >= XBIG {
         0.0
@@ -125,7 +127,7 @@ pub(crate) fn erfc_cody(x: f64) -> f64 {
         (if y <= 4.0 {
             cd(y)
         } else {
-            (FRAC_1_SQRT_2 - pq(y.powi(2).recip())) / y
+            (FRAC_1_SQRT_2 - pq((y * y).recip())) / y
         }) * smoothened_exponential_of_negative_square(y)
     };
 
@@ -142,7 +144,7 @@ fn erfcx_cody_above_threshold(y: f64) -> f64 {
     if y <= 4.0 {
         cd(y)
     } else {
-        (FRAC_1_SQRT_2 - pq(y.powi(2).recip())) / y
+        (FRAC_1_SQRT_2 - pq((y * y).recip())) / y
     }
 }
 
@@ -150,7 +152,7 @@ fn erfcx_cody_above_threshold(y: f64) -> f64 {
 pub(crate) fn erfcx_cody(x: f64) -> f64 {
     let y = x.abs();
     if y <= THRESHOLD {
-        let z = y.powi(2);
+        let z = y * y;
         return z.exp() * (ab(z).neg().mul_add2(x, 1.0));
     }
     if x < XNEG {
@@ -166,7 +168,7 @@ pub(crate) fn erfcx_cody(x: f64) -> f64 {
 
 #[cfg(test)]
 mod tests {
-    use crate::erf_cody::{erfc_cody, erfcx_cody, THRESHOLD, XBIG, XNEG};
+    use crate::erf_cody::{THRESHOLD, XBIG, XNEG, erfc_cody, erfcx_cody};
 
     #[test]
     fn calerf_1() {
