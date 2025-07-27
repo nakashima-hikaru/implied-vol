@@ -115,7 +115,7 @@ const THRESHOLD: f64 = 0.46875;
 const XNEG: f64 = -26.628;
 const XBIG: f64 = 26.543;
 
-const ONE_OVER_SQRT_PI: f64 = 0.56418958354775628695;
+const ONE_OVER_SQRT_PI: f64 = 0.564_189_583_547_756_3;
 
 pub(crate) fn erf_cody(x: f64) -> f64 {
     let y = x.abs();
