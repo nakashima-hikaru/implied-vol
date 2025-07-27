@@ -102,6 +102,41 @@ fn asymptotic_expansion_of_normalised_black_call_over_vega(h: f64, t: f64) -> f6
     (t / r) * omega
 }
 
+#[inline]
+fn yprime_tail_expansion_rational_function_part(w: f64) -> f64 {
+    w * (-2.9999999999994663866 + w * (-1.7556263323542206288E2 + w * (-3.4735035445495633334E3 + w * (-2.7805745693864308643E4 + w * (-8.3836021460741980839E4 - 6.6818249032616849037E4 * w))))) / (1.0 + w * (6.3520877744831739102E1 + w * (1.4404389037604337538E3 + w * (1.4562545638507033944E4 + w * (6.6886794165651675684E4 + w * (1.2569970380923908488E5 + 6.9286518679803751694E4 * w))))))
+}
+
+fn yprime(h: f64) -> f64 {
+    // We copied the thresholds of -0.46875 and -4 from Cody.
+    if h < -4.0 {
+        // Nonlinear-Remez optimized minimax rational function of order (5,6) for g(w) := (Y'(h)/h²-1)/h² with w:=1/h².
+        // The relative accuracy of Y'(h) ≈ w·(1+w·g(w)) is better than 9.8E-17 (in perfect arithmetic) on h in [-∞,-4] (i.e., on w in [0,1/16]).
+        let w = 1.0 / (h * h);
+        w * (1.0 + yprime_tail_expansion_rational_function_part(w))
+    }
+    else if h <= -0.46875 {
+        // Remez-optimized minimax rational function of order (7,7) of relative accuracy better than 1.6E-16 (in perfect arithmetic) on h in [-4,-0.46875].
+        (1.0000000000594317229 - h * (6.1911449879694112749E-1 - h * (2.2180844736576013957E-1 - h * (4.5650900351352987865E-2 - h * (5.545521007735379052E-3 - h * (3.0717392274913902347E-4 - h * (4.2766597835908713583E-8 + 8.4592436406580605619E-10 * h))))))) / (1.0 - h * (1.8724286369589162071 - h * (1.5685497236077651429 - h * (7.6576489836589035112E-1 - h * (2.3677701403094640361E-1 - h * (4.6762548903194957675E-2 - h * (5.5290453576936595892E-3 - 3.0822020417927147113E-4 * h)))))))
+    }else {
+        1.0 + h * SQRT_PI_OVER_TWO * erfcx_cody(-FRAC_1_SQRT_2 * h)
+    }
+}
+
+fn small_t_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
+    let a = yprime(h);
+    let h2 = h * h;
+    let t2 = t * t;
+    fn b0(a: f64) -> f64 { 2.0 * a}
+    fn b1(a: f64, h2: f64) -> f64 {(-1.0+a*(3.0+h2))/3.0}
+    fn b2(a: f64, h2: f64) -> f64 {(-7.0+h2*(10.0+h2)+a*(15.0+h2*(10.0+h2)))/60.0}
+    fn b3(a: f64, h2: f64) -> f64 {(-57.0+(-18.0-h2)*h2+a*(105.0+h2*(105.0+h2*(21.0+h2))))/2520.0}
+    fn b4(a: f64, h2: f64) -> f64 {(-561.0+h2*(-285.0+(-33.0-h2)*h2)+a*(945.0+h2*(1260.0+h2*(378.0+h2*(36.0+h2)))))/181440.0}
+    fn b5(a: f64, h2: f64) -> f64 {(-6555.0+h2*(-4680.0+h2*(-840.0+(-52.0-h2)*h2))+a*(10395.0+h2*(17325.0+h2*(6930.0+h2*(990.0+h2*(55.0+h2))))))/19958400.0}
+    fn b6(a: f64, h2: f64) -> f64 {(-89055.0+h2*(-82845.0+h2*(-20370.0+h2*(-1926.0+(-75.0-h2)*h2)))+a*(135135.0+h2*(270270.0+h2*(135135.0+h2*(25740.0+h2*(2145.0+h2*(78.0+h2)))))))/3113510400.0}
+    t * (b0(a) + t2 * (b1(a, h2) + t2 * (b2(a, h2) + t2 * (b3(a, h2) + t2 * (b4(a, h2) + t2 * (b5(a, h2) + b6(a, h2) * t2))))))
+}
+
 #[inline(always)]
 fn small_t_expansion_of_normalised_black_call_over_vega(h: f64, t: f64) -> f64 {
     let w = t.powi(2);

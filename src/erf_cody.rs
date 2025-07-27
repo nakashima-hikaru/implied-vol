@@ -115,6 +115,29 @@ const THRESHOLD: f64 = 0.46875;
 const XNEG: f64 = -26.628;
 const XBIG: f64 = 26.543;
 
+const ONE_OVER_SQRT_PI: f64 = 0.56418958354775628695;
+
+pub(crate) fn erf_cody(x: f64) -> f64 {
+    let y = x.abs();
+    if y <= THRESHOLD {
+        //       |x| <= 0.46875
+        return x * ab(y * y);
+    }
+    // Compute erfc(|x|)
+    let erfc_abs_x = if y >= XBIG {
+        0.0 // when |x| ≥ 26.543
+    } else if y <= 4.0 {
+        cd(y) // when 0.46875 < |x| <= 4.0
+    } else {
+        (ONE_OVER_SQRT_PI - pq((y * y).recip())) / y // when 4.0 < |x| < 26.543
+    } * smoothened_exponential_of_negative_square(y);
+    if x < 0.0 {
+        erfc_abs_x - 1.0
+    } else {
+        1.0 - erfc_abs_x
+    }
+}
+
 #[inline(always)]
 pub(crate) fn erfc_cody(x: f64) -> f64 {
     let y = x.abs();
