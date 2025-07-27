@@ -198,7 +198,7 @@ fn ln_normalised_vega(x: f64, s: f64) -> f64 {
 }
 
 #[inline(always)]
-fn normalised_black_call(x: f64, s: f64) -> f64 {
+fn normalised_black(x: f64, s: f64) -> f64 {
     assert!(x <= 0.0, "x: {}", x);
     assert!(s > 0.0, "s: {}", s);
     if x < s * ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD && (0.5 * s).powi(2) + x < s * (SMALL_T_EXPANSION_OF_NORMALISED_BLACK_THRESHOLD + ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD) {
@@ -231,22 +231,13 @@ fn normalised_black_call_over_vega_and_ln_vega(x: f64, s: f64) -> (f64, f64) {
 }
 
 #[inline(always)]
-fn normalised_black(x: f64, s: f64, theta: bool) -> f64 {
-    if 0.0 == x {
-        erf_cody((0.5 / SQRT_2) * s)
-    }else {
-        normalised_black_call(if !theta { -x } else { x }, s)
-    }
-}
-
-#[inline(always)]
 pub(crate) fn black(f: f64, k: f64, sigma: f64, t: f64, q: bool) -> f64 {
     let s = sigma * t.sqrt();
     if k == f{
         f * erf_cody((0.5 / SQRT_2) * s)
     }else{
         (if q { f- k } else {k - f}).max(0.0) + (if s <= 0.0 {0.0} else {
-            f.sqrt() * k.sqrt() * normalised_black_call((f / k).ln().abs().neg(), s)
+            f.sqrt() * k.sqrt() * normalised_black((f / k).ln().abs().neg(), s)
         })
     }
 }
@@ -338,7 +329,7 @@ fn lets_be_rational(
         assert!(x < 0.0, "x must be negative, but got {}", x);
         let s_l = s_c - SQRT_PI_OVER_TWO * ome;
         debug_assert!(s_l > 0.0, "s_l must be positive, but got {}", s_l);
-        let b_l = normalised_black_call(x, s_l);
+        let b_l = normalised_black(x, s_l);
         // let b_l = b_l_over_b_max(s_c) * b_max;
         if beta < b_l {
             let (f_lower_map_l, d_f_lower_map_l_d_beta, d2_f_lower_map_l_d_beta2) = compute_f_lower_map_and_first_two_derivatives(x, s_l);
@@ -388,7 +379,7 @@ fn lets_be_rational(
     } else {
         let s_u = s_c + SQRT_PI_OVER_TWO * (2.0 - ome);
         assert!(s_u > 0.0, "s_u must be positive, but got {}", s_u);
-        let b_u = normalised_black_call(x, s_u);
+        let b_u = normalised_black(x, s_u);
         if beta <= b_u {
             let inv_v_c = SQRT_TWO_PI / b_max;
 
@@ -442,7 +433,7 @@ fn lets_be_rational(
             break;
         }
 
-        let b = normalised_black_call(x, s);
+        let b = normalised_black(x, s);
         let bp = normalised_vega(x, s);
         let nu = (beta - b) / bp;
         let h = x / s;
