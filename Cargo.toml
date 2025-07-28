@@ -1,6 +1,6 @@
 [package]
 name = "implied-vol"
-version = "1.1.0"
+version = "1.2.0"
 authors = ["Hikaru Nakashima <nakashima.alg57@gmail.com>"]
 description = "A pure rust implementation of Peter Jäckel's implied volatility calculation"
 edition = "2024"
@@ -19,7 +19,7 @@ use_original_taylor_expansion = []
 [dependencies]
 
 [dev-dependencies]
-rand = "0.9.1"
+rand = "0.9.2"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
