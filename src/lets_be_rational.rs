@@ -3,7 +3,7 @@ use std::ops::Neg;
 use crate::constants::{HALF_OF_LN_TWO_PI, ONE_OVER_SQRT_THREE, SIXTEENTH_ROOT_DBL_EPSILON, SQRT_DBL_MAX, SQRT_PI_OVER_TWO, SQRT_THREE, SQRT_THREE_OVER_THIRD_ROOT_TWO_PI, SQRT_TWO_OVER_PI, SQRT_TWO_PI, TWO_PI_OVER_SQRT_TWENTY_SEVEN, VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_ABOVE_MAXIMUM, VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_BELOW_INTRINSIC};
 use crate::erf_cody::{erf_cody, erfc_cody, erfcx_cody};
 use crate::MulAdd;
-use crate::normal_distribution::{erfinv, inverse_norm_cdf, norm_cdf, norm_pdf};
+use crate::normal_distribution::{erfinv, inverse_norm_cdf, norm_pdf};
 use crate::rational_cubic::{convex_rational_cubic_control_parameter_to_fit_second_derivative_at_left_side, convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side, rational_cubic_interpolation};
 
 
@@ -305,7 +305,7 @@ fn compute_f_lower_map_and_first_two_derivatives(x: f64, s: f64) -> (f64, f64, f
     let z = ONE_OVER_SQRT_THREE * ax / s;
     let y = z * z;
     let s2 = s * s;
-    let phi_m = norm_cdf(-z);
+    let phi_m = 0.5 * erfc_cody(FRAC_1_SQRT_2 * z);
     let phi = norm_pdf(z);
     let fpp = std::f64::consts::FRAC_PI_6 * y / (s2 * s) * phi_m * (8.0 * SQRT_THREE * s * ax + (3.0 * s2 * (s2 - 8.0) - 8.0 * x * x) * phi_m / phi) * (2.0 * y + 0.25 * s2).exp();
     let (fp, f) = if s.is_subnormal() {
@@ -335,7 +335,7 @@ fn inverse_f_lower_map(x: f64, f: f64) -> f64 {
 
 #[inline(always)]
 fn compute_f_upper_map_and_first_two_derivatives(x: f64, s: f64) -> (f64, f64, f64) {
-    let f = norm_cdf(-0.5 * s);
+    let f = 0.5 * erfc_cody((0.5 / SQRT_2) * s);
     let (fp, fpp) = if x.is_subnormal() {
         (-0.5, 0.0)
     } else {
