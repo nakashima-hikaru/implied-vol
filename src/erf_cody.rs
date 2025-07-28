@@ -182,7 +182,7 @@ pub(crate) fn erfcx_cody(x: f64) -> f64 {
         return f64::MAX;
     }
     let result = erfcx_cody_above_threshold(y);
-    if x.is_sign_negative() {
+    if x < 0.0 {
         let expx2 = smoothened_exponential_of_positive_square(x);
         return (expx2 + expx2) - result;
     }

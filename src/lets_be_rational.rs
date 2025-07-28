@@ -120,26 +120,26 @@ fn y_prime(h: f64) -> f64 {
         // The relative accuracy of Y'(h) ≈ w·(1+w·g(w)) is better than 9.8E-17 (in perfect arithmetic) on h in [-∞,-4] (i.e., on w in [0,1/16]).
         let w = (h * h).recip();
         w * (1.0 + y_prime_tail_expansion_rational_function_part(w))
-    }
-    else if h <= -0.46875 {
+    } else if h <= -0.46875 {
         // Remez-optimized minimax rational function of order (7,7) of relative accuracy better than 1.6E-16 (in perfect arithmetic) on h in [-4,-0.46875].
         (1.0000000000594317229 - h * (6.1911449879694112749E-1 - h * (2.2180844736576013957E-1 - h * (4.5650900351352987865E-2 - h * (5.545521007735379052E-3 - h * (3.0717392274913902347E-4 - h * (4.2766597835908713583E-8 + 8.4592436406580605619E-10 * h))))))) / (1.0 - h * (1.8724286369589162071 - h * (1.5685497236077651429 - h * (7.6576489836589035112E-1 - h * (2.3677701403094640361E-1 - h * (4.6762548903194957675E-2 - h * (5.5290453576936595892E-3 - 3.0822020417927147113E-4 * h)))))))
-    }else {
+    } else {
         1.0 + h * SQRT_PI_OVER_TWO * erfcx_cody(-FRAC_1_SQRT_2 * h)
     }
 }
 
 #[cfg(not(feature = "use_original_taylor_expansion"))]
+#[inline(always)]
 fn small_t_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
     let a = y_prime(h);
     let h2 = h * h;
     let t2 = t * t;
     #[inline(always)]
-    fn b0(a: f64) -> f64 { 2.0 * a}
+    fn b0(a: f64) -> f64 { 2.0 * a }
     #[inline(always)]
     fn b1(a: f64, h2: f64) -> f64 {(-1.0+a*(3.0+h2))/3.0}
     #[inline(always)]
-    fn b2(a: f64, h2: f64) -> f64 {(-7.0+h2*(10.0+h2)+a*(15.0+h2*(10.0+h2)))/60.0}
+    fn b2(a: f64, h2: f64) -> f64 {(-7.0-h2+a*(15.0+h2*(10.0+h2)))/60.0}
     #[inline(always)]
     fn b3(a: f64, h2: f64) -> f64 {(-57.0+(-18.0-h2)*h2+a*(105.0+h2*(105.0+h2*(21.0+h2))))/2520.0}
     #[inline(always)]
@@ -173,12 +173,12 @@ fn normalised_black_call_with_optimal_use_of_codys_functions(x: f64, s: f64) -> 
             if q2 < CODYS_THRESHOLD {
                 0.5 * ((0.5 * x).exp() * erfc_cody(q1) - (-0.5 * x).exp() * erfc_cody(q2))
             } else {
-                0.5 * ((0.5 * x).exp() * erfc_cody(q1) - (-0.5 * (h.powi(2) + t.powi(2))).exp() * erfcx_cody(q2))
+                0.5 * ((0.5 * x).exp() * erfc_cody(q1) - (-0.5 * (h * h + t * t)).exp() * erfcx_cody(q2))
             }
         } else if q2 < CODYS_THRESHOLD {
-            0.5 * ((-0.5 * (h.powi(2) + t.powi(2))).exp() * erfcx_cody(q1) - (-0.5 * x).exp() * erfc_cody(q2))
+            0.5 * ((-0.5 * (h * h + t * t)).exp() * erfcx_cody(q1) - (-0.5 * x).exp() * erfc_cody(q2))
         } else {
-            0.5 * ((-0.5 * (h.powi(2) + t.powi(2))).exp() * (erfcx_cody(q1) - erfcx_cody(q2)))
+            0.5 * ((-0.5 * (h * h + t * t)).exp() * (erfcx_cody(q1) - erfcx_cody(q2)))
         };
     two_b.abs().max(0.0)
 }
@@ -196,19 +196,57 @@ fn inv_normalised_vega(x: f64, s: f64) -> f64 {
     assert!(s > 0.0, "s must be positive, got: {s}");
     let h = x / s;
     let t = 0.5 * s;
-    SQRT_TWO_PI * (0.5 * (h *  h + t * t)).exp()
+    SQRT_TWO_PI * (0.5 * (h * h + t * t)).exp()
 }
 
 #[inline(always)]
 fn ln_normalised_vega(x: f64, s: f64) -> f64 {
     let ax = x.abs();
     if ax <= 0.0 {
-        -HALF_OF_LN_TWO_PI - 0.125 * s.powi(2)
+        -HALF_OF_LN_TWO_PI - 0.125 * s * s
     } else if s <= 0.0 {
         f64::MIN
     } else {
-        -HALF_OF_LN_TWO_PI - 0.5 * ((x / s).powi(2) + 0.25 * s.powi(2))
+        -HALF_OF_LN_TWO_PI - 0.5 * ((x / s).powi(2) + 0.25 * s * s)
     }
+}
+
+#[inline(always)]
+fn b_u_over_b_max(s_c: f64) -> f64{
+    if s_c >= 2.449489742783178098197 {
+        let y = s_c.recip();
+        let g = (-4.6053948172126087243E-2 + y * (1.3751630820772591756 + y * (1.455319886249397753E1 + y * (8.4880892200802385788E1 + y * (2.9836801628056627321E2 + y * (6.1696928351291694236E2 + y * (6.5892809576774076373E2 - 1.2291897122716543832E0 * y))))))) / (1.0 + y * (9.3270349037904060715 + y * (5.4363781465880728853E1 + y * (2.0304204599521774403E2 + y * (5.0796471791232277633E2 + y * (8.6988303136901841628E2 + y * (8.8812383339606771272E2 + 5.2060847522792563067E2 * y)))))));
+        // f = Φ(√(π/2)) + exp(-π//4)/4 · y · ( -√(π/2) + y · g )
+        return 0.8949542972780313623144 + 0.1139845319414990591915 * y * (-1.253314137315500251208 + y * g);
+    }
+    let g = (-6.0630998803348508652E-2 + s_c * (-1.3448643785893710638E-1 + s_c * (-1.4163681164247209788E-1 + s_c * (-8.9763830861375452184E-2 + s_c * (-3.5121337410416895427E-2 + s_c * (-8.1438128785484908289E-3 + s_c * (-8.7339910261568864981E-4 - 3.3867568170011767283E-9 * s_c))))))) / (1.0 + s_c * (2.7220033406555055453 + s_c * (3.6503350360158844006 + s_c * (3.0186389537663895754 + s_c * (1.6527347941968487339 + s_c * (5.9591616493512210562E-1 + s_c * (1.3248016238920728894E-1 + 1.4212067435291777677E-2 * s_c)))))));
+    // f = c₀ + y²·(c₂+y·g)
+    return 0.7899085945560627246288 + (s_c * s_c) * (0.06146168058051474034868 + s_c * g);
+}
+
+#[inline(always)]
+fn b_l_over_b_max(s_c: f64) -> f64{
+    if s_c < 2.6267851073127395 {
+        if s_c < 0.7099295739719539 {
+            // x = -y²/2, y = √|2x| = s_c, output is f(x) = bₗ(x)/bₘₐₓ(x).
+            // For small |x|, i.e., small y, we have f ≈ (exp(-1/π)/4-Φ(-√(π/2))/2)·y² + exp(-1/π)/(3·√(2π))·y³ + O(y⁴).
+            //   c₂ := (exp(-1/π)/4-Φ(-√(π/2))/2) =  0.07560996640296361767172
+            //   c₃ := exp(-1/π)/(3·√(2π))        = -0.09672719281339436290858
+            // Nonlinear-Remez optimized minimax rational function of order (5,4) for g(y) := ((f/y²-c₂)/y-c₃)/y .   f = y²·(c₂+y·(c₃+y·g)) .
+            let g = (8.0741072372882856924E-2 + s_c * (9.8078911786358897272E-2 + s_c * (3.9760631445677058375E-2 + s_c * (5.9716928459589189876E-3 + s_c * (-6.4036399341479799981E-6 + 4.5425102093616062245E-7 * s_c))))) / (1.0 + s_c * (1.8594977672287664353 + s_c * (1.3658801475711790419 + s_c * (4.6132707108655653215E-1 + 6.1254597049831720643E-2 * s_c))));
+            // Branch I. Accuracy better than 7.43E-17 in perfect arithmetic.
+            return (s_c * s_c) * (0.07560996640296361767172 + s_c * (s_c * g - 0.09672719281339436290858));
+        }
+        // x = -y²/2, y = √|2x| = s_c, output is f(x) = bₗ(x)/bₘₐₓ(x). Remez optimized minimax rational function of order (6,6) for g(y) := bᵤ(-y²/2)/bₘₐₓ(-y²/2).
+        // Branch II. Accuracy better than 8.77E-17 in perfect arithmetic.
+        return (1.9795737927598581235E-9 + s_c * (-2.7081288564685588037E-8 + s_c * (7.5610142272549044609E-2 + s_c * (6.917130174466834016E-2 + s_c * (2.9537058950963019803E-2 + s_c * (6.5849252702302307774E-3 + 6.9711400639834715731E-4 * s_c)))))) / (1.0 + s_c * (2.1941448525586579756 + s_c * (2.1297103549995181357 + s_c * (1.1571483187179784072 + s_c * (3.7831622253060456794E-1 + s_c * (7.1714862448829349869E-2 + 6.6361975827861200167E-3 * s_c))))));
+    }
+    if s_c < 7.348469228349534 {
+        // x = -y²/2, y = √|2x| = s_c, output is f(x) = bₗ(x)/bₘₐₓ(x). Remez optimized minimax rational function of order (6,6) for g(y) := bₗ(-y²/2)/bₘₐₓ(-y²/2).
+        // Branch III. Accuracy better than 7.49E-17 in perfect arithmetic.
+        return (-9.3325115354837883291E-5 + s_c * (5.3118033972794648837E-4 + s_c * (7.4114855448345002595E-2 + s_c * (7.4039658186822817454E-2 + s_c * (3.9225177407687604785E-2 + s_c * (1.0022913378254090083E-2 + 1.7012579407246055469E-3 * s_c)))))) / (1.0 + s_c * (2.2217238132228132256 + s_c * (2.3441816707087403282 + s_c * (1.3912323646271141826 + s_c * (5.3231258443501838354E-1 + s_c * (1.1744005919716101572E-1 + 1.6195405895930935811E-2 * s_c))))));
+    }
+    (1.4500072297240603183E-3 + s_c * (-1.5116692485011195757E-3 + s_c * (7.1682178310936334831E-2 + s_c * (3.921610857820463493E-2 + s_c * (2.9342405658628443931E-2 + s_c * (5.1832526171631521426E-3 + 1.6930208078421474854E-3 * s_c)))))) / (1.0 + s_c * (1.6176313502305414664 + s_c * (1.6823159175281531664 + s_c * (8.4878307567372222113E-1 + s_c * (3.7543742137375791321E-1 + s_c * (7.126137099644302999E-2 + 1.6116992546788676159E-2 * s_c))))))
 }
 
 #[inline(always)]
@@ -265,16 +303,16 @@ pub(crate) fn black(f: f64, k: f64, sigma: f64, t: f64, q: bool) -> f64 {
 fn compute_f_lower_map_and_first_two_derivatives(x: f64, s: f64) -> (f64, f64, f64) {
     let ax = x.abs();
     let z = ONE_OVER_SQRT_THREE * ax / s;
-    let y = z.powi(2);
-    let s2 = s.powi(2);
+    let y = z * z;
+    let s2 = s * s;
     let phi_m = norm_cdf(-z);
     let phi = norm_pdf(z);
-    let fpp = std::f64::consts::FRAC_PI_6 * y / (s2 * s) * phi_m * (8.0 * SQRT_THREE * s * ax + (3.0 * s2 * (s2 - 8.0) - 8.0 * x.powi(2)) * phi_m / phi) * (2.0 * y + 0.25 * s2).exp();
+    let fpp = std::f64::consts::FRAC_PI_6 * y / (s2 * s) * phi_m * (8.0 * SQRT_THREE * s * ax + (3.0 * s2 * (s2 - 8.0) - 8.0 * x * x) * phi_m / phi) * (2.0 * y + 0.25 * s2).exp();
     let (fp, f) = if s.is_subnormal() {
         (1.0, 0.0)
     } else {
-        let phi2 = phi_m.powi(2);
-        let fp_val = std::f64::consts::TAU * y * phi2 * (y + 0.125 * s.powi(2)).exp();
+        let phi2 = phi_m * phi_m;
+        let fp_val = std::f64::consts::TAU * y * phi2 * (y + 0.125 * s * s).exp();
         let f_val = if x.is_subnormal() {
             0.0
         } else {
@@ -303,7 +341,7 @@ fn compute_f_upper_map_and_first_two_derivatives(x: f64, s: f64) -> (f64, f64, f
     } else {
         let w = (x / s).powi(2);
         (-0.5 * (0.5 * w).exp(),
-        SQRT_PI_OVER_TWO * ((w + 0.125 * s.powi(2)).exp()) * w / s)
+        SQRT_PI_OVER_TWO * ((w + 0.125 * s * s).exp()) * w / s)
     };
 
     (f, fp, fpp)
@@ -357,8 +395,8 @@ fn lets_be_rational(
         assert!(x < 0.0, "x must be negative, but got {x}");
         let s_l = s_c - SQRT_PI_OVER_TWO * ome;
         debug_assert!(s_l > 0.0, "s_l must be positive, but got {s_l}");
-        let b_l = normalised_black(x, s_l);
-        // let b_l = b_l_over_b_max(s_c) * b_max;
+        // let b_l = normalised_black(x, s_l);
+        let b_l = b_l_over_b_max(s_c) * b_max;
         if beta < b_l {
             let (f_lower_map_l, d_f_lower_map_l_d_beta, d2_f_lower_map_l_d_beta2) = compute_f_lower_map_and_first_two_derivatives(x, s_l);
             let r2 = convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side(0.0, b_l, 0.0, f_lower_map_l, 1.0, d_f_lower_map_l_d_beta, d2_f_lower_map_l_d_beta2, true);
@@ -407,7 +445,7 @@ fn lets_be_rational(
     } else {
         let s_u = s_c + SQRT_PI_OVER_TWO * (2.0 - ome);
         assert!(s_u > 0.0, "s_u must be positive, but got {s_u}");
-        let b_u = normalised_black(x, s_u);
+        let b_u = b_u_over_b_max(s_c) * b_max;
         if beta <= b_u {
             let inv_v_c = SQRT_TWO_PI / b_max;
 
@@ -437,7 +475,7 @@ fn lets_be_rational(
                     let gp = SQRT_TWO_OVER_PI / (erfcx_cody((t + h) * FRAC_1_SQRT_2) + erfcx_cody((t - h) * FRAC_1_SQRT_2));
                     let b_bar = normalised_vega(x, s) / gp;
                     let g = (beta_bar / b_bar).ln();
-                    let x_over_s_square = h.powi(2) / s;
+                    let x_over_s_square = h * h / s;
                     let b_h2 = x_over_s_square - s / 4.0;
                     let c = 3.0 * (h / s).powi(2);
                     let b_h3 = b_h2 * b_h2 - c - 0.25;
@@ -465,7 +503,7 @@ fn lets_be_rational(
         let bp = normalised_vega(x, s);
         let nu = (beta - b) / bp;
         let h = x / s;
-        let h2 = h.powi(2) / s - s / 4.0;
+        let h2 = h * h / s - s / 4.0;
         let h3 = h2 * h2 - 3.0 * (h / s).powi(2) - 0.25;
         ds = nu * householder3_factor(nu, h2, h3);
         // Never leave the branch (or bracket)

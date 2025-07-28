@@ -47,7 +47,7 @@ const U_MAX2: f64 = U_MAX * U_MAX;
 #[inline(always)]
 fn inverse_norm_cdfm_half_for_midrange_probabilities(u: f64) -> f64 {
     assert!(u.abs() <= U_MAX);
-    let s = U_MAX2 - u.powi(2);
+    let s = U_MAX2 - u * u;
     u * (s.mul_add2(
         s.mul_add2(
             s.mul_add2(
@@ -249,6 +249,7 @@ pub(crate) fn inverse_norm_cdf(p: f64) -> f64 {
     }
 }
 
+#[inline(always)]
 pub(crate) fn erfinv(e: f64) -> f64{
     if e.abs() < 2.0 * U_MAX {
         inverse_norm_cdfm_half_for_midrange_probabilities(0.5 * e) * FRAC_1_SQRT_2
