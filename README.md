@@ -27,7 +27,7 @@ Both resources can be accessed at [Peter Jäckel's homepage](http://www.jaeckel.
 ## Performance
 
 Peter Jäckel, the author of the original paper, asserts that "the calculation of a single implied volatility is now down
-to just under 270 nanoseconds" based on his machine's benchmark measurements. By examining the benchmark measurements
+to just under 180 nanoseconds" based on his machine's benchmark measurements. By examining the benchmark measurements
 performed on this crate's [GitHub Actions](https://github.com/nakashima-hikaru/implied-vol/actions), it becomes clear
 that comparable performance is being achieved.
 
@@ -45,6 +45,8 @@ Community contributions are always welcome!
 - `normal-distribution`: Provide functions related to standard normal distribution used in calculation of implied
   volatility
 - `error-function`: Provide functions related to error function used in calculation of implied volatility
+
+- `use_original_taylor_expansion`: An upstream compilation flag.
 
 ## License
 
