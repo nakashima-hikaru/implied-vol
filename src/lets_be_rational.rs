@@ -353,6 +353,7 @@ fn inverse_f_upper_map(f: f64) -> f64 {
     -2.0 * inverse_norm_cdf(f)
 }
 
+#[inline(always)]
 fn one_minus_erfcx(x: f64) -> f64 {
     if !(-1.0 / 5.0..=1.0 / 3.0).contains(&x) {
         1.0 - erfcx_cody(x)
@@ -395,7 +396,6 @@ fn lets_be_rational(
         assert!(x < 0.0, "x must be negative, but got {x}");
         let s_l = s_c - SQRT_PI_OVER_TWO * ome;
         debug_assert!(s_l > 0.0, "s_l must be positive, but got {s_l}");
-        // let b_l = normalised_black(x, s_l);
         let b_l = b_l_over_b_max(s_c) * b_max;
         if beta < b_l {
             let (f_lower_map_l, d_f_lower_map_l_d_beta, d2_f_lower_map_l_d_beta2) = compute_f_lower_map_and_first_two_derivatives(x, s_l);
