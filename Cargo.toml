@@ -10,7 +10,7 @@ keywords = ["finance"]
 categories = ["finance"]
 
 [features]
-default = [ ]
+default = ["use_original_taylor_expansion"]
 error-function = []
 normal-distribution = []
 fma = []

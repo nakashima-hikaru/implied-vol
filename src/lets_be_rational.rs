@@ -401,9 +401,12 @@ fn lets_be_rational(
             let (f_lower_map_l, d_f_lower_map_l_d_beta, d2_f_lower_map_l_d_beta2) = compute_f_lower_map_and_first_two_derivatives(x, s_l);
             let r2 = convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side(0.0, b_l, 0.0, f_lower_map_l, 1.0, d_f_lower_map_l_d_beta, d2_f_lower_map_l_d_beta2, true);
             f = rational_cubic_interpolation(beta, 0.0, b_l, 0.0, f_lower_map_l, 1.0, d_f_lower_map_l_d_beta, r2);
-            if !(f > 0.0) {
-                let t = beta / b_l;
-                f = (f_lower_map_l * t + b_l * (1.0 - t)) * t;
+            match f.partial_cmp(&0.0) {
+                Some(std::cmp::Ordering::Greater) | None => {
+                    let t = beta / b_l;
+                    f = (f_lower_map_l * t + b_l * (1.0 - t)) * t;
+                },
+                _ => {}
             }
             s = inverse_f_lower_map(x, f);
             assert!(s > 0.0, "s must be positive, but got {s}");
