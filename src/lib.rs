@@ -286,7 +286,8 @@ pub fn norm_pdf(x: f64) -> f64 {
 #[cfg(feature = "normal-distribution")]
 #[inline]
 pub fn norm_cdf(x: f64) -> f64 {
-    normal_distribution::norm_cdf(x)
+    use std::f64::consts::FRAC_1_SQRT_2;
+    0.5 * erf_cody::erfc_cody(FRAC_1_SQRT_2 * -x)
 }
 
 #[cfg(feature = "normal-distribution")]
