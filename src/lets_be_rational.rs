@@ -59,7 +59,12 @@ fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
     let r = (h + t) * (h - t);
     let q = (h / r).powi(2);
 
-    let idx = THRESHOLDS.partition_point(|&x| x<=-h - t + TAU);
+    let mut idx = 0;
+    for (i, threshold) in THRESHOLDS.iter().enumerate() {
+        if -h - t + TAU < *threshold {
+            idx = i;
+        }
+    }
     let omega = if idx == 12 {
         return a0(e) + q * (a1(e) + q * (a2(e) + q * (a3(e) + q * a4(e))));
     } else {
