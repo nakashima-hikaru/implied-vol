@@ -399,7 +399,7 @@ fn lets_be_rational(
         let b_l = b_l_over_b_max(s_c) * b_max;
         if beta < b_l {
             let (f_lower_map_l, d_f_lower_map_l_d_beta, d2_f_lower_map_l_d_beta2) = compute_f_lower_map_and_first_two_derivatives(x, s_l);
-            let r2 = convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side(0.0, b_l, 0.0, f_lower_map_l, 1.0, d_f_lower_map_l_d_beta, d2_f_lower_map_l_d_beta2, true);
+            let r2 = convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side::<true>(0.0, b_l, 0.0, f_lower_map_l, 1.0, d_f_lower_map_l_d_beta, d2_f_lower_map_l_d_beta2);
             f = rational_cubic_interpolation(beta, 0.0, b_l, 0.0, f_lower_map_l, 1.0, d_f_lower_map_l_d_beta, r2);
             match f.partial_cmp(&0.0) {
                 Some(std::cmp::Ordering::Greater) | None => {
@@ -441,7 +441,7 @@ fn lets_be_rational(
         } else {
             let inv_v_c = SQRT_TWO_PI / b_max;
             let inv_v_l = inv_normalised_vega(x, s_l);
-            let r_im = convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side(b_l, b_c, s_l, s_c, inv_v_l, inv_v_c, 0.0, false);
+            let r_im = convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side::<false>(b_l, b_c, s_l, s_c, inv_v_l, inv_v_c, 0.0);
             s = rational_cubic_interpolation(beta, b_l, b_c, s_l, s_c, inv_v_l, inv_v_c, r_im);
             assert!(s > 0.0, "s must be positive, but got {s}");
         }
@@ -453,15 +453,15 @@ fn lets_be_rational(
             let inv_v_c = SQRT_TWO_PI / b_max;
 
             let inv_v_u = inv_normalised_vega(x, s_u);
-            let r_u_m = convex_rational_cubic_control_parameter_to_fit_second_derivative_at_left_side(
-                b_c, b_u, s_c, s_u, inv_v_c, inv_v_u, 0.0, false);
+            let r_u_m = convex_rational_cubic_control_parameter_to_fit_second_derivative_at_left_side::<false>(
+                b_c, b_u, s_c, s_u, inv_v_c, inv_v_u, 0.0);
             s = rational_cubic_interpolation(beta, b_c, b_u, s_c, s_u, inv_v_c, inv_v_u, r_u_m);
             assert!(s > 0.0, "s must be positive, but got {s}");
         } else {
             let (f_upper_map_h, d_f_upper_map_h_d_beta, d2_f_upper_map_h_d_beta2) = compute_f_upper_map_and_first_two_derivatives(x, s_u);
 
             if d2_f_upper_map_h_d_beta2 > -SQRT_DBL_MAX && d2_f_upper_map_h_d_beta2 < SQRT_DBL_MAX {
-                let r_uu = convex_rational_cubic_control_parameter_to_fit_second_derivative_at_left_side(b_u, b_max, f_upper_map_h, 0.0, d_f_upper_map_h_d_beta, -0.5, d2_f_upper_map_h_d_beta2, true);
+                let r_uu = convex_rational_cubic_control_parameter_to_fit_second_derivative_at_left_side::<true>(b_u, b_max, f_upper_map_h, 0.0, d_f_upper_map_h_d_beta, -0.5, d2_f_upper_map_h_d_beta2);
                 f = rational_cubic_interpolation(beta, b_u, b_max, f_upper_map_h, 0.0, d_f_upper_map_h_d_beta, -0.5, r_uu);
             }
             if f <= 0.0 {
