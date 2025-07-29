@@ -64,8 +64,8 @@ fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
     let idx = THRESHOLDS
         .iter()
         .position(|&threshold| target < threshold)
-        .unwrap_or(12);
-    let omega = if idx == 12 {
+        .unwrap_or(THRESHOLDS.len());
+    let omega = if idx == THRESHOLDS.len() {
         return a0(e) + q * (a1(e) + q * (a2(e) + q * (a3(e) + q * a4(e))));
     } else {
         let mut omega = 0.0;
