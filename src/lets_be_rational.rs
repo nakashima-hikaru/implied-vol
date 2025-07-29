@@ -60,8 +60,9 @@ fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
     let q = (h / r).powi(2);
 
     let mut idx = 0;
+    let target = -h - t + TAU;
     for (i, threshold) in THRESHOLDS.iter().enumerate() {
-        if -h - t + TAU < *threshold {
+        if target < *threshold {
             idx = i;
         }
     }
