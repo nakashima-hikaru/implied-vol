@@ -13,7 +13,6 @@ fn householder3_factor(v: f64, h2: f64, h3: f64) -> f64 { (1.0 + 0.5 * h2 * v) /
 #[inline(always)]
 fn householder4_factor(v: f64, h2: f64, h3: f64, h4: f64) -> f64 { (1.0 + v * (h2 + v * h3 / 6.0)) / (1.0 + v * (1.5 * h2 + v * (h2 * h2 / 4.0 + h3 / 3.0 + v * h4 / 24.0))) }
 
-const ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD: f64 = -10.0;
 const TAU: f64 = 2.0 * SIXTEENTH_ROOT_DBL_EPSILON;
 
 #[inline(always)]
@@ -54,16 +53,14 @@ fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
     const fn a16(e: f64) -> f64 {1.266_531_974_152_57E19+e*(2.093_999_530_598_916E21+e*(9.108_897_958_105_285E22+e*(1.639_601_632_458_951_2E24+e*(1.480_195_918_192_108_6E25+e*(7.427_892_244_018_582E25+e*(2.199_798_856_882_426E26+e*(3.980_588_407_692_009_4E26+e*(4.478_161_958_653_511E26+e*(3.142_569_795_546_323E26+e*(1.361_780_244_736_74E26+e*(3.552_470_203_661_060_7E25+e*(5.328_705_305_491_592E24+e*(4.250_819_047_115_799E23+e*(1.570_499_647_949_187E22+e*(2.026_451_158_644_112E20+3.8379756792502125E17*e)))))))))))))))}
     const THRESHOLDS: [f64; 12] = [12.347, 12.958, 13.729, 14.718, 16.016, 17.769, 20.221, 23.816, 29.419, 38.93, 57.171, 99.347];
 
-    assert!((h < -ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD.abs()) && (h + t < -(TAU + ASYMPTOTIC_EXPANSION_ACCURACY_THRESHOLD).abs()));
+    assert!(h < ETA.abs().neg() && h < TAU + 0.5 - h + ETA);
     let e = (t / h).powi(2);
     let r = (h + t) * (h - t);
     let q = (h / r).powi(2);
 
-
-    let target = -h - t + TAU;
     let idx = THRESHOLDS
         .iter()
-        .position(|&threshold| target < threshold)
+        .position(|&threshold| -h - t + TAU + 0.5 < threshold)
         .unwrap_or(THRESHOLDS.len());
     let omega = if idx == THRESHOLDS.len() {
         return a0(e) + q * (a1(e) + q * (a2(e) + q * (a3(e) + q * a4(e))));
@@ -167,25 +164,25 @@ fn small_t_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
 }
 
 #[inline(always)]
-fn normalised_black_call_with_optimal_use_of_codys_functions(x: f64, s: f64) -> f64 {
+fn normalised_black_with_optimal_use_of_codys_functions(x: f64, s: f64) -> f64 {
     const CODYS_THRESHOLD: f64 = 0.46875;
     let h = x / s;
     let t = 0.5 * s;
     let q1 = -FRAC_1_SQRT_2 * (h + t);
     let q2 = -FRAC_1_SQRT_2 * (h - t);
-    let two_b: f64 =
+    let two_b =
         if q1 < CODYS_THRESHOLD {
             if q2 < CODYS_THRESHOLD {
-                0.5 * ((0.5 * x).exp() * erfc_cody(q1) - (-0.5 * x).exp() * erfc_cody(q2))
+                (0.5 * x).exp() * erfc_cody(q1) - (-0.5 * x).exp() * erfc_cody(q2)
             } else {
-                0.5 * ((0.5 * x).exp() * erfc_cody(q1) - (-0.5 * (h * h + t * t)).exp() * erfcx_cody(q2))
+                (0.5 * x).exp() * erfc_cody(q1) - (-0.5 * (h * h + t * t)).exp() * erfcx_cody(q2)
             }
         } else if q2 < CODYS_THRESHOLD {
-            0.5 * ((-0.5 * (h * h + t * t)).exp() * erfcx_cody(q1) - (-0.5 * x).exp() * erfc_cody(q2))
+            (-0.5 * (h * h + t * t)).exp() * erfcx_cody(q1) - (-0.5 * x).exp() * erfc_cody(q2)
         } else {
-            0.5 * ((-0.5 * (h * h + t * t)).exp() * (erfcx_cody(q1) - erfcx_cody(q2)))
+            (-0.5 * (h * h + t * t)).exp() * (erfcx_cody(q1) - erfcx_cody(q2))
         };
-    two_b.abs().max(0.0)
+    (0.5 * two_b).max(0.0)
 }
 
 #[inline(always)]
@@ -193,7 +190,7 @@ fn normalised_vega(x: f64, s: f64) -> f64 {
     assert!(s > 0.0, "s must be positive, got: {s}");
     let h = x / s;
     let t = 0.5 * s;
-    SQRT_TWO_PI.recip() * (-0.5 * (h *  h + t * t)).exp()
+    SQRT_TWO_PI.recip() * (-0.5 * (h * h + t * t)).exp()
 }
 
 #[inline(always)]
@@ -221,37 +218,25 @@ fn b_u_over_b_max(s_c: f64) -> f64{
     if s_c >= 2.449_489_742_783_178 {
         let y = s_c.recip();
         let g = (-4.605_394_817_212_609E-2 + y * (1.375_163_082_077_259_1 + y * (1.455_319_886_249_397_7E1 + y * (8.488_089_220_080_239E1 + y * (2.983_680_162_805_663E2 + y * (6.169_692_835_129_17E2 + y * (6.589_280_957_677_407E2 - 1.229_189_712_271_654_4 * y))))))) / (1.0 + y * (9.327_034_903_790_405 + y * (5.436_378_146_588_073E1 + y * (2.030_420_459_952_177_3E2 + y * (5.079_647_179_123_228E2 + y * (8.698_830_313_690_185E2 + y * (8.881_238_333_960_678E2 + 5.206_084_752_279_256E2 * y)))))));
-        // f = Φ(√(π/2)) + exp(-π//4)/4 · y · ( -√(π/2) + y · g )
-        return 0.894_954_297_278_031_3 + 0.113_984_531_941_499_06 * y * (-1.253_314_137_315_500_3 + y * g);
+        0.894_954_297_278_031_3 + 0.113_984_531_941_499_06 * y * (-1.253_314_137_315_500_3 + y * g)
+    } else {
+        let g = (-6.063_099_880_334_851E-2 + s_c * (-1.344_864_378_589_371E-1 + s_c * (-1.416_368_116_424_721E-1 + s_c * (-8.976_383_086_137_545E-2 + s_c * (-3.512_133_741_041_69E-2 + s_c * (-8.143_812_878_548_491E-3 + s_c * (-8.733_991_026_156_887E-4 - 3.386_756_817_001_176_5E-9 * s_c))))))) / (1.0 + s_c * (2.722_003_340_655_505_5 + s_c * (3.650_335_036_015_884_6 + s_c * (3.018_638_953_766_389_6 + s_c * (1.652_734_794_196_848_7 + s_c * (5.959_161_649_351_221E-1 + s_c * (1.324_801_623_892_073E-1 + 1.421_206_743_529_177_8E-2 * s_c)))))));
+        0.789_908_594_556_062_8 + (s_c * s_c) * (0.061_461_680_580_514_74 + s_c * g)
     }
-    let g = (-6.063_099_880_334_851E-2 + s_c * (-1.344_864_378_589_371E-1 + s_c * (-1.416_368_116_424_721E-1 + s_c * (-8.976_383_086_137_545E-2 + s_c * (-3.512_133_741_041_69E-2 + s_c * (-8.143_812_878_548_491E-3 + s_c * (-8.733_991_026_156_887E-4 - 3.386_756_817_001_176_5E-9 * s_c))))))) / (1.0 + s_c * (2.722_003_340_655_505_5 + s_c * (3.650_335_036_015_884_6 + s_c * (3.018_638_953_766_389_6 + s_c * (1.652_734_794_196_848_7 + s_c * (5.959_161_649_351_221E-1 + s_c * (1.324_801_623_892_073E-1 + 1.421_206_743_529_177_8E-2 * s_c)))))));
-    // f = c₀ + y²·(c₂+y·g)
-    0.789_908_594_556_062_8 + (s_c * s_c) * (0.061_461_680_580_514_74 + s_c * g)
 }
 
 #[inline(always)]
 fn b_l_over_b_max(s_c: f64) -> f64{
-    if s_c < 2.6267851073127395 {
-        if s_c < 0.7099295739719539 {
-            // x = -y²/2, y = √|2x| = s_c, output is f(x) = bₗ(x)/bₘₐₓ(x).
-            // For small |x|, i.e., small y, we have f ≈ (exp(-1/π)/4-Φ(-√(π/2))/2)·y² + exp(-1/π)/(3·√(2π))·y³ + O(y⁴).
-            //   c₂ := (exp(-1/π)/4-Φ(-√(π/2))/2) =  0.07560996640296361767172
-            //   c₃ := exp(-1/π)/(3·√(2π))        = -0.09672719281339436290858
-            // Nonlinear-Remez optimized minimax rational function of order (5,4) for g(y) := ((f/y²-c₂)/y-c₃)/y .   f = y²·(c₂+y·(c₃+y·g)) .
-            let g = (8.074_107_237_288_286E-2 + s_c * (9.807_891_178_635_89E-2 + s_c * (3.976_063_144_567_705_5E-2 + s_c * (5.971_692_845_958_919E-3 + s_c * (-6.403_639_934_147_98E-6 + 4.542_510_209_361_606_4E-7 * s_c))))) / (1.0 + s_c * (1.859_497_767_228_766_5 + s_c * (1.365_880_147_571_179 + s_c * (4.613_270_710_865_565E-1 + 6.125_459_704_983_172E-2 * s_c))));
-            // Branch I. Accuracy better than 7.43E-17 in perfect arithmetic.
-            return (s_c * s_c) * (0.075_609_966_402_963_62 + s_c * (s_c * g - 0.096_727_192_813_394_37));
-        }
-        // x = -y²/2, y = √|2x| = s_c, output is f(x) = bₗ(x)/bₘₐₓ(x). Remez optimized minimax rational function of order (6,6) for g(y) := bᵤ(-y²/2)/bₘₐₓ(-y²/2).
-        // Branch II. Accuracy better than 8.77E-17 in perfect arithmetic.
-        return (1.979_573_792_759_858E-9 + s_c * (-2.708_128_856_468_558_7E-8 + s_c * (7.561_014_227_254_904E-2 + s_c * (6.917_130_174_466_835E-2 + s_c * (2.953_705_895_096_301_8E-2 + s_c * (6.584_925_270_230_231E-3 + 6.971_140_063_983_471E-4 * s_c)))))) / (1.0 + s_c * (2.194_144_852_558_658 + s_c * (2.129_710_354_999_518 + s_c * (1.157_148_318_717_978_3 + s_c * (3.783_162_225_306_046E-1 + s_c * (7.171_486_244_882_935E-2 + 6.636_197_582_786_12E-3 * s_c))))));
+    if s_c < 0.7099295739719539 {
+        let g = (8.074_107_237_288_286E-2 + s_c * (9.807_891_178_635_89E-2 + s_c * (3.976_063_144_567_705_5E-2 + s_c * (5.971_692_845_958_919E-3 + s_c * (-6.403_639_934_147_98E-6 + 4.542_510_209_361_606_4E-7 * s_c))))) / (1.0 + s_c * (1.859_497_767_228_766_5 + s_c * (1.365_880_147_571_179 + s_c * (4.613_270_710_865_565E-1 + 6.125_459_704_983_172E-2 * s_c))));
+        (s_c * s_c) * (0.075_609_966_402_963_62 + s_c * (s_c * g - 0.096_727_192_813_394_37))
+    } else if s_c < 2.6267851073127395 {
+        (1.979_573_792_759_858E-9 + s_c * (-2.708_128_856_468_558_7E-8 + s_c * (7.561_014_227_254_904E-2 + s_c * (6.917_130_174_466_835E-2 + s_c * (2.953_705_895_096_301_8E-2 + s_c * (6.584_925_270_230_231E-3 + 6.971_140_063_983_471E-4 * s_c)))))) / (1.0 + s_c * (2.194_144_852_558_658 + s_c * (2.129_710_354_999_518 + s_c * (1.157_148_318_717_978_3 + s_c * (3.783_162_225_306_046E-1 + s_c * (7.171_486_244_882_935E-2 + 6.636_197_582_786_12E-3 * s_c))))))
+    } else if s_c < 7.348469228349534 {
+        (-9.332_511_535_483_788E-5 + s_c * (5.311_803_397_279_465E-4 + s_c * (7.411_485_544_834_501E-2 + s_c * (7.403_965_818_682_282E-2 + s_c * (3.922_517_740_768_760_6E-2 + s_c * (1.002_291_337_825_409E-2 + 1.701_257_940_724_605_5E-3 * s_c)))))) / (1.0 + s_c * (2.221_723_813_222_813_4 + s_c * (2.344_181_670_708_740_4 + s_c * (1.391_232_364_627_114 + s_c * (5.323_125_844_350_184E-1 + s_c * (1.174_400_591_971_610_1E-1 + 1.619_540_589_593_093_7E-2 * s_c))))))
+    } else {
+        (1.450_007_229_724_060_4E-3 + s_c * (-1.511_669_248_501_119_6E-3 + s_c * (7.168_217_831_093_633E-2 + s_c * (3.921_610_857_820_463_6E-2 + s_c * (2.934_240_565_862_844_5E-2 + s_c * (5.183_252_617_163_152E-3 + 1.693_020_807_842_147_5E-3 * s_c)))))) / (1.0 + s_c * (1.617_631_350_230_541_5 + s_c * (1.682_315_917_528_153_2 + s_c * (8.487_830_756_737_222E-1 + s_c * (3.754_374_213_737_579E-1 + s_c * (7.126_137_099_644_303E-2 + 1.611_699_254_678_867_7E-2 * s_c))))))
     }
-    if s_c < 7.348469228349534 {
-        // x = -y²/2, y = √|2x| = s_c, output is f(x) = bₗ(x)/bₘₐₓ(x). Remez optimized minimax rational function of order (6,6) for g(y) := bₗ(-y²/2)/bₘₐₓ(-y²/2).
-        // Branch III. Accuracy better than 7.49E-17 in perfect arithmetic.
-        return (-9.332_511_535_483_788E-5 + s_c * (5.311_803_397_279_465E-4 + s_c * (7.411_485_544_834_501E-2 + s_c * (7.403_965_818_682_282E-2 + s_c * (3.922_517_740_768_760_6E-2 + s_c * (1.002_291_337_825_409E-2 + 1.701_257_940_724_605_5E-3 * s_c)))))) / (1.0 + s_c * (2.221_723_813_222_813_4 + s_c * (2.344_181_670_708_740_4 + s_c * (1.391_232_364_627_114 + s_c * (5.323_125_844_350_184E-1 + s_c * (1.174_400_591_971_610_1E-1 + 1.619_540_589_593_093_7E-2 * s_c))))));
-    }
-    (1.450_007_229_724_060_4E-3 + s_c * (-1.511_669_248_501_119_6E-3 + s_c * (7.168_217_831_093_633E-2 + s_c * (3.921_610_857_820_463_6E-2 + s_c * (2.934_240_565_862_844_5E-2 + s_c * (5.183_252_617_163_152E-3 + 1.693_020_807_842_147_5E-3 * s_c)))))) / (1.0 + s_c * (1.617_631_350_230_541_5 + s_c * (1.682_315_917_528_153_2 + s_c * (8.487_830_756_737_222E-1 + s_c * (3.754_374_213_737_579E-1 + s_c * (7.126_137_099_644_303E-2 + 1.611_699_254_678_867_7E-2 * s_c))))))
 }
 
 #[inline(always)]
@@ -263,7 +248,7 @@ fn normalised_black(x: f64, s: f64) -> f64 {
     }else if is_region2(x, s) {
         small_t_expansion_of_scaled_normalised_black(x / s, 0.5 * s) * normalised_vega(x, s)
     }else {
-        normalised_black_call_with_optimal_use_of_codys_functions(x, s)
+        normalised_black_with_optimal_use_of_codys_functions(x, s)
     }
 }
 
@@ -288,7 +273,7 @@ fn scaled_normalised_black_and_ln_vega(x: f64, s: f64) -> (f64, f64) {
     else if is_region2(x, s) {
         (small_t_expansion_of_scaled_normalised_black(x / s, 0.5 * s), ln_vega)
     } else {
-        (normalised_black_call_with_optimal_use_of_codys_functions(x, s) * (-ln_vega).exp(), ln_vega)
+        (normalised_black_with_optimal_use_of_codys_functions(x, s) * (-ln_vega).exp(), ln_vega)
     }
 }
 
@@ -296,9 +281,9 @@ fn scaled_normalised_black_and_ln_vega(x: f64, s: f64) -> (f64, f64) {
 pub(crate) fn black(f: f64, k: f64, sigma: f64, t: f64, q: bool) -> f64 {
     let s = sigma * t.sqrt();
     if k == f {
-        f * erf_cody((0.5 / SQRT_2) * s)
+        f * erf_cody((0.5 * FRAC_1_SQRT_2) * s)
     }else{
-        (if q { f- k } else {k - f}).max(0.0) + (if s <= 0.0 {0.0} else {
+        (if q { f- k } else { k - f }).max(0.0) + (if s <= 0.0 { 0.0 } else {
             f.sqrt() * k.sqrt() * normalised_black((f / k).ln().abs().neg(), s)
         })
     }
@@ -313,17 +298,15 @@ fn compute_f_lower_map_and_first_two_derivatives(x: f64, s: f64) -> (f64, f64, f
     let phi_m = 0.5 * erfc_cody(FRAC_1_SQRT_2 * z);
     let phi = norm_pdf(z);
     let fpp = std::f64::consts::FRAC_PI_6 * y / (s2 * s) * phi_m * (8.0 * SQRT_THREE * s * ax + (3.0 * s2 * (s2 - 8.0) - 8.0 * x * x) * phi_m / phi) * (2.0 * y + 0.25 * s2).exp();
-    let (fp, f) = if s.is_subnormal() {
-        (1.0, 0.0)
+    let (f, fp) = if s.is_subnormal() {
+        (0.0, 1.0)
     } else {
         let phi2 = phi_m * phi_m;
-        let fp_val = std::f64::consts::TAU * y * phi2 * (y + 0.125 * s * s).exp();
-        let f_val = if x.is_subnormal() {
+        (if x.is_subnormal() {
             0.0
         } else {
             TWO_PI_OVER_SQRT_TWENTY_SEVEN * ax * (phi2 * phi_m)
-        };
-        (fp_val, f_val)
+        }, std::f64::consts::TAU * y * phi2 * (y + 0.125 * s * s).exp())
     };
     (f, fp, fpp)
 }
@@ -340,16 +323,14 @@ fn inverse_f_lower_map(x: f64, f: f64) -> f64 {
 
 #[inline(always)]
 fn compute_f_upper_map_and_first_two_derivatives(x: f64, s: f64) -> (f64, f64, f64) {
-    let f = 0.5 * erfc_cody((0.5 / SQRT_2) * s);
-    let (fp, fpp) = if x.is_subnormal() {
-        (-0.5, 0.0)
+    let f = 0.5 * erfc_cody((0.5 * FRAC_1_SQRT_2) * s);
+    if x.is_subnormal() {
+        (f, -0.5, 0.0)
     } else {
         let w = (x / s).powi(2);
-        (-0.5 * (0.5 * w).exp(),
+        (f, -0.5 * (0.5 * w).exp(),
         SQRT_PI_OVER_TWO * ((w + 0.125 * s * s).exp()) * w / s)
-    };
-
-    (f, fp, fpp)
+    }
 }
 
 
@@ -374,11 +355,11 @@ fn implied_normalised_volatility_atm(beta: f64) -> f64 {
 
 #[inline(always)]
 fn lets_be_rational(
-    beta: f64, x: f64, n: u8,
+    beta: f64, x: f64
 ) -> f64 {
     assert!(x  <= 0.0, "x must be non-positive, but got {x}");
     if beta <= 0. {
-        return if beta == 0.0 {0.0} else {VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_BELOW_INTRINSIC};
+        return if beta == 0.0 { 0.0 } else {VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_BELOW_INTRINSIC};
     }
     let b_max = (0.5 * x).exp();
     if beta >= b_max {
@@ -388,8 +369,6 @@ fn lets_be_rational(
         return implied_normalised_volatility_atm(beta);
     }
 
-    let mut iterations = 0;
-    let mut f = f64::MIN;
     let mut s;
     let mut ds = f64::MIN;
 
@@ -400,12 +379,12 @@ fn lets_be_rational(
     if beta < b_c {
         assert!(x < 0.0, "x must be negative, but got {x}");
         let s_l = s_c - SQRT_PI_OVER_TWO * ome;
-        debug_assert!(s_l > 0.0, "s_l must be positive, but got {s_l}");
+        assert!(s_l > 0.0, "s_l must be positive, but got {s_l}");
         let b_l = b_l_over_b_max(s_c) * b_max;
         if beta < b_l {
             let (f_lower_map_l, d_f_lower_map_l_d_beta, d2_f_lower_map_l_d_beta2) = compute_f_lower_map_and_first_two_derivatives(x, s_l);
             let r2 = convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side::<true>(0.0, b_l, 0.0, f_lower_map_l, 1.0, d_f_lower_map_l_d_beta, d2_f_lower_map_l_d_beta2);
-            f = rational_cubic_interpolation(beta, 0.0, b_l, 0.0, f_lower_map_l, 1.0, d_f_lower_map_l_d_beta, r2);
+            let mut f = rational_cubic_interpolation(beta, 0.0, b_l, 0.0, f_lower_map_l, 1.0, d_f_lower_map_l_d_beta, r2);
             match f.partial_cmp(&0.0) {
                 Some(std::cmp::Ordering::Greater) | None => {
                     let t = beta / b_l;
@@ -418,29 +397,37 @@ fn lets_be_rational(
             let ln_beta = beta.ln();
 
             ds = 1.0_f64;
-            while iterations < n && ds.abs() > f64::EPSILON * s {
+            let mut final_trial = false;
+            while ds.abs() > f64::EPSILON * s {
+                assert!(s > 0.0, "s must be positive, but got {s}");
                 let (bx, ln_vega) = scaled_normalised_black_and_ln_vega(x, s);
                 let ln_b = bx.ln() + ln_vega;
                 let bpob = bx.recip();
                 let h = x / s;
-                let b_h2 = ((h * h) / s) - s / 4.0;
-                let nu = (ln_beta - ln_b) * ln_b / ln_beta * bx;
+                let x2_over_s3 = h * h / s;
+                let b_h2 = x2_over_s3 - s / 4.0;
+                let v = (ln_beta - ln_b) * ln_b / ln_beta * bx;
                 let lambda = ln_b.recip();
-                let otlambda = lambda.mul_add2(2.0, 1.0);
-                let h2 = b_h2 - bpob * otlambda;
-                let c = 3.0 * (h / s).powi(2);
+                let ot_lambda = lambda.mul_add2(2.0, 1.0);
+                let h2 = b_h2 - bpob * ot_lambda;
+                let c = 3.0 * (x2_over_s3 / s);
                 let b_h3 = b_h2 * b_h2 - c - 0.25;
                 let sq_bpob = bpob * bpob;
+                let bppob = b_h2 * bpob;
                 let mu = 6.0 * lambda * (1.0 + lambda);
-                let h3 = b_h3 + sq_bpob * (2.0 + mu) - (b_h2 * bpob * 3.0 * otlambda);
+                let h3 = b_h3 + sq_bpob * (2.0 + mu) - (bppob * 3.0 * ot_lambda);
                 ds = if x < -190.0 {
-                    nu * householder4_factor(nu, h2, h3, ((b_h2 * (b_h3 - 0.5)) - ((b_h2 - 2.0 / s) * 2.0 * c)) - (bpob * (sq_bpob * (6.0 + lambda * (22.0 + lambda * (36.0 + lambda * 24.0))) - (b_h2 * bpob * (12.0 + 6.0 * mu))) - (b_h2 * bpob * 3.0 * otlambda) - (b_h3 * bpob * 4.0 * otlambda)))
+                    v * householder4_factor(v, h2, h3, ((b_h2 * (b_h3 - 0.5)) - (b_h2 - 2.0 / s) * 2.0 * c) - (bpob * (sq_bpob * (6.0 + lambda * (22.0 + lambda * (36.0 + lambda * 24.0))) - (bppob * (12.0 + 6.0 * mu))) - bppob * 3.0 * ot_lambda - b_h3 * bpob * 4.0 * ot_lambda))
                 } else {
-                    nu * householder3_factor(nu, h2, h3)
+                    v * householder3_factor(v, h2, h3)
                 };
                 s += ds;
                 assert!(s > 0.0, "s must be positive, but got {s}");
-                iterations += 1;
+                if final_trial {
+                    return s;
+                } else {
+                    final_trial = true;
+                }
             }
             return s;
         } else {
@@ -464,11 +451,11 @@ fn lets_be_rational(
             assert!(s > 0.0, "s must be positive, but got {s}");
         } else {
             let (f_upper_map_h, d_f_upper_map_h_d_beta, d2_f_upper_map_h_d_beta2) = compute_f_upper_map_and_first_two_derivatives(x, s_u);
-
+            let mut f =
             if d2_f_upper_map_h_d_beta2 > -SQRT_DBL_MAX && d2_f_upper_map_h_d_beta2 < SQRT_DBL_MAX {
                 let r_uu = convex_rational_cubic_control_parameter_to_fit_second_derivative_at_left_side::<true>(b_u, b_max, f_upper_map_h, 0.0, d_f_upper_map_h_d_beta, -0.5, d2_f_upper_map_h_d_beta2);
-                f = rational_cubic_interpolation(beta, b_u, b_max, f_upper_map_h, 0.0, d_f_upper_map_h_d_beta, -0.5, r_uu);
-            }
+                rational_cubic_interpolation(beta, b_u, b_max, f_upper_map_h, 0.0, d_f_upper_map_h_d_beta, -0.5, r_uu)
+            } else { f64::MIN };
             if f <= 0.0 {
                 let h = b_max - b_u;
                 let t = (beta - b_u) / h;
@@ -477,36 +464,40 @@ fn lets_be_rational(
             s = inverse_f_upper_map(f);
             if beta > 0.5 * b_max {
                 let beta_bar = b_max - beta;
-                while iterations < n && ds.abs() > f64::EPSILON * s {
+                let mut final_trial = false;
+                while ds.abs() > f64::EPSILON * s {
                     let h = x / s;
                     let t = s / 2.0;
                     let gp = SQRT_TWO_OVER_PI / (erfcx_cody((t + h) * FRAC_1_SQRT_2) + erfcx_cody((t - h) * FRAC_1_SQRT_2));
                     let b_bar = normalised_vega(x, s) / gp;
                     let g = (beta_bar / b_bar).ln();
-                    let x_over_s_square = h * h / s;
-                    let b_h2 = x_over_s_square - s / 4.0;
-                    let c = 3.0 * (h / s).powi(2);
+                    let x2_over_s3 = h * h / s;
+                    let b_h2 = x2_over_s3 - s / 4.0;
+                    let c = 3.0 * (x2_over_s3 / s);
                     let b_h3 = b_h2 * b_h2 - c - 0.25;
-                    let nu = -g / gp;
+                    let v = -g / gp;
                     let h2 = b_h2 + gp;
                     let h3 = b_h3 + gp * (2.0 * gp + 3.0 * b_h2);
                     ds = if x < -580.0 {
-                        nu * householder4_factor(nu, h2, h3, (b_h2 * (b_h3 - 0.5) - (b_h2 - 2.0 / s) * 2.0 * c) + gp * (6.0 * gp * b_h2.mul_add2(2.0,  gp) + 3.0 * b_h2 * b_h2 + 4.0 * b_h3))
+                        v * householder4_factor(v, h2, h3, (b_h2 * (b_h3 - 0.5) - (b_h2 - 2.0 / s) * 2.0 * c) + gp * (6.0 * gp * b_h2.mul_add2(2.0, gp) + 3.0 * b_h2 * b_h2 + 4.0 * b_h3))
                     } else {
-                        nu * householder3_factor(nu, h2, h3)
+                        v * householder3_factor(v, h2, h3)
                     };
                     s += ds;
-                    iterations += 1;
+                    if final_trial {
+                        break;
+                    } else {
+                        final_trial = true;
+                    }
                 }
                 return s;
             }
         }
     }
-    for _ in 0..n {
+    for _ in 0..2 {
         if ds.abs() <= f64::EPSILON * s {
             break;
         }
-
         let b = normalised_black(x, s);
         let bp = normalised_vega(x, s);
         let nu = (beta - b) / bp;
@@ -514,8 +505,18 @@ fn lets_be_rational(
         let h2 = h * h / s - s / 4.0;
         let h3 = h2 * h2 - 3.0 * (h / s).powi(2) - 0.25;
         ds = nu * householder3_factor(nu, h2, h3);
-        // Never leave the branch (or bracket)
         s += ds;
+        // the upstream uses the following code, but it is not performant on my benchmark
+        // assert!(s > 0.0, "s must be positive, but got {s}");
+        // let b = normalised_black(x, s);
+        // let inv_bp = inv_normalised_vega(x, s);
+        // let v = (beta - b) * inv_bp;
+        // let h = x / s;
+        // let x2_over_s3 = (h * h) / s;
+        // let h2 = x2_over_s3 - s * 0.25;
+        // let h3 = h2 * h2 - 3.0 * (x2_over_s3 / s) - 0.25;
+        // ds = v * householder3_factor(v, h2, h3);
+        // s += ds;
     }
     s
 }
@@ -526,7 +527,7 @@ pub(crate) fn implied_black_volatility(price: f64, f: f64, k: f64, t: f64, q: bo
         return VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_ABOVE_MAXIMUM;
     }
     let mu = if q { f - k } else { k - f };
-    lets_be_rational(if mu > 0.0 {price - mu} else {price} / (f.sqrt() * k.sqrt()), (f / k).ln().abs().neg(), 2) / t.sqrt()
+    lets_be_rational(if mu > 0.0 { price - mu } else { price } / (f.sqrt() * k.sqrt()), (f / k).ln().abs().neg()) / t.sqrt()
 }
 
 
