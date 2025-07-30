@@ -254,9 +254,9 @@ pub(crate) fn erfinv(e: f64) -> f64 {
         inverse_norm_cdfm_half_for_midrange_probabilities(0.5 * e) * FRAC_1_SQRT_2
     } else {
         (if e < 0.0 {
-            -inverse_norm_cdf_for_low_probabilities(0.5 * e + 0.5)
+            inverse_norm_cdf_for_low_probabilities(0.5 * e + 0.5)
         } else {
-            inverse_norm_cdf_for_low_probabilities(-0.5 * e + 0.5)
+            -inverse_norm_cdf_for_low_probabilities(-0.5 * e + 0.5)
         }) * FRAC_1_SQRT_2
     }
 }
