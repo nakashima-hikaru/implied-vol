@@ -107,13 +107,11 @@ fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
     (t / r) * omega
 }
 
-#[cfg(not(feature = "use_original_taylor_expansion"))]
 #[inline(always)]
 fn y_prime_tail_expansion_rational_function_part(w: f64) -> f64 {
     w * (-2.999_999_999_999_466 + w * (-1.755_626_332_354_220_6E2 + w * (-3.473_503_544_549_563_2E3 + w * (-2.780_574_569_386_430_8E4 + w * (-8.383_602_146_074_198E4 - 6.681_824_903_261_685E4 * w))))) / (1.0 + w * (6.352_087_774_483_173_6E1 + w * (1.440_438_903_760_433_7E3 + w * (1.456_254_563_850_703_4E4 + w * (6.688_679_416_565_168E4 + w * (1.256_997_038_092_390_9E5 + 6.928_651_867_980_375E4 * w))))))
 }
 
-#[cfg(not(feature = "use_original_taylor_expansion"))]
 #[inline(always)]
 fn y_prime(h: f64) -> f64 {
     // We copied the thresholds of -0.46875 and -4 from Cody.
@@ -130,7 +128,6 @@ fn y_prime(h: f64) -> f64 {
     }
 }
 
-#[cfg(not(feature = "use_original_taylor_expansion"))]
 #[inline(always)]
 fn small_t_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
     let a = y_prime(h);
@@ -151,16 +148,6 @@ fn small_t_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
     #[inline(always)]
     fn b6(a: f64, h2: f64) -> f64 {(-89055.0+h2*(-82845.0+h2*(-20370.0+h2*(-1926.0+(-75.0-h2)*h2)))+a*(135135.0+h2*(270270.0+h2*(135135.0+h2*(25740.0+h2*(2145.0+h2*(78.0+h2)))))))/3113510400.0}
     t * (b0(a) + t2 * (b1(a, h2) + t2 * (b2(a, h2) + t2 * (b3(a, h2) + t2 * (b4(a, h2) + t2 * (b5(a, h2) + b6(a, h2) * t2))))))
-}
-
-#[cfg(feature = "use_original_taylor_expansion")]
-#[inline(always)]
-fn small_t_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
-    let zeta = t * t;
-    let g = h * h;
-    let a = 1_f64 + h * SQRT_PI_OVER_TWO * erfcx_cody(-FRAC_1_SQRT_2 * h);
-    let b_over_vega = 2.0 * t * (a + zeta * ((-1.0 + 3.0 * a + a * g) / 6.0 + zeta * ((-7.0 + 15.0 * a + g * (-1.0 + 10.0 * a + a * g)) / 120.0 + zeta * ((-57.0 + 105.0 * a + g * (-18.0 + 105.0 * a + g * (-1.0 + 21.0 * a + a * g))) / 5040.0 + zeta * ((-561.0 + 945.0 * a + g * (-285.0 + 1260.0 * a + g * (-33.0 + 378.0 * a + g * (-1.0 + 36.0 * a + a * g)))) / 362880.0 + zeta * ((-6555.0 + 10395.0 * a + g * (-4680.0 + 17325.0 * a + g * (-840.0 + 6930.0 * a + g * (-52.0 + 990.0 * a + g * (-1.0 + 55.0 * a + a * g))))) / 39916800.0 + ((-89055.0 + 135135.0 * a + g * (-82845.0 + 270270.0 * a + g * (-20370.0 + 135135.0 * a + g * (-1926.0 + 25740.0 * a + g * (-75.0 + 2145.0 * a + g * (-1.0 + 78.0 * a + a * g)))))) * zeta) / 6227020800.0))))));
-    b_over_vega.max(0.0).abs()
 }
 
 #[inline(always)]
@@ -535,6 +522,50 @@ pub(crate) fn implied_black_volatility(price: f64, f: f64, k: f64, t: f64, q: bo
 mod tests {
     use rand::Rng;
     use super::*;
+    pub(crate) const FOURTH_ROOT_DBL_EPSILON: f64 = f64::from_bits(0x3f20000000000000);
+
+    fn normalised_intrinsic(theta_x: f64) -> f64 {
+        if theta_x <= 0.0 {
+            return 0.0;
+        }
+        let x2 = theta_x * theta_x;
+        if x2 < 98.0 * FOURTH_ROOT_DBL_EPSILON {
+            return theta_x * (1.0 + x2 * ((1.0 / 24.0) + x2 * ((1.0 / 1920.0) + x2 * ((1.0 / 322560.0) + (1.0 / 92897280.0) * x2))));
+        }
+        (0.5 * theta_x).exp() - (-0.5 * theta_x).exp()
+    }
+    fn scaled_normalised_black(theta_x: f64, s: f64) -> f64 {
+        assert!(s > 0.0 && theta_x != 0.0);
+        return if theta_x > 0.0 {
+            normalised_intrinsic(theta_x) * SQRT_TWO_PI * (0.5 * ((theta_x / s).powi(2) + 0.25 * s * s)).exp()
+        } else {
+            0.0
+        } + scaled_normalised_black_and_ln_vega(-theta_x.abs(), s).0;
+    }
+
+    #[allow(unused)]
+    fn black_accuracy_factor(x: f64, s: f64, theta: f64 /* θ=±1 */) -> f64 {
+        // When x = 0, we have bx(x,s) = b(x,s) / (∂(b(x,s)/∂s)  =  s·(1+s²/12+s⁴/240+O(s⁶)) for small s.
+        if x == 0.0 {
+            return if s.abs() < std::f64::EPSILON {
+                1.0
+            } else {
+                s / (erf_cody((0.5 / std::f64::consts::SQRT_2) * s)
+                    * std::f64::consts::SQRT_2
+                    * std::f64::consts::PI
+                    * (-0.125 * s * s).exp())
+            };
+        }
+        let theta_x = if theta < 0.0 { -x } else { x };
+        if s <= 0.0 {
+            return if theta_x > 0.0 {
+                0.0
+            } else {
+                std::f64::MAX
+            };
+        }
+        s / scaled_normalised_black(theta_x, s)
+    }
 
     #[test]
     fn reconstruction_call_atm() {
@@ -549,6 +580,21 @@ mod tests {
             assert!((price - reprice).abs() < f64::EPSILON * 100.0, "{}", (price - reprice).abs() / 100.0);
         }
     }
+
+    // #[test]
+    // fn reconstruction_call_atm2() {
+    //     for i in 1..10000 {
+    //         let f = 100.0;
+    //         let k = f;
+    //         let t = 1.0;
+    //         let q = true;
+    //         let sigma = 0.001 * i as f64;
+    //         let price = black(f, k, sigma, t, q);
+    //         let sigma2 = implied_black_volatility(price, f, k, t, q);
+    //         // assert!((sigma - sigma2).abs() / sigma <= (1.0 + black_accuracy_factor((f / k).ln(), sigma * t.sqrt(),1.0).recip()) * f64::EPSILON, "f: {f}, k: {k}, t: {t}, sigma: {sigma}, sigma2; {sigma2}, {}, {}", (sigma - sigma2).abs() / sigma / f64::EPSILON, 1.0 + black_accuracy_factor((f / k).ln(), sigma * t.sqrt(), 1.0).recip());
+    //         assert!((sigma - sigma2).abs() / sigma <= 500000.903426791277258 * f64::EPSILON, "f: {f}, k: {k}, t: {t}, sigma: {sigma}, sigma2; {sigma2}, {}, {}", (sigma - sigma2).abs() / sigma / f64::EPSILON, 1.0 + black_accuracy_factor((f / k).ln(), sigma * t.sqrt(), 1.0).recip());
+    //     }
+    // }
 
     #[test]
     fn reconstruction_put_atm() {
@@ -657,5 +703,15 @@ mod tests {
             let reprice = black(f, k, sigma, t, q);
             assert!((price - reprice).abs() <= 1.5 * f64::EPSILON);
         }
+    }
+
+    #[test]
+    fn panic_case() {
+        let _ = implied_black_volatility(73.425, 12173.425, 12100., 0.0077076327759348934, true);
+        let _ = implied_black_volatility(73.425, 12173.425, 12100., 0.007705808219781035, true);
+        let _ = implied_black_volatility(73.425, 12173.425, 12100., 0.007705804818688366, true);
+        let _ = implied_black_volatility(73.425, 12173.425, 12100., 0.007705800716005495, true);
+        let _ = implied_black_volatility(73.425, 12173.425, 11600., 0.0016085064438058978, true);
+        let _ = implied_black_volatility(73.425, 12173.425, 11600., 0.001608503794106174, true);
     }
 }
