@@ -996,13 +996,13 @@ mod tests {
     }
     fn scaled_normalised_black(theta_x: f64, s: f64) -> f64 {
         assert!(s > 0.0 && theta_x != 0.0);
-        return if theta_x > 0.0 {
+        (if theta_x > 0.0 {
             normalised_intrinsic(theta_x)
                 * SQRT_TWO_PI
                 * (0.5 * ((theta_x / s).powi(2) + 0.25 * s * s)).exp()
         } else {
             0.0
-        } + scaled_normalised_black_and_ln_vega(-theta_x.abs(), s).0;
+        }) + scaled_normalised_black_and_ln_vega(-theta_x.abs(), s).0
     }
 
     #[allow(unused)]
