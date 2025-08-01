@@ -1040,26 +1040,20 @@ mod tests {
         }
     }
 
-    // #[test]
-    // fn reconstruction_call_atm2() {
-    //     for i in 1..10000 {
-    //         let f = 100.0;
-    //         let k = f;
-    //         let t = 1.0;
-    //         let q = true;
-    //         let sigma = 0.001 * i as f64;
-    //         let sigma = 9.062;
-    //         let price = black(f, k, sigma, t, q);
-    //         let sigma2 = implied_black_volatility(price, f, k, t, q);
-    //         let sigma_p = sigma2 * (1. + f64::EPSILON);
-    //         let price_p = black(f, k, sigma_p, t, q);
-    //         let sigma_m = sigma2 * (1. - f64::EPSILON);
-    //         let price_m = black(f, k, sigma_m, t, q);
-    //         println!("f: {f}, k: {k}, t: {t}, sigma: {sigma}, sigma2: {sigma2}, sigma_p: {sigma_p}, sigma_m: {sigma_m}, price: {price:?}, price_p: {price_p:?}, price_m: {price_m:?}");
-    //         // assert!((sigma - sigma2).abs() / sigma <= (1.0 + black_accuracy_factor((f / k).ln(), sigma * t.sqrt(),1.0).recip()) * f64::EPSILON, "f: {f}, k: {k}, t: {t}, sigma: {sigma}, sigma2; {sigma2}, {}, {}", (sigma - sigma2).abs() / sigma / f64::EPSILON, 1.0 + black_accuracy_factor((f / k).ln(), sigma * t.sqrt(), 1.0).recip());
-    //         assert!((sigma - sigma2).abs() / sigma <= 5000. * f64::EPSILON, "f: {f}, k: {k}, t: {t}, sigma: {sigma}, sigma2; {sigma2}, price: {price}, {}, {}", (sigma - sigma2).abs() / sigma / f64::EPSILON, 1.0 + black_accuracy_factor((f / k).ln(), sigma * t.sqrt(), 1.0).recip());
-    //     }
-    // }
+    #[test]
+    fn reconstruction_call_atm2() {
+        for i in 1..10000 {
+            let f = 100.0;
+            let k = f;
+            let t = 1.0;
+            let q = true;
+            let sigma = 0.001 * i as f64;
+            let price = black(f, k, sigma, t, q);
+            let sigma2 = implied_black_volatility(price, f, k, t, q);
+            // assert!((sigma - sigma2).abs() / sigma <= (1.0 + black_accuracy_factor((f / k).ln(), sigma * t.sqrt(),1.0).recip()) * f64::EPSILON, "f: {f}, k: {k}, t: {t}, sigma: {sigma}, sigma2; {sigma2}, {}, {}", (sigma - sigma2).abs() / sigma / f64::EPSILON, 1.0 + black_accuracy_factor((f / k).ln(), sigma * t.sqrt(), 1.0).recip());
+            assert!((sigma - sigma2).abs() / sigma <= 50000. * f64::EPSILON, "f: {f}, k: {k}, t: {t}, sigma: {sigma}, sigma2; {sigma2}, price: {price}, {}, {}", (sigma - sigma2).abs() / sigma / f64::EPSILON, 1.0 + black_accuracy_factor((f / k).ln(), sigma * t.sqrt(), 1.0).recip());
+        }
+    }
 
     #[test]
     fn reconstruction_put_atm() {
