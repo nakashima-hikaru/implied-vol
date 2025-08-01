@@ -85,7 +85,9 @@ pub(crate) const fn rational_cubic_control_parameter_to_fit_second_derivative_at
 }
 
 #[inline(always)]
-pub(crate) const fn minimum_rational_cubic_control_parameter<const PREFER_SHAPE_PRESERVATION_OVER_SMOOTHNESS: bool>(
+pub(crate) const fn minimum_rational_cubic_control_parameter<
+    const PREFER_SHAPE_PRESERVATION_OVER_SMOOTHNESS: bool,
+>(
     d_l: f64,
     d_r: f64,
     s: f64,
@@ -95,28 +97,28 @@ pub(crate) const fn minimum_rational_cubic_control_parameter<const PREFER_SHAPE_
     if !monotonic && !convex_or_concave {
         return MINIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE;
     }
-    let d_r_m_d_l = d_r - d_l;
-    let d_r_m_s = d_r - s;
-    let s_m_d_l = s - d_l;
     let r1 = if monotonic && s != 0.0 {
         (d_r + d_l) / s
-    } else if monotonic && s == 0.0 && PREFER_SHAPE_PRESERVATION_OVER_SMOOTHNESS {
+    } else if monotonic && PREFER_SHAPE_PRESERVATION_OVER_SMOOTHNESS {
         MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE
     } else {
         f64::MIN
     };
     let r2 = if convex_or_concave {
-        if s_m_d_l != 0.0 && d_r_m_s != 0.0 {
+        let s_m_d_l = s - d_l;
+        let d_r_m_s = d_r - s;
+        let d_r_m_d_l = d_r - d_l;
+        if s_m_d_l != 0.0 || d_r_m_s == 0.0 {
             (d_r_m_d_l / d_r_m_s.min(s_m_d_l)).abs()
         } else if PREFER_SHAPE_PRESERVATION_OVER_SMOOTHNESS {
             MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE
         } else {
-            f64::MIN
+            r1
         }
     } else if monotonic && PREFER_SHAPE_PRESERVATION_OVER_SMOOTHNESS {
         MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE
     } else {
-        f64::MIN
+        r1
     };
     r1.max(r2)
         .max(MINIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE)
@@ -124,7 +126,9 @@ pub(crate) const fn minimum_rational_cubic_control_parameter<const PREFER_SHAPE_
 
 #[allow(clippy::too_many_arguments)]
 #[inline(always)]
-pub(crate) const fn convex_rational_cubic_control_parameter_to_fit_second_derivative_at_left_side<const PREFER_SHAPE_PRESERVATION_OVER_SMOOTHNESS: bool>(
+pub(crate) const fn convex_rational_cubic_control_parameter_to_fit_second_derivative_at_left_side<
+    const PREFER_SHAPE_PRESERVATION_OVER_SMOOTHNESS: bool,
+>(
     x_l: f64,
     x_r: f64,
     y_l: f64,
@@ -152,7 +156,9 @@ pub(crate) const fn convex_rational_cubic_control_parameter_to_fit_second_deriva
 
 #[allow(clippy::too_many_arguments)]
 #[inline(always)]
-pub(crate) const fn convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side<const PREFER_SHAPE_PRESERVATION_OVER_SMOOTHNESS: bool>(
+pub(crate) const fn convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side<
+    const PREFER_SHAPE_PRESERVATION_OVER_SMOOTHNESS: bool,
+>(
     x_l: f64,
     x_r: f64,
     y_l: f64,
