@@ -1051,7 +1051,12 @@ mod tests {
             let price = black(f, k, sigma, t, q);
             let sigma2 = implied_black_volatility(price, f, k, t, q);
             // assert!((sigma - sigma2).abs() / sigma <= (1.0 + black_accuracy_factor((f / k).ln(), sigma * t.sqrt(),1.0).recip()) * f64::EPSILON, "f: {f}, k: {k}, t: {t}, sigma: {sigma}, sigma2; {sigma2}, {}, {}", (sigma - sigma2).abs() / sigma / f64::EPSILON, 1.0 + black_accuracy_factor((f / k).ln(), sigma * t.sqrt(), 1.0).recip());
-            assert!((sigma - sigma2).abs() / sigma <= 50000. * f64::EPSILON, "f: {f}, k: {k}, t: {t}, sigma: {sigma}, sigma2; {sigma2}, price: {price}, {}, {}", (sigma - sigma2).abs() / sigma / f64::EPSILON, 1.0 + black_accuracy_factor((f / k).ln(), sigma * t.sqrt(), 1.0).recip());
+            assert!(
+                (sigma - sigma2).abs() / sigma <= 50000. * f64::EPSILON,
+                "f: {f}, k: {k}, t: {t}, sigma: {sigma}, sigma2; {sigma2}, price: {price}, {}, {}",
+                (sigma - sigma2).abs() / sigma / f64::EPSILON,
+                1.0 + black_accuracy_factor((f / k).ln(), sigma * t.sqrt(), 1.0).recip()
+            );
         }
     }
 
