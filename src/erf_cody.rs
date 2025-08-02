@@ -171,7 +171,7 @@ fn erfcx_cody_above_threshold(y: f64) -> f64 {
     }
 }
 
-#[inline(always)]
+#[inline]
 pub(crate) fn erfcx_cody(x: f64) -> f64 {
     let y = x.abs();
     if y <= THRESHOLD {
