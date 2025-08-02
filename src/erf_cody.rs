@@ -154,7 +154,7 @@ pub(crate) fn erfc_cody(x: f64) -> f64 {
         }) * smoothened_exponential_of_negative_square(y)
     };
 
-    if x.is_sign_negative() {
+    if x < 0.0 {
         2.0 - erfc_abs_x
     } else {
         erfc_abs_x

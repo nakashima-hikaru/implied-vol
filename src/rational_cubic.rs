@@ -48,7 +48,7 @@ pub(crate) const fn rational_cubic_control_parameter_to_fit_second_derivative_at
     }
     let denominator = (y_r - y_l) / h - d_l;
     if denominator == 0.0_f64 {
-        if numerator.is_sign_positive() {
+        if numerator > 0.0 {
             MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE
         } else {
             MINIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE
@@ -75,7 +75,7 @@ pub(crate) const fn rational_cubic_control_parameter_to_fit_second_derivative_at
     }
     let denominator = d_r - (y_r - y_l) / h;
     if denominator == 0.0_f64 {
-        return if numerator.is_sign_positive() {
+        return if numerator > 0.0 {
             MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE
         } else {
             MINIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE

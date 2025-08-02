@@ -231,7 +231,7 @@ pub(crate) fn inverse_norm_cdf(p: f64) -> f64 {
     if u.abs() < U_MAX {
         return inverse_norm_cdfm_half_for_midrange_probabilities(u);
     }
-    if u.is_sign_positive() {
+    if u > 0.0 {
         -inverse_norm_cdf_for_low_probabilities(1.0 - p)
     } else {
         inverse_norm_cdf_for_low_probabilities(p)

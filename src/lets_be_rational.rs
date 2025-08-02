@@ -458,7 +458,7 @@ fn b_u_over_b_max(s_c: f64) -> f64 {
                 .mul_add2(y, 5.436_378_146_588_073E1)
                 .mul_add2(y, 9.327_034_903_790_405)
                 .mul_add2(y, 1.0);
-        0.894_954_297_278_031_3 + 0.113_984_531_941_499_06 * y * (-1.253_314_137_315_500_3 + y * g)
+        y.mul_add2(g, -1.253_314_137_315_500_3).mul_add2(0.113_984_531_941_499_06 * y, 0.894_954_297_278_031_3)
     } else {
         let g = s_c
             .mul_add2(-3.386_756_817_001_176_5E-9, -8.733_991_026_156_887E-4)
@@ -477,7 +477,7 @@ fn b_u_over_b_max(s_c: f64) -> f64 {
                 .mul_add2(s_c, 2.722_003_340_655_505_5)
                 .mul_add2(s_c, 1.0);
 
-        0.789_908_594_556_062_8 + (s_c * s_c) * (0.061_461_680_580_514_74 + s_c * g)
+        s_c.mul_add2(g, 0.061_461_680_580_514_74).mul_add2(s_c * s_c, 0.789_908_594_556_062_8)
     }
 }
 
@@ -610,50 +610,33 @@ fn compute_f_lower_map_and_first_two_derivatives(x: f64, s: f64) -> (f64, f64, f
     let s2 = s * s;
     let phi_m = 0.5 * erfc_cody(FRAC_1_SQRT_2 * z);
     let phi = norm_pdf(z);
-    let fpp = std::f64::consts::FRAC_PI_6 * y / (s2 * s)
-        * phi_m
-        * (8.0 * SQRT_THREE * s * ax + (3.0 * s2 * (s2 - 8.0) - 8.0 * x * x) * phi_m / phi)
-        * (2.0 * y + 0.25 * s2).exp();
-    let (f, fp) = if s.is_subnormal() {
-        (0.0, 1.0)
-    } else {
-        let phi2 = phi_m * phi_m;
-        (
-            if x.is_subnormal() {
-                0.0
-            } else {
-                TWO_PI_OVER_SQRT_TWENTY_SEVEN * ax * (phi2 * phi_m)
-            },
-            std::f64::consts::TAU * y * phi2 * (y + 0.125 * s * s).exp(),
-        )
-    };
-    (f, fp, fpp)
+
+    let phi2 = phi_m * phi_m;
+    (
+        TWO_PI_OVER_SQRT_TWENTY_SEVEN * ax * (phi2 * phi_m),
+        std::f64::consts::TAU * y * phi2 * (y + 0.125 * s * s).exp(),
+        std::f64::consts::FRAC_PI_6 * y / (s2 * s)
+            * phi_m
+            * (8.0 * SQRT_THREE * s * ax + (3.0 * s2 * (s2 - 8.0) - 8.0 * x * x) * phi_m / phi)
+            * (2.0 * y + 0.25 * s2).exp(),
+    )
 }
 
 #[inline(always)]
 fn inverse_f_lower_map(x: f64, f: f64) -> f64 {
-    if f.is_subnormal() {
-        0.0
-    } else {
-        (x / (SQRT_THREE
-            * inverse_norm_cdf(SQRT_THREE_OVER_THIRD_ROOT_TWO_PI * f.cbrt() / x.abs().cbrt())))
-        .abs()
-    }
+    (x / (SQRT_THREE
+        * inverse_norm_cdf(SQRT_THREE_OVER_THIRD_ROOT_TWO_PI * f.cbrt() / x.abs().cbrt())))
+    .abs()
 }
 
 #[inline(always)]
 fn compute_f_upper_map_and_first_two_derivatives(x: f64, s: f64) -> (f64, f64, f64) {
-    let f = 0.5 * erfc_cody((0.5 * FRAC_1_SQRT_2) * s);
-    if x.is_subnormal() {
-        (f, -0.5, 0.0)
-    } else {
-        let w = (x / s).powi(2);
-        (
-            f,
-            -0.5 * (0.5 * w).exp(),
-            SQRT_PI_OVER_TWO * ((w + 0.125 * s * s).exp()) * w / s,
-        )
-    }
+    let w = (x / s).powi(2);
+    (
+        0.5 * erfc_cody((0.5 * FRAC_1_SQRT_2) * s),
+        -0.5 * (0.5 * w).exp(),
+        SQRT_PI_OVER_TWO * ((w + 0.125 * s * s).exp()) * w / s,
+    )
 }
 
 #[inline(always)]
@@ -770,8 +753,8 @@ fn lets_be_rational(beta: f64, x: f64) -> f64 {
                 let bppob = b_h2 * bpob;
                 let mu = 6.0 * lambda * (1.0 + lambda);
                 let h3 = sq_bpob.mul_add2(2.0 + mu, b_h3) - (bppob * 3.0 * ot_lambda);
-                ds = if x < -190.0 {
-                    v * householder4_factor(
+                ds = v * if x < -190.0 {
+                    householder4_factor(
                         v,
                         h2,
                         h3,
@@ -787,7 +770,7 @@ fn lets_be_rational(beta: f64, x: f64) -> f64 {
                                 - b_h3 * bpob * 4.0 * ot_lambda),
                     )
                 } else {
-                    v * householder3_factor(v, h2, h3)
+                    householder3_factor(v, h2, h3)
                 };
                 s += ds;
                 assert!(s > 0.0, "s must be positive, but got {s}");
@@ -877,8 +860,8 @@ fn lets_be_rational(beta: f64, x: f64) -> f64 {
                     let v = -g / gp;
                     let h2 = b_h2 + gp;
                     let h3 = b_h3 + gp * (2.0 * gp + 3.0 * b_h2);
-                    ds = if x < -580.0 {
-                        v * householder4_factor(
+                    ds = v * if x < -580.0 {
+                        householder4_factor(
                             v,
                             h2,
                             h3,
@@ -888,7 +871,7 @@ fn lets_be_rational(beta: f64, x: f64) -> f64 {
                                     + 4.0 * b_h3),
                         )
                     } else {
-                        v * householder3_factor(v, h2, h3)
+                        householder3_factor(v, h2, h3)
                     };
                     s += ds;
                     if final_trial {
@@ -952,11 +935,13 @@ mod tests {
         }
         let x2 = theta_x * theta_x;
         if x2 < 98.0 * FOURTH_ROOT_DBL_EPSILON {
-            return x2.mul_add2(1.0 / 92897280.0, 1.0 / 322560.0)
+            return x2
+                .mul_add2(1.0 / 92897280.0, 1.0 / 322560.0)
                 .mul_add2(x2, 1.0 / 1920.0)
                 .mul_add2(x2, 1.0 / 120.0)
                 .mul_add2(x2, 1.0 / 24.0)
-                .mul_add2(x2, 1.0) * theta_x;
+                .mul_add2(x2, 1.0)
+                * theta_x;
         }
         (0.5 * theta_x).exp() - (-0.5 * theta_x).exp()
     }
