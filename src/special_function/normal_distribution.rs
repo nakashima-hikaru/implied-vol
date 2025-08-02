@@ -11,8 +11,8 @@ pub(super) fn norm_pdf(x: f64) -> f64 {
 
 #[cfg(feature = "normal-distribution")]
 #[inline(always)]
-pub(crate) fn norm_cdf(z: f64) -> f64 {
-    use crate::erf_cody::erfc_cody;
+pub(super) fn norm_cdf(z: f64) -> f64 {
+    use crate::special_function::erf_cody::erfc_cody;
     const NORM_CDF_ASYMPTOTIC_EXPANSION_FIRST_THRESHOLD: f64 = -10.0;
     const NORM_CDF_ASYMPTOTIC_EXPANSION_SECOND_THRESHOLD: f64 = -67108864.0;
     if z <= NORM_CDF_ASYMPTOTIC_EXPANSION_FIRST_THRESHOLD {

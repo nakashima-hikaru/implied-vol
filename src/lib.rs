@@ -262,7 +262,7 @@ pub fn calculate_european_option_price_by_bachelier(
 /// ```
 #[inline]
 pub fn erfcx(x: f64) -> f64 {
-    erf_cody::erfcx_cody(x)
+    DefaultSpecialFn::erfcx(x)
 }
 
 #[cfg(feature = "error-function")]
@@ -284,7 +284,7 @@ pub fn erfcx(x: f64) -> f64 {
 /// ```
 #[inline]
 pub fn erfc(x: f64) -> f64 {
-    erf_cody::erfc_cody(x)
+    DefaultSpecialFn::erfc(x)
 }
 
 /// Calculates the probability density function of a standard normal distribution.
@@ -306,7 +306,7 @@ pub fn erfc(x: f64) -> f64 {
 #[cfg(feature = "normal-distribution")]
 #[inline]
 pub fn norm_pdf(x: f64) -> f64 {
-    normal_distribution::norm_pdf(x)
+    DefaultSpecialFn::norm_pdf(x)
 }
 /// Calculates the cumulative distribution function (CDF) of the standard normal distribution.
 ///
@@ -327,7 +327,7 @@ pub fn norm_pdf(x: f64) -> f64 {
 #[cfg(feature = "normal-distribution")]
 #[inline]
 pub fn norm_cdf(x: f64) -> f64 {
-    normal_distribution::norm_cdf(x)
+    special_function::norm_cdf(x)
 }
 
 #[cfg(feature = "normal-distribution")]
@@ -353,5 +353,5 @@ pub fn norm_cdf(x: f64) -> f64 {
 /// This function will panic if the given probability value is outside the range [0, 1].
 #[inline]
 pub fn inverse_norm_cdf(x: f64) -> f64 {
-    normal_distribution::inverse_norm_cdf(x)
+    DefaultSpecialFn::inverse_norm_cdf(x)
 }

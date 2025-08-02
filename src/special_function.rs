@@ -1,5 +1,5 @@
 mod erf_cody;
-mod normal_distribution;
+pub mod normal_distribution;
 
 use crate::special_function::erf_cody::{erf_cody, erfc_cody, erfcx_cody};
 use crate::special_function::normal_distribution::{erfinv, inverse_norm_cdf, norm_pdf};
@@ -40,4 +40,10 @@ impl SpecialFn for DefaultSpecialFn {
     fn norm_pdf(x: f64) -> f64 {
         norm_pdf(x)
     }
+}
+
+#[cfg(feature = "normal-distribution")]
+#[inline(always)]
+pub(super) fn norm_cdf(z: f64) -> f64 {
+    normal_distribution::norm_cdf(z)
 }
