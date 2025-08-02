@@ -294,7 +294,7 @@ fn y_prime_tail_expansion_rational_function_part(w: f64) -> f64 {
 }
 
 #[inline(always)]
-fn y_prime<E: SpecialFn>(h: f64) -> f64 {
+fn y_prime<SpFn: SpecialFn>(h: f64) -> f64 {
     // We copied the thresholds of -0.46875 and -4 from Cody.
     if h < -4.0 {
         // Nonlinear-Remez optimized minimax rational function of order (5,6) for g(w) := (Y'(h)/h²-1)/h² with w:=1/h².
@@ -318,13 +318,13 @@ fn y_prime<E: SpecialFn>(h: f64) -> f64 {
                 .mul_add2(-h, 1.872_428_636_958_916_3)
                 .mul_add2(-h, 1.0)
     } else {
-        1.0 + h * SQRT_PI_OVER_TWO * E::erfcx(-FRAC_1_SQRT_2 * h)
+        1.0 + h * SQRT_PI_OVER_TWO * SpFn::erfcx(-FRAC_1_SQRT_2 * h)
     }
 }
 
 #[inline(always)]
-fn small_t_expansion_of_scaled_normalised_black<E: SpecialFn>(h: f64, t: f64) -> f64 {
-    let a = y_prime::<E>(h);
+fn small_t_expansion_of_scaled_normalised_black<SpFn: SpecialFn>(h: f64, t: f64) -> f64 {
+    let a = y_prime::<SpFn>(h);
     let h2 = h * h;
     let t2 = t * t;
     #[inline(always)]
@@ -389,7 +389,7 @@ fn small_t_expansion_of_scaled_normalised_black<E: SpecialFn>(h: f64, t: f64) ->
 }
 
 #[inline(always)]
-fn normalised_black_with_optimal_use_of_codys_functions<E: SpecialFn>(x: f64, s: f64) -> f64 {
+fn normalised_black_with_optimal_use_of_codys_functions<SpFn: SpecialFn>(x: f64, s: f64) -> f64 {
     const CODYS_THRESHOLD: f64 = 0.46875;
     let h = x / s;
     let t = 0.5 * s;
@@ -397,14 +397,14 @@ fn normalised_black_with_optimal_use_of_codys_functions<E: SpecialFn>(x: f64, s:
     let q2 = -FRAC_1_SQRT_2 * (h - t);
     let two_b = if q1 < CODYS_THRESHOLD {
         if q2 < CODYS_THRESHOLD {
-            (0.5 * x).exp() * E::erfc(q1) - (-0.5 * x).exp() * E::erfc(q2)
+            (0.5 * x).exp() * SpFn::erfc(q1) - (-0.5 * x).exp() * SpFn::erfc(q2)
         } else {
-            (0.5 * x).exp() * E::erfc(q1) - (-0.5 * (h * h + t * t)).exp() * E::erfcx(q2)
+            (0.5 * x).exp() * SpFn::erfc(q1) - (-0.5 * (h * h + t * t)).exp() * SpFn::erfcx(q2)
         }
     } else if q2 < CODYS_THRESHOLD {
-        (-0.5 * (h * h + t * t)).exp() * E::erfcx(q1) - (-0.5 * x).exp() * E::erfc(q2)
+        (-0.5 * (h * h + t * t)).exp() * SpFn::erfcx(q1) - (-0.5 * x).exp() * SpFn::erfc(q2)
     } else {
-        (-0.5 * (h * h + t * t)).exp() * (E::erfcx(q1) - E::erfcx(q2))
+        (-0.5 * (h * h + t * t)).exp() * (SpFn::erfcx(q1) - SpFn::erfcx(q2))
     };
     (0.5 * two_b).max(0.0)
 }
@@ -543,15 +543,15 @@ fn b_l_over_b_max(s_c: f64) -> f64 {
 }
 
 #[inline(always)]
-fn normalised_black<E: SpecialFn>(x: f64, s: f64) -> f64 {
+fn normalised_black<SpFn: SpecialFn>(x: f64, s: f64) -> f64 {
     assert!(x < 0.0, "x: {x}");
     assert!(s > 0.0, "s: {s}");
     if is_region1(x, s) {
         asymptotic_expansion_of_scaled_normalised_black(x / s, 0.5 * s) * normalised_vega(x, s)
     } else if is_region2(x, s) {
-        small_t_expansion_of_scaled_normalised_black::<E>(x / s, 0.5 * s) * normalised_vega(x, s)
+        small_t_expansion_of_scaled_normalised_black::<SpFn>(x / s, 0.5 * s) * normalised_vega(x, s)
     } else {
-        normalised_black_with_optimal_use_of_codys_functions::<E>(x, s)
+        normalised_black_with_optimal_use_of_codys_functions::<SpFn>(x, s)
     }
 }
 
@@ -566,7 +566,7 @@ fn is_region2(x: f64, s: f64) -> bool {
 }
 
 #[inline(always)]
-fn scaled_normalised_black_and_ln_vega<E: SpecialFn>(x: f64, s: f64) -> (f64, f64) {
+fn scaled_normalised_black_and_ln_vega<SpFn: SpecialFn>(x: f64, s: f64) -> (f64, f64) {
     assert!(x < 0.0, "x must be negative, got: {x}");
     assert!(s > 0.0, "s must be positive, got: {s}");
     let ln_vega = ln_normalised_vega(x, s);
@@ -577,40 +577,40 @@ fn scaled_normalised_black_and_ln_vega<E: SpecialFn>(x: f64, s: f64) -> (f64, f6
         )
     } else if is_region2(x, s) {
         (
-            small_t_expansion_of_scaled_normalised_black::<E>(x / s, 0.5 * s),
+            small_t_expansion_of_scaled_normalised_black::<SpFn>(x / s, 0.5 * s),
             ln_vega,
         )
     } else {
         (
-            normalised_black_with_optimal_use_of_codys_functions::<E>(x, s) * (-ln_vega).exp(),
+            normalised_black_with_optimal_use_of_codys_functions::<SpFn>(x, s) * (-ln_vega).exp(),
             ln_vega,
         )
     }
 }
 
 #[inline(always)]
-pub(crate) fn black<E: SpecialFn>(f: f64, k: f64, sigma: f64, t: f64, q: bool) -> f64 {
+pub(crate) fn black<SpFn: SpecialFn>(f: f64, k: f64, sigma: f64, t: f64, q: bool) -> f64 {
     let s = sigma * t.sqrt();
     if k == f {
-        f * E::erf((0.5 * FRAC_1_SQRT_2) * s)
+        f * SpFn::erf((0.5 * FRAC_1_SQRT_2) * s)
     } else {
         (if q { f - k } else { k - f }).max(0.0)
             + (if s <= 0.0 {
                 0.0
             } else {
-                f.sqrt() * k.sqrt() * normalised_black::<E>((f / k).ln().abs().neg(), s)
+                f.sqrt() * k.sqrt() * normalised_black::<SpFn>((f / k).ln().abs().neg(), s)
             })
     }
 }
 
 #[inline(always)]
-fn compute_f_lower_map_and_first_two_derivatives<E: SpecialFn>(x: f64, s: f64) -> (f64, f64, f64) {
+fn compute_f_lower_map_and_first_two_derivatives<SpFn: SpecialFn>(x: f64, s: f64) -> (f64, f64, f64) {
     let ax = x.abs();
     let z = ONE_OVER_SQRT_THREE * ax / s;
     let y = z * z;
     let s2 = s * s;
-    let phi_m = 0.5 * E::erfc(FRAC_1_SQRT_2 * z);
-    let phi = E::norm_pdf(z);
+    let phi_m = 0.5 * SpFn::erfc(FRAC_1_SQRT_2 * z);
+    let phi = SpFn::norm_pdf(z);
 
     let phi2 = phi_m * phi_m;
     (
@@ -624,31 +624,31 @@ fn compute_f_lower_map_and_first_two_derivatives<E: SpecialFn>(x: f64, s: f64) -
 }
 
 #[inline(always)]
-fn inverse_f_lower_map<E: SpecialFn>(x: f64, f: f64) -> f64 {
+fn inverse_f_lower_map<SpFn: SpecialFn>(x: f64, f: f64) -> f64 {
     (x / (SQRT_THREE
-        * E::inverse_norm_cdf(SQRT_THREE_OVER_THIRD_ROOT_TWO_PI * f.cbrt() / x.abs().cbrt())))
+        * SpFn::inverse_norm_cdf(SQRT_THREE_OVER_THIRD_ROOT_TWO_PI * f.cbrt() / x.abs().cbrt())))
     .abs()
 }
 
 #[inline(always)]
-fn compute_f_upper_map_and_first_two_derivatives<E: SpecialFn>(x: f64, s: f64) -> (f64, f64, f64) {
+fn compute_f_upper_map_and_first_two_derivatives<SpFn: SpecialFn>(x: f64, s: f64) -> (f64, f64, f64) {
     let w = (x / s).powi(2);
     (
-        0.5 * E::erfc((0.5 * FRAC_1_SQRT_2) * s),
+        0.5 * SpFn::erfc((0.5 * FRAC_1_SQRT_2) * s),
         -0.5 * (0.5 * w).exp(),
         SQRT_PI_OVER_TWO * ((w + 0.125 * s * s).exp()) * w / s,
     )
 }
 
 #[inline(always)]
-fn inverse_f_upper_map<E: SpecialFn>(f: f64) -> f64 {
-    -2.0 * E::inverse_norm_cdf(f)
+fn inverse_f_upper_map<SpFn: SpecialFn>(f: f64) -> f64 {
+    -2.0 * SpFn::inverse_norm_cdf(f)
 }
 
 #[inline(always)]
-fn one_minus_erfcx<E: SpecialFn>(x: f64) -> f64 {
+fn one_minus_erfcx<SpFn: SpecialFn>(x: f64) -> f64 {
     if !(-1.0 / 5.0..=1.0 / 3.0).contains(&x) {
-        1.0 - E::erfcx(x)
+        1.0 - SpFn::erfcx(x)
     } else {
         x * (x
             .mul_add2(1.4069285713634565E-2, 1.406_918_874_460_965E-1)
@@ -665,12 +665,12 @@ fn one_minus_erfcx<E: SpecialFn>(x: f64) -> f64 {
 }
 
 #[inline(always)]
-fn implied_normalised_volatility_atm<E: SpecialFn>(beta: f64) -> f64 {
-    2.0 * SQRT_2 * E::erfinv(beta)
+fn implied_normalised_volatility_atm<SpFn: SpecialFn>(beta: f64) -> f64 {
+    2.0 * SQRT_2 * SpFn::erfinv(beta)
 }
 
 #[inline(always)]
-fn lets_be_rational<E: SpecialFn>(beta: f64, x: f64) -> f64 {
+fn lets_be_rational<SpFn: SpecialFn>(beta: f64, x: f64) -> f64 {
     assert!(x <= 0.0, "x must be non-positive, but got {x}");
     if beta <= 0. {
         return if beta == 0.0 {
@@ -684,7 +684,7 @@ fn lets_be_rational<E: SpecialFn>(beta: f64, x: f64) -> f64 {
         return VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_ABOVE_MAXIMUM;
     }
     if x == 0.0 {
-        return implied_normalised_volatility_atm::<E>(beta);
+        return implied_normalised_volatility_atm::<SpFn>(beta);
     }
 
     let mut s;
@@ -692,7 +692,7 @@ fn lets_be_rational<E: SpecialFn>(beta: f64, x: f64) -> f64 {
 
     let sqrt_ax = x.neg().sqrt();
     let s_c = SQRT_2 * sqrt_ax;
-    let ome = one_minus_erfcx::<E>(sqrt_ax);
+    let ome = one_minus_erfcx::<SpFn>(sqrt_ax);
     let b_c = 0.5 * b_max * ome;
     if beta < b_c {
         assert!(x < 0.0, "x must be negative, but got {x}");
@@ -701,7 +701,7 @@ fn lets_be_rational<E: SpecialFn>(beta: f64, x: f64) -> f64 {
         let b_l = b_l_over_b_max(s_c) * b_max;
         if beta < b_l {
             let (f_lower_map_l, d_f_lower_map_l_d_beta, d2_f_lower_map_l_d_beta2) =
-                compute_f_lower_map_and_first_two_derivatives::<E>(x, s_l);
+                compute_f_lower_map_and_first_two_derivatives::<SpFn>(x, s_l);
             let r2 = convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side::<
                 true,
             >(
@@ -730,7 +730,7 @@ fn lets_be_rational<E: SpecialFn>(beta: f64, x: f64) -> f64 {
                 }
                 _ => {}
             }
-            s = inverse_f_lower_map::<E>(x, f);
+            s = inverse_f_lower_map::<SpFn>(x, f);
             assert!(s > 0.0, "s must be positive, but got {s}");
             let ln_beta = beta.ln();
 
@@ -738,7 +738,7 @@ fn lets_be_rational<E: SpecialFn>(beta: f64, x: f64) -> f64 {
             let mut final_trial = false;
             while ds.abs() > f64::EPSILON * s {
                 assert!(s > 0.0, "s must be positive, but got {s}");
-                let (bx, ln_vega) = scaled_normalised_black_and_ln_vega::<E>(x, s);
+                let (bx, ln_vega) = scaled_normalised_black_and_ln_vega::<SpFn>(x, s);
                 let ln_b = bx.ln() + ln_vega;
                 let bpob = bx.recip();
                 let h = x / s;
@@ -808,7 +808,7 @@ fn lets_be_rational<E: SpecialFn>(beta: f64, x: f64) -> f64 {
             assert!(s > 0.0, "s must be positive, but got {s}");
         } else {
             let (f_upper_map_h, d_f_upper_map_h_d_beta, d2_f_upper_map_h_d_beta2) =
-                compute_f_upper_map_and_first_two_derivatives::<E>(x, s_u);
+                compute_f_upper_map_and_first_two_derivatives::<SpFn>(x, s_u);
             let mut f = if d2_f_upper_map_h_d_beta2 > -SQRT_DBL_MAX
                 && d2_f_upper_map_h_d_beta2 < SQRT_DBL_MAX
             {
@@ -842,7 +842,7 @@ fn lets_be_rational<E: SpecialFn>(beta: f64, x: f64) -> f64 {
                 let t = (beta - b_u) / h;
                 f = (f_upper_map_h * (1.0 - t) + 0.5 * h * t) * (1.0 - t);
             }
-            s = inverse_f_upper_map::<E>(f);
+            s = inverse_f_upper_map::<SpFn>(f);
             if beta > 0.5 * b_max {
                 let beta_bar = b_max - beta;
                 let mut final_trial = false;
@@ -850,7 +850,7 @@ fn lets_be_rational<E: SpecialFn>(beta: f64, x: f64) -> f64 {
                     let h = x / s;
                     let t = s / 2.0;
                     let gp = SQRT_TWO_OVER_PI
-                        / (E::erfcx((t + h) * FRAC_1_SQRT_2) + E::erfcx((t - h) * FRAC_1_SQRT_2));
+                        / (SpFn::erfcx((t + h) * FRAC_1_SQRT_2) + SpFn::erfcx((t - h) * FRAC_1_SQRT_2));
                     let b_bar = normalised_vega(x, s) / gp;
                     let g = (beta_bar / b_bar).ln();
                     let x2_over_s3 = h * h / s;
@@ -888,7 +888,7 @@ fn lets_be_rational<E: SpecialFn>(beta: f64, x: f64) -> f64 {
         if ds.abs() <= f64::EPSILON * s {
             break;
         }
-        let b = normalised_black::<E>(x, s);
+        let b = normalised_black::<SpFn>(x, s);
         let bp = normalised_vega(x, s);
         let nu = (beta - b) / bp;
         let h = x / s;
@@ -912,7 +912,7 @@ fn lets_be_rational<E: SpecialFn>(beta: f64, x: f64) -> f64 {
 }
 
 #[inline(always)]
-pub(crate) fn implied_black_volatility<E: SpecialFn>(
+pub(crate) fn implied_black_volatility<SpFn: SpecialFn>(
     price: f64,
     f: f64,
     k: f64,
@@ -923,7 +923,7 @@ pub(crate) fn implied_black_volatility<E: SpecialFn>(
         return VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_ABOVE_MAXIMUM;
     }
     let mu = if q { f - k } else { k - f };
-    lets_be_rational::<E>(
+    lets_be_rational::<SpFn>(
         if mu > 0.0 { price - mu } else { price } / (f.sqrt() * k.sqrt()),
         (f / k).ln().abs().neg(),
     ) / t.sqrt()

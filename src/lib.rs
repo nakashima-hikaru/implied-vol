@@ -21,7 +21,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! implied-vol = "1.0.0"
+//! implied-vol = "1.2.3"
 //! ```
 //!
 //! Then, in your code, bring the functions you need into scope with:
@@ -116,10 +116,6 @@ pub fn implied_black_volatility(
 
 /// Computes the implied Black-Scholes volatility of an option given its price.
 ///
-/// This function calculates the implied volatility by using the `lets_be_rational`
-/// library. The implied volatility is the volatility value that, when used in the
-/// Black-Scholes model, produces the given market price of the option.
-///
 /// # Type Parameters
 /// - `SpFn`: A type implementing the `SpecialFn` trait. This type is used internally
 ///   by the `lets_be_rational` library for specialized mathematical computations.
@@ -135,11 +131,6 @@ pub fn implied_black_volatility(
 ///
 /// # Returns
 /// - Returns a `f64` representing the implied volatility of the option.
-///
-/// # Panics
-/// This function may panic if the inputs are invalid for computing the implied volatility.
-/// For example, if the option price is outside of the valid range implied by the
-/// Black-Scholes model, the function may fail.
 ///
 /// # Examples
 /// ```
@@ -162,10 +153,6 @@ pub fn implied_black_volatility(
 ///
 /// println!("Implied Volatility: {}", implied_vol);
 /// ```
-///
-/// # Notes
-/// - Ensure the input parameters are consistent with the assumptions of the Black-Scholes model.
-/// - The accuracy of the implied volatility calculation depends on the `lets_be_rational` implementation being used.
 #[inline]
 pub fn implied_black_volatility_custom<SpFn: SpecialFn>(
     option_price: f64,

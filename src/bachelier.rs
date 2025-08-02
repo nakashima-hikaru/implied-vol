@@ -76,9 +76,9 @@ fn phi_tilde(x: f64) -> f64 {
 }
 
 #[inline(always)]
-fn inv_phi_tilde<E: SpecialFn>(phi_tilde_star: f64) -> f64 {
+fn inv_phi_tilde<SpFn: SpecialFn>(phi_tilde_star: f64) -> f64 {
     if phi_tilde_star > 1.0 {
-        return -inv_phi_tilde::<E>(1.0 - phi_tilde_star);
+        return -inv_phi_tilde::<SpFn>(1.0 - phi_tilde_star);
     }
     if !phi_tilde_star.is_sign_negative() {
         return f64::NAN;
@@ -101,7 +101,7 @@ fn inv_phi_tilde<E: SpecialFn>(phi_tilde_star: f64) -> f64 {
             / (1.0 - h * (0.65174820867 + h * (1.5120247828 + 0.000066437847132 * h)))
     };
     // Equation (2.7)
-    let q = (phi_tilde(x_bar) - phi_tilde_star) / E::norm_pdf(x_bar);
+    let q = (phi_tilde(x_bar) - phi_tilde_star) / SpFn::norm_pdf(x_bar);
     let x2 = x_bar * x_bar;
     // Equation (2.6)
     x_bar
@@ -138,7 +138,7 @@ pub(crate) fn bachelier(forward: f64, strike: f64, sigma: f64, t: f64, q: bool) 
 }
 
 #[inline(always)]
-pub(crate) fn implied_normal_volatility<E: SpecialFn>(
+pub(crate) fn implied_normal_volatility<SpFn: SpecialFn>(
     price: f64,
     forward: f64,
     strike: f64,
@@ -155,7 +155,7 @@ pub(crate) fn implied_normal_volatility<E: SpecialFn>(
         Ordering::Greater => {
             let absolute_moneyness = (forward - strike).abs();
             let phi_tilde_star = (intrinsic - price) / absolute_moneyness;
-            let x_star = inv_phi_tilde::<E>(phi_tilde_star);
+            let x_star = inv_phi_tilde::<SpFn>(phi_tilde_star);
             absolute_moneyness / (x_star * t.sqrt()).abs()
         }
     }
