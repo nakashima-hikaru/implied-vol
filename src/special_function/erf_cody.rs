@@ -114,10 +114,9 @@ const THRESHOLD: f64 = 0.46875;
 const XNEG: f64 = -26.628;
 const XBIG: f64 = 26.543;
 
-const ONE_OVER_SQRT_PI: f64 = 0.564_189_583_547_756_3;
-
 #[inline(always)]
-pub(crate) fn erf_cody(x: f64) -> f64 {
+pub(super) fn erf_cody(x: f64) -> f64 {
+    const ONE_OVER_SQRT_PI: f64 = 0.564_189_583_547_756_3;
     let y = x.abs();
     if y <= THRESHOLD {
         //       |x| <= 0.46875
@@ -139,7 +138,7 @@ pub(crate) fn erf_cody(x: f64) -> f64 {
 }
 
 #[inline(always)]
-pub(crate) fn erfc_cody(x: f64) -> f64 {
+pub(super) fn erfc_cody(x: f64) -> f64 {
     let y = x.abs();
     if y <= THRESHOLD {
         return ab(y * y).neg().mul_add2(x, 1.0);
@@ -172,7 +171,7 @@ fn erfcx_cody_above_threshold(y: f64) -> f64 {
 }
 
 #[inline]
-pub(crate) fn erfcx_cody(x: f64) -> f64 {
+pub(super) fn erfcx_cody(x: f64) -> f64 {
     let y = x.abs();
     if y <= THRESHOLD {
         let z = y * y;
@@ -191,7 +190,7 @@ pub(crate) fn erfcx_cody(x: f64) -> f64 {
 
 #[cfg(test)]
 mod tests {
-    use crate::erf_cody::{THRESHOLD, XBIG, XNEG, erfc_cody, erfcx_cody};
+    use crate::special_function::erf_cody::{THRESHOLD, XBIG, XNEG, erfc_cody, erfcx_cody};
 
     #[test]
     fn calerf_1() {

@@ -5,7 +5,7 @@ use std::ops::Neg;
 const FRAC_SQRT_2_PI: f64 = f64::from_bits(0x3fd9884533d43651);
 
 #[inline(always)]
-pub(crate) fn norm_pdf(x: f64) -> f64 {
+pub(super) fn norm_pdf(x: f64) -> f64 {
     FRAC_SQRT_2_PI * (-0.5 * x * x).exp()
 }
 
@@ -226,7 +226,7 @@ fn inverse_norm_cdf_for_low_probabilities(p: f64) -> f64 {
 }
 
 #[inline(always)]
-pub(crate) fn inverse_norm_cdf(p: f64) -> f64 {
+pub(super) fn inverse_norm_cdf(p: f64) -> f64 {
     let u = p - 0.5;
     if u.abs() < U_MAX {
         return inverse_norm_cdfm_half_for_midrange_probabilities(u);
@@ -239,7 +239,7 @@ pub(crate) fn inverse_norm_cdf(p: f64) -> f64 {
 }
 
 #[inline(always)]
-pub(crate) fn erfinv(e: f64) -> f64 {
+pub(super) fn erfinv(e: f64) -> f64 {
     if e.abs() < 2.0 * U_MAX {
         inverse_norm_cdfm_half_for_midrange_probabilities(0.5 * e) * FRAC_1_SQRT_2
     } else {

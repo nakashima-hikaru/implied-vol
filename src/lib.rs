@@ -48,12 +48,13 @@
 //! ```
 //!
 //! For detailed explanations of each feature, please refer to the README.md file.
+use crate::special_function::{DefaultSpecialFn, SpecialFn};
+
 mod bachelier;
 mod constants;
-mod erf_cody;
 mod lets_be_rational;
-mod normal_distribution;
 mod rational_cubic;
+pub mod special_function;
 
 trait MulAdd {
     fn mul_add2(self, a: f64, b: f64) -> f64;
@@ -104,7 +105,30 @@ pub fn implied_black_volatility(
     expiry: f64,
     is_call: bool,
 ) -> f64 {
-    lets_be_rational::implied_black_volatility(option_price, forward, strike, expiry, is_call)
+    lets_be_rational::implied_black_volatility::<DefaultSpecialFn>(
+        option_price,
+        forward,
+        strike,
+        expiry,
+        is_call,
+    )
+}
+
+#[inline]
+pub fn implied_black_volatility_custom<SpFn: SpecialFn>(
+    option_price: f64,
+    forward: f64,
+    strike: f64,
+    expiry: f64,
+    is_call: bool,
+) -> f64 {
+    lets_be_rational::implied_black_volatility::<SpFn>(
+        option_price,
+        forward,
+        strike,
+        expiry,
+        is_call,
+    )
 }
 
 /// Calculates the price of a European option using the Black-Scholes formula.
@@ -135,7 +159,18 @@ pub fn calculate_european_option_price_by_black_scholes(
     expiry: f64,
     is_call: bool,
 ) -> f64 {
-    lets_be_rational::black(forward, strike, volatility, expiry, is_call)
+    lets_be_rational::black::<DefaultSpecialFn>(forward, strike, volatility, expiry, is_call)
+}
+
+#[inline]
+pub fn calculate_european_option_price_by_black_scholes_custom<SpFn: SpecialFn>(
+    forward: f64,
+    strike: f64,
+    volatility: f64,
+    expiry: f64,
+    is_call: bool,
+) -> f64 {
+    lets_be_rational::black::<SpFn>(forward, strike, volatility, expiry, is_call)
 }
 
 /// Calculates the implied normal volatility.
@@ -165,7 +200,13 @@ pub fn implied_normal_volatility(
     expiry: f64,
     is_call: bool,
 ) -> f64 {
-    bachelier::implied_normal_volatility(option_price, forward, strike, expiry, is_call)
+    bachelier::implied_normal_volatility::<DefaultSpecialFn>(
+        option_price,
+        forward,
+        strike,
+        expiry,
+        is_call,
+    )
 }
 
 /// Calculates the price of an option using Bachelier's model.
