@@ -273,9 +273,9 @@ fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
                 }
             }
         }
-        omega_over_q
+        q * omega_over_q
     };
-    (t / r) * q * omega
+    (t / r) * omega
 }
 
 #[inline(always)]
