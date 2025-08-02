@@ -240,27 +240,27 @@ fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
             .mul_add2(q, a0())
     } else {
         let mut omega_over_q = a16(e);
-        if idx >= 1 {
+        if idx != 0 {
             omega_over_q = omega_over_q.mul_add2(q, a15(e));
-            if idx >= 2 {
+            if idx != 1 {
                 omega_over_q = omega_over_q.mul_add2(q, a14(e));
-                if idx >= 3 {
+                if idx != 2 {
                     omega_over_q = omega_over_q.mul_add2(q, a13(e));
-                    if idx >= 4 {
+                    if idx != 3 {
                         omega_over_q = omega_over_q.mul_add2(q, a12(e));
-                        if idx >= 5 {
+                        if idx != 4 {
                             omega_over_q = omega_over_q.mul_add2(q, a11(e));
-                            if idx >= 6 {
+                            if idx != 5 {
                                 omega_over_q = omega_over_q.mul_add2(q, a10(e));
-                                if idx >= 7 {
+                                if idx != 6 {
                                     omega_over_q = omega_over_q.mul_add2(q, a9(e));
-                                    if idx >= 8 {
+                                    if idx != 7 {
                                         omega_over_q = omega_over_q.mul_add2(q, a8(e));
-                                        if idx >= 9 {
+                                        if idx != 8 {
                                             omega_over_q = omega_over_q.mul_add2(q, a7(e));
-                                            if idx >= 10 {
+                                            if idx != 9 {
                                                 omega_over_q = omega_over_q.mul_add2(q, a6(e));
-                                                if idx == 11 {
+                                                if idx != 10 {
                                                     omega_over_q = omega_over_q.mul_add2(q, a5(e));
                                                 }
                                             }
@@ -952,11 +952,11 @@ mod tests {
         }
         let x2 = theta_x * theta_x;
         if x2 < 98.0 * FOURTH_ROOT_DBL_EPSILON {
-            return theta_x
-                * (1.0
-                    + x2 * ((1.0 / 24.0)
-                        + x2 * ((1.0 / 1920.0)
-                            + x2 * ((1.0 / 322560.0) + (1.0 / 92897280.0) * x2))));
+            return x2.mul_add2(1.0 / 92897280.0, 1.0 / 322560.0)
+                .mul_add2(x2, 1.0 / 1920.0)
+                .mul_add2(x2, 1.0 / 120.0)
+                .mul_add2(x2, 1.0 / 24.0)
+                .mul_add2(x2, 1.0) * theta_x;
         }
         (0.5 * theta_x).exp() - (-0.5 * theta_x).exp()
     }
