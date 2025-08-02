@@ -114,6 +114,58 @@ pub fn implied_black_volatility(
     )
 }
 
+/// Computes the implied Black-Scholes volatility of an option given its price.
+///
+/// This function calculates the implied volatility by using the `lets_be_rational`
+/// library. The implied volatility is the volatility value that, when used in the
+/// Black-Scholes model, produces the given market price of the option.
+///
+/// # Type Parameters
+/// - `SpFn`: A type implementing the `SpecialFn` trait. This type is used internally
+///   by the `lets_be_rational` library for specialized mathematical computations.
+///
+/// # Arguments
+/// - `option_price`: The observed market price of the option.
+/// - `forward`: The forward price of the underlying asset.
+/// - `strike`: The strike price of the option.
+/// - `expiry`: The time to expiry (in years) of the option.
+/// - `is_call`: A boolean flag indicating the type of the option:
+///   - `true` if the option is a call.
+///   - `false` if the option is a put.
+///
+/// # Returns
+/// - Returns a `f64` representing the implied volatility of the option.
+///
+/// # Panics
+/// This function may panic if the inputs are invalid for computing the implied volatility.
+/// For example, if the option price is outside of the valid range implied by the
+/// Black-Scholes model, the function may fail.
+///
+/// # Examples
+/// ```
+/// use implied_vol::implied_black_volatility_custom;
+/// use implied_vol::special_function::DefaultSpecialFn;
+///
+/// let option_price = 10.0;
+/// let forward = 100.0;
+/// let strike = 105.0;
+/// let expiry = 1.0; // 1 year
+/// let is_call = true;
+///
+/// let implied_vol = implied_black_volatility_custom::<DefaultSpecialFn>(
+///     option_price,
+///     forward,
+///     strike,
+///     expiry,
+///     is_call,
+/// );
+///
+/// println!("Implied Volatility: {}", implied_vol);
+/// ```
+///
+/// # Notes
+/// - Ensure the input parameters are consistent with the assumptions of the Black-Scholes model.
+/// - The accuracy of the implied volatility calculation depends on the `lets_be_rational` implementation being used.
 #[inline]
 pub fn implied_black_volatility_custom<SpFn: SpecialFn>(
     option_price: f64,
@@ -162,6 +214,43 @@ pub fn calculate_european_option_price_by_black_scholes(
     lets_be_rational::black::<DefaultSpecialFn>(forward, strike, volatility, expiry, is_call)
 }
 
+/// Calculates the price of a European option using the Black-Scholes model with a custom special function.
+///
+/// # Type Parameters
+/// - `SpFn`: A custom type that implements the `SpecialFn` trait to handle special mathematical functions used in the computation.
+///
+/// # Parameters
+/// - `forward` (`f64`): The forward price of the underlying asset.
+/// - `strike` (`f64`): The strike price of the option.
+/// - `volatility` (`f64`): The implied volatility of the underlying asset, expressed as a decimal.
+/// - `expiry` (`f64`): The time to expiry of the option, measured in years.
+/// - `is_call` (`bool`): A flag to specify the option type:
+///   - `true` for a call option.
+///   - `false` for a put option.
+///
+/// # Returns
+/// - `f64`: The Black-Scholes price of the European option, calculated using the custom special function.
+///
+/// # Example
+/// ```
+/// use implied_vol::calculate_european_option_price_by_black_scholes_custom;
+/// use implied_vol::special_function::DefaultSpecialFn;
+/// let forward_price = 100.0; // Forward price of the underlying asset
+/// let strike_price = 105.0; // Strike price of the option
+/// let volatility = 0.2; // Implied volatility (20%)
+/// let time_to_expiry = 1.0; // Time to expiry in years
+/// let is_call = true; // Call option
+///
+/// let price = calculate_european_option_price_by_black_scholes_custom::<DefaultSpecialFn>(
+///     forward_price,
+///     strike_price,
+///     volatility,
+///     time_to_expiry,
+///     is_call,
+/// );
+///
+/// println!("European option price: {}", price);
+/// ```
 #[inline]
 pub fn calculate_european_option_price_by_black_scholes_custom<SpFn: SpecialFn>(
     forward: f64,
