@@ -1,6 +1,6 @@
 [package]
 name = "implied-vol"
-version = "1.3.0"
+version = "2.0.0"
 authors = ["Hikaru Nakashima <nakashima.alg57@gmail.com>"]
 description = "A pure rust implementation of Peter Jäckel's implied volatility calculation"
 edition = "2024"
@@ -11,10 +11,7 @@ categories = ["finance"]
 
 [features]
 default = []
-error-function = []
-normal-distribution = []
 fma = []
-use_original_taylor_expansion = []
 
 [dependencies]
 

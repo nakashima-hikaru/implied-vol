@@ -1,8 +1,7 @@
 use crate::fused_multiply_add::MulAdd;
-#[cfg(feature = "normal-distribution")]
-use crate::special_function::SpecialFn;
 use std::f64::consts::FRAC_1_SQRT_2;
 use std::ops::Neg;
+use crate::SpecialFn;
 
 const FRAC_SQRT_2_PI: f64 = f64::from_bits(0x3fd9884533d43651);
 
@@ -11,7 +10,6 @@ pub(super) fn norm_pdf(x: f64) -> f64 {
     FRAC_SQRT_2_PI * (-0.5 * x * x).exp()
 }
 
-#[cfg(feature = "normal-distribution")]
 #[inline(always)]
 pub(super) fn norm_cdf<SpFn: SpecialFn + ?Sized>(z: f64) -> f64 {
     const NORM_CDF_ASYMPTOTIC_EXPANSION_FIRST_THRESHOLD: f64 = -10.0;

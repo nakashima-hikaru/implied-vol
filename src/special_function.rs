@@ -80,7 +80,7 @@ pub trait SpecialFn {
     fn norm_pdf(x: f64) -> f64 {
         norm_pdf(x)
     }
-    #[cfg(feature = "normal-distribution")]
+    #[inline(always)]
     fn norm_cdf(x: f64) -> f64 {
         normal_distribution::norm_cdf::<Self>(x)
     }
