@@ -8,7 +8,7 @@ unsafe extern "C" {
     fn erfc(x: f64) -> f64;
 }
 
-struct MySpecialFn {}
+struct MySpecialFn;
 
 // Implement the `SpecialFn` trait for `MySpecialFn`
 // For more details on the `SpecialFn` trait, see the `implied_vol` crate documentation.
