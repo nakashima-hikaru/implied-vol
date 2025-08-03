@@ -2,7 +2,6 @@ use crate::MulAdd;
 use crate::constants::{ONE_OVER_SQRT_TWO_PI, SQRT_TWO_PI};
 use crate::special_function::SpecialFn;
 use std::cmp::Ordering;
-use std::ops::Neg;
 
 #[inline(always)]
 fn intrinsic_value(forward: f64, strike: f64, q: bool) -> f64 {
