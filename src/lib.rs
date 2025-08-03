@@ -403,7 +403,7 @@ pub fn norm_pdf(x: f64) -> f64 {
 #[cfg(feature = "normal-distribution")]
 #[inline]
 pub fn norm_cdf(x: f64) -> f64 {
-    special_function::norm_cdf(x)
+    DefaultSpecialFn::norm_cdf(x)
 }
 
 #[cfg(feature = "normal-distribution")]

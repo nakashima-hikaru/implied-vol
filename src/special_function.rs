@@ -54,6 +54,14 @@ pub trait SpecialFn {
 
 /// A struct representing the default implementation of a special function.
 pub struct DefaultSpecialFn;
+
+impl DefaultSpecialFn {
+    #[cfg(feature = "normal-distribution")]
+    #[inline(always)]
+    pub fn norm_cdf(z: f64) -> f64 {
+        normal_distribution::norm_cdf(z)
+    }
+}
 impl SpecialFn for DefaultSpecialFn {
     #[inline(always)]
     fn erf(x: f64) -> f64 {
@@ -80,10 +88,4 @@ impl SpecialFn for DefaultSpecialFn {
     fn norm_pdf(x: f64) -> f64 {
         norm_pdf(x)
     }
-}
-
-#[cfg(feature = "normal-distribution")]
-#[inline(always)]
-pub(super) fn norm_cdf(z: f64) -> f64 {
-    normal_distribution::norm_cdf(z)
 }
