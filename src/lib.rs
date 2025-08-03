@@ -48,7 +48,7 @@
 //! ```
 //!
 //! For detailed explanations of each feature, please refer to the README.md file.
-use crate::special_function::{DefaultSpecialFn, SpecialFn};
+pub use crate::special_function::{DefaultSpecialFn, SpecialFn};
 
 mod bachelier;
 mod constants;

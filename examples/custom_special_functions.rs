@@ -1,7 +1,7 @@
 /// This example demonstrates how to use custom special functions with the `implied_vol` crate
 /// by implementing the `SpecialFn` trait.
-use implied_vol::special_function::DefaultSpecialFn;
-use implied_vol::special_function::SpecialFn;
+use implied_vol::DefaultSpecialFn;
+use implied_vol::SpecialFn;
 
 #[link(name = "m")]
 unsafe extern "C" {
