@@ -1,5 +1,5 @@
-use crate::MulAdd;
 use crate::constants::{ONE_OVER_SQRT_TWO_PI, SQRT_TWO_PI};
+use crate::fused_multiply_add::MulAdd;
 use crate::special_function::SpecialFn;
 use std::cmp::Ordering;
 

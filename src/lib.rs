@@ -52,30 +52,10 @@ pub use crate::special_function::{DefaultSpecialFn, SpecialFn};
 
 mod bachelier;
 mod constants;
+mod fused_multiply_add;
 mod lets_be_rational;
 mod rational_cubic;
 pub mod special_function;
-
-trait MulAdd {
-    fn mul_add2(self, a: f64, b: f64) -> f64;
-}
-#[cfg(feature = "fma")]
-#[inline(always)]
-fn fma_function(r: f64, a: f64, b: f64) -> f64 {
-    r.mul_add(a, b)
-}
-
-#[cfg(not(feature = "fma"))]
-#[inline(always)]
-fn fma_function(r: f64, a: f64, b: f64) -> f64 {
-    a * r + b
-}
-impl MulAdd for f64 {
-    #[inline(always)]
-    fn mul_add2(self, a: f64, b: f64) -> f64 {
-        fma_function(self, a, b)
-    }
-}
 
 /// Calculates the implied black volatility using a transformed rational guess with limited iterations.
 ///
@@ -89,7 +69,7 @@ impl MulAdd for f64 {
 ///
 /// # Returns
 ///
-/// The implied black volatility.
+/// The implied Black volatility.
 ///
 /// # Examples
 ///
@@ -130,7 +110,7 @@ pub fn implied_black_volatility(
 ///   - `false` if the option is a put.
 ///
 /// # Returns
-/// - Returns a `f64` representing the implied volatility of the option.
+/// - The implied Black volatility of the option.
 ///
 /// # Examples
 /// ```
@@ -182,7 +162,7 @@ pub fn implied_black_volatility_custom<SpFn: SpecialFn>(
 ///
 /// # Returns
 ///
-/// The price of the European option.
+/// The price of the European option based on the Black-Scholes model.
 ///
 /// # Examples
 ///
@@ -337,6 +317,7 @@ pub fn calculate_european_option_price_by_bachelier(
 /// assert!((result - 0.6156903441929259) / result <= f64::EPSILON);
 /// ```
 #[inline]
+#[deprecated(since = "1.3.0", note = "Use `DefaultSpecialFn::erfcx` instead")]
 pub fn erfcx(x: f64) -> f64 {
     DefaultSpecialFn::erfcx(x)
 }
@@ -359,6 +340,7 @@ pub fn erfcx(x: f64) -> f64 {
 /// assert!((result - 0.4795001221869535) / result <= f64::EPSILON);
 /// ```
 #[inline]
+#[deprecated(since = "1.3.0", note = "Use `DefaultSpecialFn::erfc` instead")]
 pub fn erfc(x: f64) -> f64 {
     DefaultSpecialFn::erfc(x)
 }
@@ -380,6 +362,7 @@ pub fn erfc(x: f64) -> f64 {
 /// assert!((pdf - 0.3989422804014327) / pdf <= f64::EPSILON);
 /// ```
 #[cfg(feature = "normal-distribution")]
+#[deprecated(since = "1.3.0", note = "Use `DefaultSpecialFn::norm_pdf` instead")]
 #[inline]
 pub fn norm_pdf(x: f64) -> f64 {
     DefaultSpecialFn::norm_pdf(x)
@@ -401,6 +384,7 @@ pub fn norm_pdf(x: f64) -> f64 {
 /// assert!((cdf - 0.9331927987311419) / cdf <= f64::EPSILON);
 /// ```
 #[cfg(feature = "normal-distribution")]
+#[deprecated(since = "1.3.0", note = "Use `DefaultSpecialFn::norm_cdf` instead")]
 #[inline]
 pub fn norm_cdf(x: f64) -> f64 {
     DefaultSpecialFn::norm_cdf(x)
@@ -428,6 +412,10 @@ pub fn norm_cdf(x: f64) -> f64 {
 ///
 /// This function will panic if the given probability value is outside the range [0, 1].
 #[inline]
+#[deprecated(
+    since = "1.3.0",
+    note = "Use `DefaultSpecialFn::inverse_norm_cdf` instead"
+)]
 pub fn inverse_norm_cdf(x: f64) -> f64 {
     DefaultSpecialFn::inverse_norm_cdf(x)
 }

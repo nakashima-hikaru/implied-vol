@@ -43,6 +43,18 @@ use crate::special_function::normal_distribution::{erfinv, inverse_norm_cdf, nor
 ///
 /// Computes the probability density function of the standard normal distribution `N(0, 1)`.
 /// This function evaluates the PDF at a given input `x`.
+///
+/// ## 7. `norm_cdf`
+/// Computes the Cumulative Distribution Function (CDF) of the standard normal distribution at a
+/// given `x`.
+/// - This method is only available if the `"normal-distribution"` feature is enabled.
+/// - The CDF quantifies the probability that a normally distributed random variable will be
+///   less than or equal to `x`.
+/// - This function delegates to `normal_distribution::norm_cdf`.
+///
+/// # Feature Flags
+/// - The method `norm_cdf` is available only when the `"normal-distribution"` feature flag is
+///   enabled.
 pub trait SpecialFn {
     #[inline(always)]
     fn erf(x: f64) -> f64 {
@@ -69,8 +81,8 @@ pub trait SpecialFn {
         norm_pdf(x)
     }
     #[cfg(feature = "normal-distribution")]
-    fn norm_cdf(z: f64) -> f64 {
-        normal_distribution::norm_cdf::<Self>(z)
+    fn norm_cdf(x: f64) -> f64 {
+        normal_distribution::norm_cdf::<Self>(x)
     }
 }
 

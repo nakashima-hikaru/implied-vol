@@ -1,10 +1,10 @@
-use crate::MulAdd;
 use crate::constants::{
     HALF_OF_LN_TWO_PI, ONE_OVER_SQRT_THREE, SIXTEENTH_ROOT_DBL_EPSILON, SQRT_DBL_MAX,
     SQRT_PI_OVER_TWO, SQRT_THREE, SQRT_THREE_OVER_THIRD_ROOT_TWO_PI, SQRT_TWO_OVER_PI, SQRT_TWO_PI,
     TWO_PI_OVER_SQRT_TWENTY_SEVEN, VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_ABOVE_MAXIMUM,
     VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_BELOW_INTRINSIC,
 };
+use crate::fused_multiply_add::MulAdd;
 use crate::rational_cubic::{
     convex_rational_cubic_control_parameter_to_fit_second_derivative_at_left_side,
     convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side,

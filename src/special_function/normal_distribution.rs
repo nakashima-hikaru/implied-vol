@@ -1,4 +1,4 @@
-use crate::MulAdd;
+use crate::fused_multiply_add::MulAdd;
 #[cfg(feature = "normal-distribution")]
 use crate::special_function::SpecialFn;
 use std::f64::consts::FRAC_1_SQRT_2;
