@@ -604,7 +604,10 @@ pub(crate) fn black<SpFn: SpecialFn>(f: f64, k: f64, sigma: f64, t: f64, q: bool
 }
 
 #[inline(always)]
-fn compute_f_lower_map_and_first_two_derivatives<SpFn: SpecialFn>(x: f64, s: f64) -> (f64, f64, f64) {
+fn compute_f_lower_map_and_first_two_derivatives<SpFn: SpecialFn>(
+    x: f64,
+    s: f64,
+) -> (f64, f64, f64) {
     let ax = x.abs();
     let z = ONE_OVER_SQRT_THREE * ax / s;
     let y = z * z;
@@ -631,7 +634,10 @@ fn inverse_f_lower_map<SpFn: SpecialFn>(x: f64, f: f64) -> f64 {
 }
 
 #[inline(always)]
-fn compute_f_upper_map_and_first_two_derivatives<SpFn: SpecialFn>(x: f64, s: f64) -> (f64, f64, f64) {
+fn compute_f_upper_map_and_first_two_derivatives<SpFn: SpecialFn>(
+    x: f64,
+    s: f64,
+) -> (f64, f64, f64) {
     let w = (x / s).powi(2);
     (
         0.5 * SpFn::erfc((0.5 * FRAC_1_SQRT_2) * s),
@@ -850,7 +856,8 @@ fn lets_be_rational<SpFn: SpecialFn>(beta: f64, x: f64) -> f64 {
                     let h = x / s;
                     let t = s / 2.0;
                     let gp = SQRT_TWO_OVER_PI
-                        / (SpFn::erfcx((t + h) * FRAC_1_SQRT_2) + SpFn::erfcx((t - h) * FRAC_1_SQRT_2));
+                        / (SpFn::erfcx((t + h) * FRAC_1_SQRT_2)
+                            + SpFn::erfcx((t - h) * FRAC_1_SQRT_2));
                     let b_bar = normalised_vega(x, s) / gp;
                     let g = (beta_bar / b_bar).ln();
                     let x2_over_s3 = h * h / s;
