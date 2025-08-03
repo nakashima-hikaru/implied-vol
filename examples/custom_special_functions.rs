@@ -1,6 +1,5 @@
 /// This example demonstrates how to use custom special functions with the `implied_vol` crate
 /// by implementing the `SpecialFn` trait.
-use implied_vol::DefaultSpecialFn;
 use implied_vol::SpecialFn;
 
 #[link(name = "m")]
@@ -22,26 +21,6 @@ impl SpecialFn for MySpecialFn {
     fn erfc(x: f64) -> f64 {
         // Call the C library function `erfc` directly
         unsafe { erfc(x) }
-    }
-
-    fn erfcx(x: f64) -> f64 {
-        // Use the default implementation for `erfcx`
-        DefaultSpecialFn::erfcx(x)
-    }
-
-    fn erfinv(x: f64) -> f64 {
-        // Use the default implementation for `erfinv`
-        DefaultSpecialFn::erfinv(x)
-    }
-
-    fn inverse_norm_cdf(x: f64) -> f64 {
-        // Use the default implementation for `inverse_norm_cdf`
-        DefaultSpecialFn::inverse_norm_cdf(x)
-    }
-
-    fn norm_pdf(x: f64) -> f64 {
-        // Use the default implementation for `norm_pdf`
-        DefaultSpecialFn::norm_pdf(x)
     }
 }
 

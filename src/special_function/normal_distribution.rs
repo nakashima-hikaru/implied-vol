@@ -1,4 +1,6 @@
 use crate::MulAdd;
+#[cfg(feature = "normal-distribution")]
+use crate::special_function::SpecialFn;
 use std::f64::consts::FRAC_1_SQRT_2;
 use std::ops::Neg;
 
@@ -11,8 +13,7 @@ pub(super) fn norm_pdf(x: f64) -> f64 {
 
 #[cfg(feature = "normal-distribution")]
 #[inline(always)]
-pub(super) fn norm_cdf(z: f64) -> f64 {
-    use crate::special_function::erf_cody::erfc_cody;
+pub(super) fn norm_cdf<SpFn: SpecialFn + ?Sized>(z: f64) -> f64 {
     const NORM_CDF_ASYMPTOTIC_EXPANSION_FIRST_THRESHOLD: f64 = -10.0;
     const NORM_CDF_ASYMPTOTIC_EXPANSION_SECOND_THRESHOLD: f64 = -67108864.0;
     if z <= NORM_CDF_ASYMPTOTIC_EXPANSION_FIRST_THRESHOLD {
@@ -38,7 +39,7 @@ pub(super) fn norm_cdf(z: f64) -> f64 {
         }
         return -norm_pdf(z) * sum / z;
     }
-    0.5 * erfc_cody(-z * FRAC_1_SQRT_2)
+    0.5 * SpFn::erfc(-z * FRAC_1_SQRT_2)
 }
 
 const U_MAX: f64 = 0.3413447460685429;
