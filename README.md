@@ -40,14 +40,8 @@ Community contributions are always welcome!
 
 ## Cargo Feature Flags
 
-- `fma`: Enable FMA (Fused Multiply-Add) operations for improved performance. Approximately 10% faster than the default
+- `fma`: Enable FMA (Fused Multiply-Add) operations for improved performance. Approximately 10% ~ 20% faster than the default
   implementation if FMA is available on the target architecture.
-- `normal-distribution`: Provide functions related to standard normal distribution used in calculation of implied
-  volatility
-- `error-function`: Provide functions related to error function used in calculation of implied volatility
-
-- `use_original_taylor_expansion`: An upstream compilation flag.
-
 ## License
 
 This project is licensed under the [MIT license](https://github.com/nakashima-hikaru/implied-vol/blob/main/LICENSE).

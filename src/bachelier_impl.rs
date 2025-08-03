@@ -132,7 +132,7 @@ fn inv_phi_tilde<SpFn: SpecialFn>(phi_tilde_star: f64) -> f64 {
 /// # Returns
 ///
 /// The price of the option.
-pub(crate) fn bachelier(forward: f64, strike: f64, sigma: f64, t: f64, q: bool) -> f64 {
+pub(crate) fn bachelier_price(forward: f64, strike: f64, sigma: f64, t: f64, q: bool) -> f64 {
     let s = sigma.abs() * t.sqrt();
     if s < f64::MIN_POSITIVE {
         return intrinsic_value(forward, strike, q);
@@ -185,7 +185,7 @@ mod tests {
             let t = 1.0;
             let q = true;
             let sigma = implied_normal_volatility::<DefaultSpecialFn>(price, f, k, t, q);
-            let reprice = bachelier(f, k, sigma, t, q);
+            let reprice = bachelier_price(f, k, sigma, t, q);
             assert!((price - reprice).abs() < 5e-14);
         }
     }
@@ -199,7 +199,7 @@ mod tests {
             let t = 1.0;
             let q = false;
             let sigma = implied_normal_volatility::<DefaultSpecialFn>(price, f, k, t, q);
-            let reprice = bachelier(f, k, sigma, t, q);
+            let reprice = bachelier_price(f, k, sigma, t, q);
             assert!((price - reprice).abs() < 5e-14);
         }
     }
@@ -217,7 +217,7 @@ mod tests {
             let t = 1e5 * r3;
             let q = true;
             let sigma = implied_normal_volatility::<DefaultSpecialFn>(price, f, k, t, q);
-            let reprice = bachelier(f, k, sigma, t, q);
+            let reprice = bachelier_price(f, k, sigma, t, q);
             assert!((price - reprice).abs() <= 2.0 * f64::EPSILON);
         }
     }
@@ -235,7 +235,7 @@ mod tests {
             let t = 1e5 * r3;
             let q = true;
             let sigma = implied_normal_volatility::<DefaultSpecialFn>(price, f, k, t, q);
-            let reprice = bachelier(f, k, sigma, t, q);
+            let reprice = bachelier_price(f, k, sigma, t, q);
             assert!((price - reprice).abs() <= 2.0 * f64::EPSILON);
         }
     }
@@ -253,7 +253,7 @@ mod tests {
             let t = 1e5 * r3;
             let q = true;
             let sigma = implied_normal_volatility::<DefaultSpecialFn>(price, f, k, t, q);
-            let reprice = bachelier(f, k, sigma, t, q);
+            let reprice = bachelier_price(f, k, sigma, t, q);
             assert!((price - reprice).abs() <= 2.0 * f64::EPSILON);
         }
     }
@@ -271,7 +271,7 @@ mod tests {
             let t = 1e5 * r3;
             let q = false;
             let sigma = implied_normal_volatility::<DefaultSpecialFn>(price, f, k, t, q);
-            let reprice = bachelier(f, k, sigma, t, q);
+            let reprice = bachelier_price(f, k, sigma, t, q);
             assert!((price - reprice).abs() <= 2.0 * f64::EPSILON);
         }
     }
@@ -289,7 +289,7 @@ mod tests {
             let t = 1e5 * r3;
             let q = false;
             let sigma = implied_normal_volatility::<DefaultSpecialFn>(price, f, k, t, q);
-            let reprice = bachelier(f, k, sigma, t, q);
+            let reprice = bachelier_price(f, k, sigma, t, q);
             assert!((price - reprice).abs() <= 2.0 * f64::EPSILON);
         }
     }
