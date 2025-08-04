@@ -183,13 +183,87 @@ pub fn calculate_european_option_price_by_bachelier(
     bachelier_impl::bachelier_price(forward, strike, volatility, expiry, is_call)
 }
 
+/// A module implementing pricing and implied volatility computation using the Black-Scholes model.
 pub mod black {
-    use crate::{lets_be_rational, SpecialFn};
+    use crate::{SpecialFn, lets_be_rational};
 
-    pub fn price<SpFn: SpecialFn>(forward: f64, strike: f64, volatility: f64, expiry: f64, is_call: bool) -> f64 {
+    /// Computes the price of a European option using the Black-Scholes model.
+    ///
+    /// # Type Parameters
+    /// - `SpFn`: A type that implements the `SpecialFn` trait.
+    ///
+    /// # Arguments
+    /// - `forward`: The forward price of the underlying asset.
+    /// - `strike`: The strike price of the option.
+    /// - `volatility`: The Black volatility of the underlying asset (in annualized terms).
+    /// - `expiry`: Time to expiry of the option, in years.
+    /// - `is_call`: A boolean flag indicating whether the option is a call (`true`)
+    ///   or a put (`false`).
+    ///
+    /// # Returns
+    /// - The price of the option, calculated under the Black-Scholes model.
+    ///
+    /// # Example
+    /// ```rust
+    /// use implied_vol::black::price;
+    /// use implied_vol::DefaultSpecialFn;
+    ///
+    /// let forward = 100.0;
+    /// let strike = 95.0;
+    /// let volatility = 0.2; // 20% annualized volatility
+    /// let expiry = 1.0; // 1 year
+    /// let is_call = true; // Call option
+    ///
+    /// let option_price = price::<DefaultSpecialFn>(forward, strike, volatility, expiry, is_call);
+    /// println!("The option price is: {}", option_price);
+    /// ```
+    #[inline]
+    pub fn price<SpFn: SpecialFn>(
+        forward: f64,
+        strike: f64,
+        volatility: f64,
+        expiry: f64,
+        is_call: bool,
+    ) -> f64 {
         lets_be_rational::black::<SpFn>(forward, strike, volatility, expiry, is_call)
     }
 
+    /// Computes the implied Black volatility from the European option price.
+    ///
+    /// # Parameters
+    ///
+    /// - `option_price`: The observed price of the option (call or put).
+    /// - `forward`: The forward price of the underlying asset.
+    /// - `strike`: The strike price of the option.
+    /// - `expiry`: The time to expiration of the option, typically expressed in years.
+    /// - `is_call`: A boolean flag indicating whether the option is a call (`true`) or a put (`false`).
+    ///
+    /// # Type Parameters
+    ///
+    /// - `SpFn`: A special function type implementing numerical methods, such as approximations for
+    ///   probability distributions, required for calculating the implied volatility. This is a generic
+    ///   placeholder for specialization traits used in numerical methods.
+    ///
+    /// # Returns
+    ///
+    /// The implied Black volatility.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use implied_vol::black::implied_volatility;
+    /// use implied_vol::DefaultSpecialFn;
+    ///
+    /// let option_price = 10.0;
+    /// let forward = 100.0;
+    /// let strike = 95.0;
+    /// let expiry = 1.0; // 1 year
+    /// let is_call = true;
+    ///
+    /// let iv = implied_volatility::<DefaultSpecialFn>(option_price, forward, strike, expiry, is_call);
+    /// println!("Implied Volatility: {}", iv);
+    /// ```
+    #[inline]
     pub fn implied_volatility<SpFn: SpecialFn>(
         option_price: f64,
         forward: f64,
@@ -210,10 +284,85 @@ pub mod black {
 pub mod bachelier {
     use crate::{SpecialFn, bachelier_impl};
 
-    pub fn price(forward: f64, strike: f64, volatility: f64, expiry: f64, is_call: bool) -> f64 {
+    /// Calculates the European option price under the Bachelier model.
+    ///
+    /// # Parameters
+    /// - `forward`: The forward price of the underlying asset.
+    /// - `strike`: The strike price of the option.
+    /// - `volatility`: The normal volatility of the underlying asset (constant for this model).
+    /// - `expiry`: The time to expiry of the option, expressed in years.
+    /// - `is_call`: A boolean indicating whether the option is a call option (`true`) or a put option (`false`).
+    ///
+    /// # Returns
+    /// The computed price of the option.
+    ///
+    /// # type parameters
+    /// - `SpFn`: A trait bound representing a special function type, used internally by the computation.
+    ///
+    /// # Example
+    /// ```
+    /// use implied_vol::bachelier::price;
+    /// use implied_vol::DefaultSpecialFn;
+    ///
+    /// let forward = 100.0;
+    /// let strike = 95.0;
+    /// let volatility = 10.0;
+    /// let expiry = 1.0;
+    /// let is_call = true;
+    ///
+    /// let option_price = price::<DefaultSpecialFn>(forward, strike, volatility, expiry, is_call);
+    /// println!("Option Price: {}", option_price);
+    /// ```
+    #[inline]
+    pub fn price<SpFn: SpecialFn>(
+        forward: f64,
+        strike: f64,
+        volatility: f64,
+        expiry: f64,
+        is_call: bool,
+    ) -> f64 {
         bachelier_impl::bachelier_price(forward, strike, volatility, expiry, is_call)
     }
 
+    /// Computes the implied normal volatility for a European option price.
+    ///
+    /// # Type Parameters
+    /// * `SpFn`: A trait bound for objects that implement the `SpecialFn` trait, used
+    ///   internally by the computation of the implied normal volatility.
+    ///
+    /// # Arguments
+    /// * `option_price` - The observed market price of the option.
+    /// * `forward` - The forward price of the underlying asset.
+    /// * `strike` - The strike price of the option.
+    /// * `expiry` - The time to expiry of the option (in years).
+    /// * `is_call` - A boolean indicating whether the option is a call option (`true`)
+    ///   or a put option (`false`).
+    ///
+    /// # Returns
+    /// The implied normal volatility.
+    ///
+    /// # Example
+    /// ```
+    /// use implied_vol::bachelier::implied_volatility;
+    /// use implied_vol::DefaultSpecialFn;
+    ///
+    /// let option_price = 1.50;
+    /// let forward = 100.0;
+    /// let strike = 102.0;
+    /// let expiry = 0.5;
+    /// let is_call = true;
+    ///
+    /// let vol = implied_volatility::<DefaultSpecialFn>(
+    ///     option_price,
+    ///     forward,
+    ///     strike,
+    ///     expiry,
+    ///     is_call,
+    /// );
+    ///
+    /// println!("Implied Volatility: {}", vol);
+    /// ```
+    #[inline]
     pub fn implied_volatility<SpFn: SpecialFn>(
         option_price: f64,
         forward: f64,

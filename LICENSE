@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2024 Hikaru Nakashima
+Copyright (c) 2025 Hikaru Nakashima
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -24,28 +24,28 @@ The externally maintained libraries from which parts of the Software is derived 
 
     - LetsBeRational, licensed as follows:
 
-    =========================================================================================
-     Copyright © 2013 - 2023 Peter Jäckel.
+        =========================================================================================
+         Copyright © 2013-2024 Peter Jäckel.
 
-     Permission to use, copy, modify, and distribute this software is freely granted,
-     provided that this notice is preserved.
+         Permission to use, copy, modify, and distribute this software is freely granted,
+         provided that this notice is preserved.
 
-     WARRANTY DISCLAIMER
-     The Software is provided "as is" without warranty of any kind, either express or implied,
-     including without limitation any implied warranties of condition, uninterrupted use,
-     merchantability, fitness for a particular purpose, or non-infringement.
-    ==========================================================================================
+         WARRANTY DISCLAIMER
+         The Software is provided "as is" without warranty of any kind, either express or implied,
+         including without limitation any implied warranties of condition, uninterrupted use,
+         merchantability, fitness for a particular purpose, or non-infringement.
+        ==========================================================================================
 
     -　ImpliedNormalVolatility, licensed as follows:
 
-    =========================================================================================
-     Copyright © 2022 Peter Jäckel.
+        =========================================================================================
+         Copyright © 2022 Peter Jäckel.
 
-     Permission to use, copy, modify, and distribute this software is freely granted,
-     provided that this notice is preserved.
+         Permission to use, copy, modify, and distribute this software is freely granted,
+         provided that this notice is preserved.
 
-     WARRANTY DISCLAIMER
-     The Software is provided "as is" without warranty of any kind, either express or implied,
-     including without limitation any implied warranties of condition, uninterrupted use,
-     merchantability, fitness for a particular purpose, or non-infringement.
-    ==========================================================================================
+         WARRANTY DISCLAIMER
+         The Software is provided "as is" without warranty of any kind, either express or implied,
+         including without limitation any implied warranties of condition, uninterrupted use,
+         merchantability, fitness for a particular purpose, or non-infringement.
+        ==========================================================================================

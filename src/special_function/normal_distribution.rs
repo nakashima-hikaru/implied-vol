@@ -1,7 +1,7 @@
+use crate::SpecialFn;
 use crate::fused_multiply_add::MulAdd;
 use std::f64::consts::FRAC_1_SQRT_2;
 use std::ops::Neg;
-use crate::SpecialFn;
 
 const FRAC_SQRT_2_PI: f64 = f64::from_bits(0x3fd9884533d43651);
 

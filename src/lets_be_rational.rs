@@ -318,7 +318,7 @@ fn y_prime<SpFn: SpecialFn>(h: f64) -> f64 {
                 .mul_add2(-h, 1.872_428_636_958_916_3)
                 .mul_add2(-h, 1.0)
     } else {
-        1.0 + h * SQRT_PI_OVER_TWO * SpFn::erfcx(-FRAC_1_SQRT_2 * h)
+        SpFn::erfcx(-FRAC_1_SQRT_2 * h).mul_add2(h * SQRT_PI_OVER_TWO, 1.0)
     }
 }
 
@@ -613,23 +613,23 @@ fn compute_f_lower_map_and_first_two_derivatives<SpFn: SpecialFn>(
     let y = z * z;
     let s2 = s * s;
     let phi_m = 0.5 * SpFn::erfc(FRAC_1_SQRT_2 * z);
-    let phi = SpFn::norm_pdf(z);
 
     let phi2 = phi_m * phi_m;
     (
         TWO_PI_OVER_SQRT_TWENTY_SEVEN * ax * (phi2 * phi_m),
-        std::f64::consts::TAU * y * phi2 * (y + 0.125 * s * s).exp(),
+        std::f64::consts::TAU * y * phi2 * s2.mul_add2(0.125, y).exp(),
         std::f64::consts::FRAC_PI_6 * y / (s2 * s)
             * phi_m
-            * (8.0 * SQRT_THREE * s * ax + (3.0 * s2 * (s2 - 8.0) - 8.0 * x * x) * phi_m / phi)
+            * (8.0 * SQRT_THREE * s * ax
+                + (3.0 * s2 * (s2 - 8.0) - 8.0 * x * x) * phi_m / SpFn::norm_pdf(z))
             * (2.0 * y + 0.25 * s2).exp(),
     )
 }
 
 #[inline(always)]
 fn inverse_f_lower_map<SpFn: SpecialFn>(x: f64, f: f64) -> f64 {
-    (x / (SQRT_THREE
-        * SpFn::inverse_norm_cdf(SQRT_THREE_OVER_THIRD_ROOT_TWO_PI * f.cbrt() / x.abs().cbrt())))
+    (x * ONE_OVER_SQRT_THREE
+        / SpFn::inverse_norm_cdf(SQRT_THREE_OVER_THIRD_ROOT_TWO_PI * f.cbrt() / x.abs().cbrt()))
     .abs()
 }
 
@@ -711,22 +711,16 @@ fn lets_be_rational<SpFn: SpecialFn>(beta: f64, x: f64) -> f64 {
             let r2 = convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side::<
                 true,
             >(
-                0.0,
                 b_l,
-                0.0,
                 f_lower_map_l,
-                1.0,
-                d_f_lower_map_l_d_beta,
+                (1.0, d_f_lower_map_l_d_beta),
                 d2_f_lower_map_l_d_beta2,
             );
             let mut f = rational_cubic_interpolation(
                 beta,
-                0.0,
                 b_l,
-                0.0,
-                f_lower_map_l,
-                1.0,
-                d_f_lower_map_l_d_beta,
+                (0.0, f_lower_map_l),
+                (1.0, d_f_lower_map_l_d_beta),
                 r2,
             );
             match f.partial_cmp(&0.0) {
@@ -749,7 +743,7 @@ fn lets_be_rational<SpFn: SpecialFn>(beta: f64, x: f64) -> f64 {
                 let bpob = bx.recip();
                 let h = x / s;
                 let x2_over_s3 = h * h / s;
-                let b_h2 = x2_over_s3 - s / 4.0;
+                let b_h2 = x2_over_s3 - s * 0.25;
                 let v = (ln_beta - ln_b) * ln_b / ln_beta * bx;
                 let lambda = ln_b.recip();
                 let ot_lambda = lambda.mul_add2(2.0, 1.0);
@@ -789,13 +783,13 @@ fn lets_be_rational<SpFn: SpecialFn>(beta: f64, x: f64) -> f64 {
             }
             return s;
         } else {
-            let inv_v_c = SQRT_TWO_PI / b_max;
-            let inv_v_l = inv_normalised_vega(x, s_l);
+            let inv_v = (SQRT_TWO_PI / b_max, inv_normalised_vega(x, s_l));
+            let h = b_c - b_l;
             let r_im =
                 convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side::<
                     false,
-                >(b_l, b_c, s_l, s_c, inv_v_l, inv_v_c, 0.0);
-            s = rational_cubic_interpolation(beta, b_l, b_c, s_l, s_c, inv_v_l, inv_v_c, r_im);
+                >(h, s_c - s_l, inv_v, 0.0);
+            s = rational_cubic_interpolation(beta - b_l, h, (s_l, s_c), inv_v, r_im);
             assert!(s > 0.0, "s must be positive, but got {s}");
         }
     } else {
@@ -803,14 +797,13 @@ fn lets_be_rational<SpFn: SpecialFn>(beta: f64, x: f64) -> f64 {
         assert!(s_u > 0.0, "s_u must be positive, but got {s_u}");
         let b_u = b_u_over_b_max(s_c) * b_max;
         if beta <= b_u {
-            let inv_v_c = SQRT_TWO_PI / b_max;
-
-            let inv_v_u = inv_normalised_vega(x, s_u);
+            let inv_v = (SQRT_TWO_PI / b_max, inv_normalised_vega(x, s_u));
+            let h = b_u - b_c;
             let r_u_m =
                 convex_rational_cubic_control_parameter_to_fit_second_derivative_at_left_side::<
                     false,
-                >(b_c, b_u, s_c, s_u, inv_v_c, inv_v_u, 0.0);
-            s = rational_cubic_interpolation(beta, b_c, b_u, s_c, s_u, inv_v_c, inv_v_u, r_u_m);
+                >(h, s_u - s_c, inv_v, 0.0);
+            s = rational_cubic_interpolation(beta - b_c, h, (s_c, s_u), inv_v, r_u_m);
             assert!(s > 0.0, "s must be positive, but got {s}");
         } else {
             let (f_upper_map_h, d_f_upper_map_h_d_beta, d2_f_upper_map_h_d_beta2) =
@@ -818,26 +811,21 @@ fn lets_be_rational<SpFn: SpecialFn>(beta: f64, x: f64) -> f64 {
             let mut f = if d2_f_upper_map_h_d_beta2 > -SQRT_DBL_MAX
                 && d2_f_upper_map_h_d_beta2 < SQRT_DBL_MAX
             {
+                let h = b_max - b_u;
                 let r_uu =
                     convex_rational_cubic_control_parameter_to_fit_second_derivative_at_left_side::<
                         true,
                     >(
-                        b_u,
-                        b_max,
-                        f_upper_map_h,
-                        0.0,
-                        d_f_upper_map_h_d_beta,
-                        -0.5,
+                        h,
+                        -f_upper_map_h,
+                        (d_f_upper_map_h_d_beta, -0.5),
                         d2_f_upper_map_h_d_beta2,
                     );
                 rational_cubic_interpolation(
-                    beta,
-                    b_u,
-                    b_max,
-                    f_upper_map_h,
-                    0.0,
-                    d_f_upper_map_h_d_beta,
-                    -0.5,
+                    beta - b_u,
+                    h,
+                    (f_upper_map_h, 0.0),
+                    (d_f_upper_map_h_d_beta, -0.5),
                     r_uu,
                 )
             } else {
@@ -861,9 +849,9 @@ fn lets_be_rational<SpFn: SpecialFn>(beta: f64, x: f64) -> f64 {
                     let b_bar = normalised_vega(x, s) / gp;
                     let g = (beta_bar / b_bar).ln();
                     let x2_over_s3 = h * h / s;
-                    let b_h2 = x2_over_s3 - s / 4.0;
+                    let b_h2 = s.mul_add2(-0.25, x2_over_s3);
                     let c = 3.0 * (x2_over_s3 / s);
-                    let b_h3 = b_h2 * b_h2 - c - 0.25;
+                    let b_h3 = b_h2.mul_add2(b_h2, -c - 0.25);
                     let v = -g / gp;
                     let h2 = b_h2 + gp;
                     let h3 = b_h3 + gp * (2.0 * gp + 3.0 * b_h2);
@@ -899,7 +887,7 @@ fn lets_be_rational<SpFn: SpecialFn>(beta: f64, x: f64) -> f64 {
         let bp = normalised_vega(x, s);
         let nu = (beta - b) / bp;
         let h = x / s;
-        let h2 = h * h / s - s / 4.0;
+        let h2 = h * h / s - s * 0.25;
         let h3 = h2 * h2 - 3.0 * (h / s).powi(2) - 0.25;
         ds = nu * householder3_factor(nu, h2, h3);
         s += ds;
@@ -985,7 +973,7 @@ mod tests {
         }
         let theta_x = if theta < 0.0 { -x } else { x };
         if s <= 0.0 {
-            return if theta_x > 0.0 { 0.0 } else { std::f64::MAX };
+            return if theta_x > 0.0 { 0.0 } else { f64::MAX };
         }
         s / scaled_normalised_black(theta_x, s)
     }

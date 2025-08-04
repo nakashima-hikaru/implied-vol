@@ -1,4 +1,4 @@
-pub trait MulAdd {
+pub(super) trait MulAdd {
     fn mul_add2(self, a: f64, b: f64) -> f64;
 }
 
