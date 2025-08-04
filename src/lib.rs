@@ -136,6 +136,7 @@ pub fn calculate_european_option_price_by_black_scholes(
 /// let normal_vol = implied_vol::implied_normal_volatility(20.0, 100.0, 90.0, 30.0, true);
 /// assert_eq!(normal_vol, 6.614292466299764);
 /// ```
+#[inline]
 pub fn implied_normal_volatility(
     option_price: f64,
     forward: f64,
