@@ -183,9 +183,10 @@ pub(super) fn erfcx_cody(x: f64) -> f64 {
     let result = erfcx_cody_above_threshold(y);
     if x < 0.0 {
         let expx2 = smoothened_exponential_of_positive_square(x);
-        return (expx2 + expx2) - result;
+        (expx2 + expx2) - result
+    } else {
+        result
     }
-    result
 }
 
 #[cfg(test)]
