@@ -12,6 +12,7 @@ categories = ["finance"]
 [features]
 default = []
 fma = []
+bench = []
 
 [dependencies]
 cxx = "1"

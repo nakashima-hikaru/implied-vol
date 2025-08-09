@@ -41,6 +41,7 @@
 //! ```
 
 pub use crate::special_function::{DefaultSpecialFn, SpecialFn};
+#[cfg(feature = "bench")]
 pub mod cxx;
 
 mod bachelier_impl;
@@ -385,8 +386,10 @@ pub mod bachelier {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(feature = "bench")]
     use crate::cxx::ffi::ImpliedBlackVolatility;
 
+    #[cfg(feature = "bench")]
     #[test]
     fn test_hello() {
         let val = ImpliedBlackVolatility(10.0, 100.0, 100.0, 0.2, 1.0);

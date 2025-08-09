@@ -77,8 +77,10 @@ fn put_otm(b: &mut Bencher) {
     let q = false;
     b.iter(|| implied_black_volatility(price, f, k, t, q));
 }
-
+#[cfg(feature = "bench")]
 use implied_vol::cxx::ffi::ImpliedBlackVolatility;
+
+#[cfg(feature = "bench")]
 #[bench]
 fn call_atm_cpp(b: &mut Bencher) {
     let price = 0.01;
@@ -89,6 +91,7 @@ fn call_atm_cpp(b: &mut Bencher) {
     b.iter(|| ImpliedBlackVolatility(price, f, k, t, q));
 }
 
+#[cfg(feature = "bench")]
 #[bench]
 fn call_itm_cpp(b: &mut Bencher) {
     let seed: [u8; 32] = [13; 32];
@@ -102,6 +105,7 @@ fn call_itm_cpp(b: &mut Bencher) {
     b.iter(|| ImpliedBlackVolatility(price, f, k, t, q));
 }
 
+#[cfg(feature = "bench")]
 #[bench]
 fn call_otm_cpp(b: &mut Bencher) {
     let seed: [u8; 32] = [13; 32];
@@ -115,6 +119,7 @@ fn call_otm_cpp(b: &mut Bencher) {
     b.iter(|| ImpliedBlackVolatility(price, f, k, t, q));
 }
 
+#[cfg(feature = "bench")]
 #[bench]
 fn put_atm_cpp(b: &mut Bencher) {
     let price = 0.01;
@@ -124,6 +129,8 @@ fn put_atm_cpp(b: &mut Bencher) {
     let q = -1.0;
     b.iter(|| ImpliedBlackVolatility(price, f, k, t, q));
 }
+
+#[cfg(feature = "bench")]
 #[bench]
 fn put_itm_cpp(b: &mut Bencher) {
     let seed: [u8; 32] = [13; 32];
@@ -137,6 +144,7 @@ fn put_itm_cpp(b: &mut Bencher) {
     b.iter(|| ImpliedBlackVolatility(price, f, k, t, q));
 }
 
+#[cfg(feature = "bench")]
 #[bench]
 fn put_otm_cpp(b: &mut Bencher) {
     let seed: [u8; 32] = [13; 32];

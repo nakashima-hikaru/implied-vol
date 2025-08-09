@@ -36,11 +36,11 @@ jobs:
         uses: dtolnay/rust-toolchain@nightly
 
       - name: Run benchmarks
-        run: cargo +nightly bench
+        run: cargo +nightly bench --features bench
         env:
           RUSTFLAGS: --cfg=bench
 
       - name: Run benchmarks with FMA
-        run: cargo +nightly bench --features fma
+        run: cargo +nightly bench --features fma,bench
         env:
           RUSTFLAGS: --cfg=bench

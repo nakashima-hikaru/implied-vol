@@ -1,15 +1,21 @@
 fn main() {
+    if !cfg!(feature = "bench") {
+        return;
+    }
+    println!("Running build.rs for benchmarks only...");
     cxx_build::bridge("src/cxx.rs")
         .file("source/lets_be_rational.cpp")
         .file("source/normaldistribution.cpp")
         .file("source/rationalcubic.cpp")
         .file("source/erf_cody.cpp")
+        .flag("-finput-charset=UTF-8")
         .flag("-O3")
         .flag("-DNDEBUG")
         .flag("-fextended-identifiers")
         .flag("-ffp-contract=fast")
         .flag("-march=native")
         .flag("-Ofast")
+        .flag("-w")
         .include("source")
         .flag_if_supported("-std=c++23")
         .compile("lets_be_rational");

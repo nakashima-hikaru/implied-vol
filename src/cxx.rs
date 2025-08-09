@@ -1,3 +1,4 @@
+#[cfg(feature = "bench")]
 #[cxx::bridge]
 pub mod ffi {
     unsafe extern "C++" {
