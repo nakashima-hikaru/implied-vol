@@ -9,8 +9,9 @@ fn main() {
         .flag("-fextended-identifiers")
         .flag("-ffp-contract=fast")
         .flag("-march=native")
+        .flag("-Ofast")
         .include("source")
-        .flag_if_supported("-std=c++17")
+        .flag_if_supported("-std=c++23")
         .compile("lets_be_rational");
 
     println!("cargo:rerun-if-changed=src/cxx.rs");
