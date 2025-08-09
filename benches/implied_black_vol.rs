@@ -80,7 +80,7 @@ fn put_otm(b: &mut Bencher) {
 
 use implied_vol::cxx::ffi::ImpliedBlackVolatility;
 #[bench]
-fn call_atm_pj(b: &mut Bencher) {
+fn call_atm_cpp(b: &mut Bencher) {
     let price = 0.01;
     let f = 100.0;
     let k = f;
@@ -90,7 +90,7 @@ fn call_atm_pj(b: &mut Bencher) {
 }
 
 #[bench]
-fn call_itm_pj(b: &mut Bencher) {
+fn call_itm_cpp(b: &mut Bencher) {
     let seed: [u8; 32] = [13; 32];
     let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
     let (r, r2, r3): (f64, f64, f64) = rng.random();
@@ -103,7 +103,7 @@ fn call_itm_pj(b: &mut Bencher) {
 }
 
 #[bench]
-fn call_otm_pj(b: &mut Bencher) {
+fn call_otm_cpp(b: &mut Bencher) {
     let seed: [u8; 32] = [13; 32];
     let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
     let (r, r2, r3): (f64, f64, f64) = rng.random();
@@ -116,7 +116,7 @@ fn call_otm_pj(b: &mut Bencher) {
 }
 
 #[bench]
-fn put_atm_pj(b: &mut Bencher) {
+fn put_atm_cpp(b: &mut Bencher) {
     let price = 0.01;
     let f = 100.0;
     let k = f;
@@ -125,7 +125,7 @@ fn put_atm_pj(b: &mut Bencher) {
     b.iter(|| ImpliedBlackVolatility(price, f, k, t, q));
 }
 #[bench]
-fn put_itm_pj(b: &mut Bencher) {
+fn put_itm_cpp(b: &mut Bencher) {
     let seed: [u8; 32] = [13; 32];
     let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
     let (r, r2, r3): (f64, f64, f64) = rng.random();
@@ -138,7 +138,7 @@ fn put_itm_pj(b: &mut Bencher) {
 }
 
 #[bench]
-fn put_otm_pj(b: &mut Bencher) {
+fn put_otm_cpp(b: &mut Bencher) {
     let seed: [u8; 32] = [13; 32];
     let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
     let (r, r2, r3): (f64, f64, f64) = rng.random();

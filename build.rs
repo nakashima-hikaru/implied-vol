@@ -16,7 +16,10 @@ fn main() {
 
     println!("cargo:rerun-if-changed=src/cxx.rs");
     println!("cargo:rerun-if-changed=source/lets_be_rational.h");
+    println!("cargo:rerun-if-changed=source/lets_be_rational.cpp");
     println!("cargo:rerun-if-changed=source/erf_cody.cpp");
     println!("cargo:rerun-if-changed=source/normaldistribution.h");
+    println!("cargo:rerun-if-changed=source/normaldistribution.cpp");
     println!("cargo:rerun-if-changed=source/rationalcubic.h");
+    println!("cargo:rerun-if-changed=source/rationalcubic.cpp");
 }
