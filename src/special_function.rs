@@ -1,6 +1,5 @@
 mod erf_cody;
 pub mod normal_distribution;
-
 use crate::special_function::erf_cody::{erf_cody, erfc_cody, erfcx_cody};
 use crate::special_function::normal_distribution::{erfinv, inverse_norm_cdf, norm_pdf};
 

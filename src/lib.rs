@@ -39,7 +39,9 @@
 //! let price = implied_vol::calculate_european_option_price_by_bachelier(100.0, 90.0, 6.614292466299764, 30.0, true);
 //! assert!(((price - 20.0) / price).abs()<= 2.0 * f64::EPSILON);
 //! ```
+
 pub use crate::special_function::{DefaultSpecialFn, SpecialFn};
+pub mod cxx;
 
 mod bachelier_impl;
 mod constants;
@@ -378,5 +380,17 @@ pub mod bachelier {
             expiry,
             is_call,
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::cxx::ffi::ImpliedBlackVolatility;
+
+    #[test]
+    fn test_hello() {
+        let val = ImpliedBlackVolatility(10.0, 100.0, 100.0, 0.2, 1.0);
+        assert!(val.is_finite());
+        println!("{:?}", val);
     }
 }

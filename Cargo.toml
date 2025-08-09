@@ -14,9 +14,14 @@ default = []
 fma = []
 
 [dependencies]
+cxx = "1"
 
 [dev-dependencies]
 rand = "0.9.2"
+#cxx = "1"
+
+[build-dependencies]
+cxx-build = "1"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
