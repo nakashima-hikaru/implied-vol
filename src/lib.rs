@@ -39,7 +39,10 @@
 //! let price = implied_vol::calculate_european_option_price_by_bachelier(100.0, 90.0, 6.614292466299764, 30.0, true);
 //! assert!(((price - 20.0) / price).abs()<= 2.0 * f64::EPSILON);
 //! ```
+
 pub use crate::special_function::{DefaultSpecialFn, SpecialFn};
+#[cfg(feature = "bench")]
+pub mod cxx;
 
 mod bachelier_impl;
 mod constants;
