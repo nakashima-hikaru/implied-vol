@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use crate::SpecialFn;
 use crate::fused_multiply_add::MulAdd;
 use std::f64::consts::FRAC_1_SQRT_2;
@@ -44,7 +45,7 @@ const U_MAX: f64 = 0.3413447460685429;
 const U_MAX2: f64 = U_MAX * U_MAX;
 #[inline(always)]
 fn inverse_norm_cdfm_half_for_midrange_probabilities(u: f64) -> f64 {
-    assert!(u.abs() <= U_MAX);
+    assert_ne!(u.abs().partial_cmp(&U_MAX), Some(Ordering::Greater));
     let s = U_MAX2 - u * u;
     u * (s.mul_add2(
         s.mul_add2(
@@ -78,7 +79,7 @@ fn inverse_norm_cdfm_half_for_midrange_probabilities(u: f64) -> f64 {
 
 #[inline(always)]
 fn inverse_norm_cdf_for_low_probabilities(p: f64) -> f64 {
-    assert!(p <= 0.15865525393146);
+    assert_ne!(p.partial_cmp(&0.15865525393146), Some(Ordering::Greater));
     let r = p.ln().neg().sqrt();
     if r < 2.05 {
         // Branch I: Accuracy better than 7.6E-17
