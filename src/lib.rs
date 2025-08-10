@@ -71,7 +71,7 @@ pub mod special_function;
 /// let black_vol = implied_vol::implied_black_volatility(20.0, 100.0, 90.0, 30.0, true);
 /// assert_eq!(black_vol, 0.07011701801482094);
 /// ```
-#[inline]
+#[inline(always)]
 pub fn implied_black_volatility(
     option_price: f64,
     forward: f64,
@@ -108,7 +108,7 @@ pub fn implied_black_volatility(
 /// let price = implied_vol::black_scholes_option_price(100.0, 90.0, 0.07011701801482094, 30.0, true);
 /// assert!((price - 20.0).abs()<= 2.0 * f64::EPSILON * 20.0);
 /// ```
-#[inline]
+#[inline(always)]
 pub fn black_scholes_option_price(
     forward: f64,
     strike: f64,
@@ -139,7 +139,7 @@ pub fn black_scholes_option_price(
 /// let normal_vol = implied_vol::implied_normal_volatility(20.0, 100.0, 90.0, 30.0, true);
 /// assert_eq!(normal_vol, 6.614292466299764);
 /// ```
-#[inline]
+#[inline(always)]
 pub fn implied_normal_volatility(
     option_price: f64,
     forward: f64,
@@ -184,7 +184,7 @@ pub fn implied_normal_volatility(
 /// let price = implied_vol::bachelier_option_price(100.0, 90.0, 6.614292466299764, 30.0, true);
 /// assert!((price - 20.0).abs()<= 2.0 * f64::EPSILON * 20.0);
 /// ```
-#[inline]
+#[inline(always)]
 pub fn bachelier_option_price(
     forward: f64,
     strike: f64,
@@ -233,7 +233,7 @@ pub mod black {
     /// let option_price = price::<DefaultSpecialFn>(forward, strike, volatility, expiry, is_call);
     /// println!("The option price is: {}", option_price);
     /// ```
-    #[inline]
+    #[inline(always)]
     pub fn price<SpFn: SpecialFn>(
         forward: f64,
         strike: f64,
@@ -279,7 +279,7 @@ pub mod black {
     /// let iv = implied_volatility::<DefaultSpecialFn>(option_price, forward, strike, expiry, is_call);
     /// println!("Implied Volatility: {}", iv);
     /// ```
-    #[inline]
+    #[inline(always)]
     pub fn implied_volatility<SpFn: SpecialFn>(
         option_price: f64,
         forward: f64,
@@ -329,7 +329,7 @@ pub mod bachelier {
     /// let option_price = price::<DefaultSpecialFn>(forward, strike, volatility, expiry, is_call);
     /// println!("Option Price: {}", option_price);
     /// ```
-    #[inline]
+    #[inline(always)]
     pub fn price<SpFn: SpecialFn>(
         forward: f64,
         strike: f64,
@@ -382,7 +382,7 @@ pub mod bachelier {
     ///
     /// println!("Implied Volatility: {}", vol);
     /// ```
-    #[inline]
+    #[inline(always)]
     pub fn implied_volatility<SpFn: SpecialFn>(
         option_price: f64,
         forward: f64,

@@ -48,31 +48,31 @@ use crate::special_function::normal_distribution::{erfinv, inverse_norm_cdf, nor
 /// Computes the Cumulative Distribution Function (CDF) of the standard normal distribution at a
 /// given `x`.
 pub trait SpecialFn {
-    #[inline]
+    #[inline(always)]
     fn erf(x: f64) -> f64 {
         erf_cody(x)
     }
-    #[inline]
+    #[inline(always)]
     fn erfc(x: f64) -> f64 {
         erfc_cody(x)
     }
-    #[inline]
+    #[inline(always)]
     fn erfcx(x: f64) -> f64 {
         erfcx_cody(x)
     }
-    #[inline]
+    #[inline(always)]
     fn erfinv(x: f64) -> f64 {
         erfinv(x)
     }
-    #[inline]
+    #[inline(always)]
     fn inverse_norm_cdf(x: f64) -> f64 {
         inverse_norm_cdf(x)
     }
-    #[inline]
+    #[inline(always)]
     fn norm_pdf(x: f64) -> f64 {
         norm_pdf(x)
     }
-    #[inline]
+    #[inline(always)]
     fn norm_cdf(x: f64) -> f64 {
         normal_distribution::norm_cdf::<Self>(x)
     }

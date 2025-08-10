@@ -3,7 +3,7 @@ use crate::fused_multiply_add::MulAdd;
 use crate::special_function::SpecialFn;
 use std::cmp::Ordering;
 
-#[inline]
+#[inline(always)]
 fn intrinsic_value<const IS_CALL: bool>(forward: f64, strike: f64) -> f64 {
     (if !IS_CALL {
         strike - forward
@@ -14,7 +14,7 @@ fn intrinsic_value<const IS_CALL: bool>(forward: f64, strike: f64) -> f64 {
     .abs()
 }
 
-#[inline]
+#[inline(always)]
 fn phi_tilde_times_x(x: f64) -> f64 {
     if x.abs() <= 0.612_003_180_962_480_7 {
         let h = (x * x - 1.872_739_467_540_974_8E-1) * 5.339_771_053_755_08;
@@ -73,12 +73,12 @@ fn phi_tilde_times_x(x: f64) -> f64 {
     ONE_OVER_SQRT_TWO_PI * (-0.5 * x * x).exp() * w * (1.0 - g * w)
 }
 
-#[inline]
+#[inline(always)]
 fn phi_tilde(x: f64) -> f64 {
     phi_tilde_times_x(x) / x
 }
 
-#[inline]
+#[inline(always)]
 fn inv_phi_tilde<SpFn: SpecialFn>(phi_tilde_star: f64) -> f64 {
     if phi_tilde_star > 1.0 {
         return -inv_phi_tilde::<SpFn>(1.0 - phi_tilde_star);
@@ -151,7 +151,7 @@ pub(crate) fn bachelier_price<const IS_CALL: bool>(
     s * phi_tilde_times_x(x)
 }
 
-#[inline]
+#[inline(always)]
 pub(crate) fn implied_normal_volatility<SpFn: SpecialFn, const IS_CALL: bool>(
     price: f64,
     forward: f64,

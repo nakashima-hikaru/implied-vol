@@ -2,7 +2,7 @@ use crate::fused_multiply_add::MulAdd;
 use std::f64::consts::FRAC_1_SQRT_2;
 use std::ops::Neg;
 
-#[inline]
+#[inline(always)]
 fn ab(z: f64) -> f64 {
     const A: [f64; 5] = [
         3.1611237438705656,
@@ -27,7 +27,7 @@ fn ab(z: f64) -> f64 {
             .mul_add2(z, B[3])
 }
 
-#[inline]
+#[inline(always)]
 fn cd(y: f64) -> f64 {
     const C: [f64; 9] = [
         0.564_188_496_988_670_1,
@@ -68,7 +68,7 @@ fn cd(y: f64) -> f64 {
             .mul_add2(y, D[7])
 }
 
-#[inline]
+#[inline(always)]
 fn pq(z: f64) -> f64 {
     const P: [f64; 6] = [
         0.305_326_634_961_232_36,
@@ -98,13 +98,13 @@ fn pq(z: f64) -> f64 {
             .mul_add2(z, Q[4]))
 }
 
-#[inline]
+#[inline(always)]
 fn smoothened_exponential_of_negative_square(y: f64) -> f64 {
     let y_tilde = (y * 16.0).trunc() / 16.0;
     (y_tilde * y_tilde).neg().exp() * (-(y - y_tilde) * (y + y_tilde)).exp()
 }
 
-#[inline]
+#[inline(always)]
 fn smoothened_exponential_of_positive_square(x: f64) -> f64 {
     let x_tilde = (x * 16.0).trunc() / 16.0;
     (x_tilde * x_tilde).exp() * ((x - x_tilde) * (x + x_tilde)).exp()
@@ -114,7 +114,7 @@ const THRESHOLD: f64 = 0.46875;
 const XNEG: f64 = -26.628;
 const XBIG: f64 = 26.543;
 
-#[inline]
+#[inline(always)]
 pub(super) fn erf_cody(x: f64) -> f64 {
     const ONE_OVER_SQRT_PI: f64 = 0.564_189_583_547_756_3;
     let y = x.abs();
@@ -137,7 +137,7 @@ pub(super) fn erf_cody(x: f64) -> f64 {
     }
 }
 
-#[inline]
+#[inline(always)]
 pub(super) fn erfc_cody(x: f64) -> f64 {
     let y = x.abs();
     if y <= THRESHOLD {
@@ -160,7 +160,7 @@ pub(super) fn erfc_cody(x: f64) -> f64 {
     }
 }
 
-#[inline]
+#[inline(always)]
 fn erfcx_cody_above_threshold(y: f64) -> f64 {
     assert!(y > THRESHOLD);
     if y <= 4.0 {
@@ -170,7 +170,7 @@ fn erfcx_cody_above_threshold(y: f64) -> f64 {
     }
 }
 
-#[inline]
+#[inline(always)]
 pub(super) fn erfcx_cody(x: f64) -> f64 {
     let y = x.abs();
     if y <= THRESHOLD {
