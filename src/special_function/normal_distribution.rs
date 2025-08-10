@@ -5,12 +5,12 @@ use std::ops::Neg;
 
 const FRAC_SQRT_2_PI: f64 = f64::from_bits(0x3fd9884533d43651);
 
-#[inline(always)]
+#[inline]
 pub(super) fn norm_pdf(x: f64) -> f64 {
     FRAC_SQRT_2_PI * (-0.5 * x * x).exp()
 }
 
-#[inline(always)]
+#[inline]
 pub(super) fn norm_cdf<SpFn: SpecialFn + ?Sized>(z: f64) -> f64 {
     const NORM_CDF_ASYMPTOTIC_EXPANSION_FIRST_THRESHOLD: f64 = -10.0;
     const NORM_CDF_ASYMPTOTIC_EXPANSION_SECOND_THRESHOLD: f64 = -67108864.0;
@@ -42,7 +42,7 @@ pub(super) fn norm_cdf<SpFn: SpecialFn + ?Sized>(z: f64) -> f64 {
 
 const U_MAX: f64 = 0.3413447460685429;
 const U_MAX2: f64 = U_MAX * U_MAX;
-#[inline(always)]
+#[inline]
 fn inverse_norm_cdfm_half_for_midrange_probabilities(u: f64) -> f64 {
     assert!(u.abs() <= U_MAX);
     let s = U_MAX2 - u * u;
@@ -76,7 +76,7 @@ fn inverse_norm_cdfm_half_for_midrange_probabilities(u: f64) -> f64 {
     ))
 }
 
-#[inline(always)]
+#[inline]
 fn inverse_norm_cdf_for_low_probabilities(p: f64) -> f64 {
     assert!(p <= 0.15865525393146);
     let r = p.ln().neg().sqrt();
@@ -224,7 +224,7 @@ fn inverse_norm_cdf_for_low_probabilities(p: f64) -> f64 {
     }
 }
 
-#[inline(always)]
+#[inline]
 pub(super) fn inverse_norm_cdf(p: f64) -> f64 {
     let u = p - 0.5;
     if u.abs() < U_MAX {
@@ -237,7 +237,7 @@ pub(super) fn inverse_norm_cdf(p: f64) -> f64 {
     }
 }
 
-#[inline(always)]
+#[inline]
 pub(super) fn erfinv(e: f64) -> f64 {
     if e.abs() < 2.0 * U_MAX {
         inverse_norm_cdfm_half_for_midrange_probabilities(0.5 * e) * FRAC_1_SQRT_2

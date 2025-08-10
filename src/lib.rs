@@ -30,13 +30,13 @@
 //! let black_vol = implied_vol::implied_black_volatility(20.0, 100.0, 90.0, 30.0, true);
 //! assert_eq!(black_vol, 0.07011701801482094);
 //!
-//! let price = implied_vol::calculate_european_option_price_by_black_scholes(100.0, 90.0, 0.07011701801482094, 30.0, true);
+//! let price = implied_vol::black_scholes_option_price(100.0, 90.0, 0.07011701801482094, 30.0, true);
 //! assert!(((price - 20.0) / price).abs() <= 2.0 * f64::EPSILON);
 //!
 //! let normal_vol = implied_vol::implied_normal_volatility(20.0, 100.0, 90.0, 30.0, true);
 //! assert_eq!(normal_vol, 6.614292466299764);
 //!
-//! let price = implied_vol::calculate_european_option_price_by_bachelier(100.0, 90.0, 6.614292466299764, 30.0, true);
+//! let price = implied_vol::bachelier_option_price(100.0, 90.0, 6.614292466299764, 30.0, true);
 //! assert!(((price - 20.0) / price).abs()<= 2.0 * f64::EPSILON);
 //! ```
 
@@ -105,11 +105,11 @@ pub fn implied_black_volatility(
 /// # Examples
 ///
 /// ```
-/// let price = implied_vol::calculate_european_option_price_by_black_scholes(100.0, 90.0, 0.07011701801482094, 30.0, true);
+/// let price = implied_vol::black_scholes_option_price(100.0, 90.0, 0.07011701801482094, 30.0, true);
 /// assert!((price - 20.0).abs()<= 2.0 * f64::EPSILON * 20.0);
 /// ```
 #[inline]
-pub fn calculate_european_option_price_by_black_scholes(
+pub fn black_scholes_option_price(
     forward: f64,
     strike: f64,
     volatility: f64,
@@ -147,13 +147,21 @@ pub fn implied_normal_volatility(
     expiry: f64,
     is_call: bool,
 ) -> f64 {
-    bachelier_impl::implied_normal_volatility::<DefaultSpecialFn>(
-        option_price,
-        forward,
-        strike,
-        expiry,
-        is_call,
-    )
+    if is_call {
+        bachelier_impl::implied_normal_volatility::<DefaultSpecialFn, true>(
+            option_price,
+            forward,
+            strike,
+            expiry,
+        )
+    } else {
+        bachelier_impl::implied_normal_volatility::<DefaultSpecialFn, false>(
+            option_price,
+            forward,
+            strike,
+            expiry,
+        )
+    }
 }
 
 /// Calculates the price of an option using Bachelier's model.
@@ -173,18 +181,22 @@ pub fn implied_normal_volatility(
 /// # Examples
 ///
 /// ```
-/// let price = implied_vol::calculate_european_option_price_by_bachelier(100.0, 90.0, 6.614292466299764, 30.0, true);
+/// let price = implied_vol::bachelier_option_price(100.0, 90.0, 6.614292466299764, 30.0, true);
 /// assert!((price - 20.0).abs()<= 2.0 * f64::EPSILON * 20.0);
 /// ```
 #[inline]
-pub fn calculate_european_option_price_by_bachelier(
+pub fn bachelier_option_price(
     forward: f64,
     strike: f64,
     volatility: f64,
     expiry: f64,
     is_call: bool,
 ) -> f64 {
-    bachelier_impl::bachelier_price(forward, strike, volatility, expiry, is_call)
+    if is_call {
+        bachelier_impl::bachelier_price::<true>(forward, strike, volatility, expiry)
+    } else {
+        bachelier_impl::bachelier_price::<false>(forward, strike, volatility, expiry)
+    }
 }
 
 /// A module implementing pricing and implied volatility computation using the Black-Scholes model.
@@ -325,7 +337,11 @@ pub mod bachelier {
         expiry: f64,
         is_call: bool,
     ) -> f64 {
-        bachelier_impl::bachelier_price(forward, strike, volatility, expiry, is_call)
+        if is_call {
+            bachelier_impl::bachelier_price::<true>(forward, strike, volatility, expiry)
+        } else {
+            bachelier_impl::bachelier_price::<false>(forward, strike, volatility, expiry)
+        }
     }
 
     /// Computes the implied normal volatility for a European option price.
@@ -361,7 +377,7 @@ pub mod bachelier {
     ///     forward,
     ///     strike,
     ///     expiry,
-    ///     is_call,
+    ///     is_call
     /// );
     ///
     /// println!("Implied Volatility: {}", vol);
@@ -374,12 +390,20 @@ pub mod bachelier {
         expiry: f64,
         is_call: bool,
     ) -> f64 {
-        bachelier_impl::implied_normal_volatility::<SpFn>(
-            option_price,
-            forward,
-            strike,
-            expiry,
-            is_call,
-        )
+        if is_call {
+            bachelier_impl::implied_normal_volatility::<SpFn, true>(
+                option_price,
+                forward,
+                strike,
+                expiry,
+            )
+        } else {
+            bachelier_impl::implied_normal_volatility::<SpFn, false>(
+                option_price,
+                forward,
+                strike,
+                expiry,
+            )
+        }
     }
 }

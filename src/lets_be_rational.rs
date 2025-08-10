@@ -14,12 +14,12 @@ use crate::special_function::SpecialFn;
 use std::f64::consts::{FRAC_1_SQRT_2, SQRT_2};
 use std::ops::Neg;
 
-#[inline(always)]
+#[inline]
 fn householder3_factor(v: f64, h2: f64, h3: f64) -> f64 {
     v.mul_add2(0.5 * h2, 1.0) / v.mul_add2(h3 / 6.0, h2).mul_add2(v, 1.0)
 }
 
-#[inline(always)]
+#[inline]
 fn householder4_factor(v: f64, h2: f64, h3: f64, h4: f64) -> f64 {
     v.mul_add2(h3 / 6.0, h2).mul_add2(v, 1.0)
         / v.mul_add2(h4 / 24.0, h2 * h2 / 4.0 + h3 / 3.0)
@@ -29,34 +29,34 @@ fn householder4_factor(v: f64, h2: f64, h3: f64, h4: f64) -> f64 {
 
 const TAU: f64 = 2.0 * SIXTEENTH_ROOT_DBL_EPSILON;
 
-#[inline(always)]
+#[inline]
 fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
-    #[inline(always)]
+    #[inline]
     const fn a0() -> f64 {
         2.0
     }
-    #[inline(always)]
+    #[inline]
     fn a1(e: f64) -> f64 {
         e.mul_add2(-2.0, -6.0)
     }
-    #[inline(always)]
+    #[inline]
     fn a2(e: f64) -> f64 {
         e.mul_add2(6.0, 60.0).mul_add2(e, 30.0)
     }
-    #[inline(always)]
+    #[inline]
     fn a3(e: f64) -> f64 {
         e.mul_add2(-30.0, -6.3E2)
             .mul_add2(e, -1.05E3)
             .mul_add2(e, -2.1E2)
     }
-    #[inline(always)]
+    #[inline]
     fn a4(e: f64) -> f64 {
         e.mul_add2(2.1E2, 7.56E3)
             .mul_add2(e, 2.646E4)
             .mul_add2(e, 1.764E4)
             .mul_add2(e, 1.89E3)
     }
-    #[inline(always)]
+    #[inline]
     fn a5(e: f64) -> f64 {
         e.mul_add2(-1.89E3, -1.0395E5)
             .mul_add2(e, -6.237E5)
@@ -64,7 +64,7 @@ fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
             .mul_add2(e, -3.1185E5)
             .mul_add2(e, -2.079E4)
     }
-    #[inline(always)]
+    #[inline]
     fn a6(e: f64) -> f64 {
         e.mul_add2(2.079E4, 1.62162E6)
             .mul_add2(e, 1.486485E7)
@@ -73,7 +73,7 @@ fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
             .mul_add2(e, 5.94594E6)
             .mul_add2(e, 2.7027E5)
     }
-    #[inline(always)]
+    #[inline]
     fn a7(e: f64) -> f64 {
         e.mul_add2(-2.7027E5, -2.837835E7)
             .mul_add2(e, -3.6891855E8)
@@ -83,7 +83,7 @@ fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
             .mul_add2(e, -1.2297285E8)
             .mul_add2(e, -4.05405E6)
     }
-    #[inline(always)]
+    #[inline]
     fn a8(e: f64) -> f64 {
         e.mul_add2(4.05405E6, 5.513508E8)
             .mul_add2(e, 9.648639E9)
@@ -94,7 +94,7 @@ fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
             .mul_add2(e, 2.756754E9)
             .mul_add2(e, 6.891885E7)
     }
-    #[inline(always)]
+    #[inline]
     fn a9(e: f64) -> f64 {
         e.mul_add2(-6.891885E7, -1.178512335E10)
             .mul_add2(e, -2.671294626E11)
@@ -106,7 +106,7 @@ fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
             .mul_add2(e, -6.678236565E10)
             .mul_add2(e, -1.30945815E9)
     }
-    #[inline(always)]
+    #[inline]
     fn a10(e: f64) -> f64 {
         e.mul_add2(1.30945815E9, 2.749862115E11)
             .mul_add2(e, 7.83710702775E12)
@@ -119,7 +119,7 @@ fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
             .mul_add2(e, 1.7415793395E12)
             .mul_add2(e, 2.749862115E10)
     }
-    #[inline(always)]
+    #[inline]
     fn a11(e: f64) -> f64 {
         e.mul_add2(-2.749862115E10, -6.95715115095E12)
             .mul_add2(e, -2.4350029028325E14)
@@ -133,7 +133,7 @@ fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
             .mul_add2(e, -4.870005805665E13)
             .mul_add2(e, -6.3246828645E11)
     }
-    #[inline(always)]
+    #[inline]
     fn a12(e: f64) -> f64 {
         e.mul_add2(6.3246828645E11, 1.89740485935E14)
             .mul_add2(e, 8.0007238235925E15)
@@ -148,7 +148,7 @@ fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
             .mul_add2(e, 1.454677058835E15)
             .mul_add2(e, 1.581170716125E13)
     }
-    #[inline(always)]
+    #[inline]
     fn a13(e: f64) -> f64 {
         e.mul_add2(-1.581170716125E13, -5.54990921359875E15)
             .mul_add2(e, -2.774954606799375E17)
@@ -164,7 +164,7 @@ fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
             .mul_add2(e, -4.624924344665625E16)
             .mul_add2(e, -4.2691609335375E14)
     }
-    #[inline(always)]
+    #[inline]
     fn a14(e: f64) -> f64 {
         e.mul_add2(4.2691609335375E14, 1.733279339016225E17)
             .mul_add2(e, 1.013_968_413_324_491_6E19)
@@ -181,7 +181,7 @@ fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
             .mul_add2(e, 1.5599514051146025E18)
             .mul_add2(e, 1.238056670725875E16)
     }
-    #[inline(always)]
+    #[inline]
     fn a15(e: f64) -> f64 {
         e.mul_add2(-1.238056670725875E16, -5.756_963_518_875_318E18)
             .mul_add2(e, -3.895_545_314_438_965_5E20)
@@ -199,7 +199,7 @@ fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
             .mul_add2(e, -5.565_064_734_912_808E19)
             .mul_add2(e, -3.8379756792502125E17)
     }
-    #[inline(always)]
+    #[inline]
     fn a16(e: f64) -> f64 {
         e.mul_add2(3.8379756792502125E17, 2.026_451_158_644_112E20)
             .mul_add2(e, 1.570_499_647_949_187E22)
@@ -277,7 +277,7 @@ fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
     (t / r) * omega
 }
 
-#[inline(always)]
+#[inline]
 fn y_prime_tail_expansion_rational_function_part(w: f64) -> f64 {
     w.mul_add2(-6.681_824_903_261_685E4, -8.383_602_146_074_198E4)
         .mul_add2(w, -2.780_574_569_386_430_8E4)
@@ -293,7 +293,7 @@ fn y_prime_tail_expansion_rational_function_part(w: f64) -> f64 {
             .mul_add2(w, 1.0)
 }
 
-#[inline(always)]
+#[inline]
 fn y_prime<SpFn: SpecialFn>(h: f64) -> f64 {
     // We copied the thresholds of -0.46875 and -4 from Cody.
     if h < -4.0 {
@@ -322,29 +322,29 @@ fn y_prime<SpFn: SpecialFn>(h: f64) -> f64 {
     }
 }
 
-#[inline(always)]
+#[inline]
 fn small_t_expansion_of_scaled_normalised_black<SpFn: SpecialFn>(h: f64, t: f64) -> f64 {
     let a = y_prime::<SpFn>(h);
     let h2 = h * h;
     let t2 = t * t;
-    #[inline(always)]
+    #[inline]
     fn b0(a: f64) -> f64 {
         2.0 * a
     }
-    #[inline(always)]
+    #[inline]
     fn b1(a: f64, h2: f64) -> f64 {
         a.mul_add2(3.0 + h2, -1.0) / 3.0
     }
-    #[inline(always)]
+    #[inline]
     fn b2(a: f64, h2: f64) -> f64 {
         h2.mul_add2(10.0 + h2, 15.0).mul_add2(a, -7.0 - h2) / 60.0
     }
-    #[inline(always)]
+    #[inline]
     fn b3(a: f64, h2: f64) -> f64 {
         (h2.mul_add2(21.0 + h2, 105.0).mul_add2(h2, 105.0) * a + h2.mul_add2(-18.0 - h2, -57.0))
             / 2520.0
     }
-    #[inline(always)]
+    #[inline]
     fn b4(a: f64, h2: f64) -> f64 {
         (h2.mul_add2(-33.0 - h2, -285.0).mul_add2(h2, -561.0)
             + h2.mul_add2(36.0 + h2, 378.0)
@@ -353,7 +353,7 @@ fn small_t_expansion_of_scaled_normalised_black<SpFn: SpecialFn>(h: f64, t: f64)
                 * a)
             / 181440.0
     }
-    #[inline(always)]
+    #[inline]
     fn b5(a: f64, h2: f64) -> f64 {
         (h2.mul_add2(-52.0 - h2, -840.0)
             .mul_add2(h2, -4680.0)
@@ -365,7 +365,7 @@ fn small_t_expansion_of_scaled_normalised_black<SpFn: SpecialFn>(h: f64, t: f64)
                 * a)
             / 19958400.0
     }
-    #[inline(always)]
+    #[inline]
     fn b6(a: f64, h2: f64) -> f64 {
         (h2.mul_add2(-75.0 - h2, -1926.0)
             .mul_add2(h2, -20370.0)
@@ -388,7 +388,7 @@ fn small_t_expansion_of_scaled_normalised_black<SpFn: SpecialFn>(h: f64, t: f64)
         * t
 }
 
-#[inline(always)]
+#[inline]
 fn normalised_black_with_optimal_use_of_codys_functions<SpFn: SpecialFn>(x: f64, s: f64) -> f64 {
     const CODYS_THRESHOLD: f64 = 0.46875;
     let h = x / s;
@@ -409,23 +409,23 @@ fn normalised_black_with_optimal_use_of_codys_functions<SpFn: SpecialFn>(x: f64,
     (0.5 * two_b).max(0.0)
 }
 
-#[inline(always)]
+#[inline]
 fn normalised_vega(x: f64, s: f64) -> f64 {
-    assert!(s > 0.0, "s must be positive, got: {s}");
+    assert!(s > 0.0);
     let h = x / s;
     let t = 0.5 * s;
     SQRT_TWO_PI.recip() * (-0.5 * (h * h + t * t)).exp()
 }
 
-#[inline(always)]
+#[inline]
 fn inv_normalised_vega(x: f64, s: f64) -> f64 {
-    assert!(s > 0.0, "s must be positive, got: {s}");
+    assert!(s > 0.0);
     let h = x / s;
     let t = 0.5 * s;
     SQRT_TWO_PI * (0.5 * (h * h + t * t)).exp()
 }
 
-#[inline(always)]
+#[inline]
 fn ln_normalised_vega(x: f64, s: f64) -> f64 {
     let ax = x.abs();
     if ax <= 0.0 {
@@ -437,7 +437,7 @@ fn ln_normalised_vega(x: f64, s: f64) -> f64 {
     }
 }
 
-#[inline(always)]
+#[inline]
 fn b_u_over_b_max(s_c: f64) -> f64 {
     if s_c >= 2.449_489_742_783_178 {
         let y = s_c.recip();
@@ -482,7 +482,7 @@ fn b_u_over_b_max(s_c: f64) -> f64 {
     }
 }
 
-#[inline(always)]
+#[inline]
 fn b_l_over_b_max(s_c: f64) -> f64 {
     if s_c < 0.7099295739719539 {
         let g = s_c
@@ -542,10 +542,10 @@ fn b_l_over_b_max(s_c: f64) -> f64 {
     }
 }
 
-#[inline(always)]
+#[inline]
 fn normalised_black<SpFn: SpecialFn>(x: f64, s: f64) -> f64 {
-    assert!(x < 0.0, "x: {x}");
-    assert!(s > 0.0, "s: {s}");
+    assert!(x < 0.0);
+    assert!(s > 0.0);
     if is_region1(x, s) {
         asymptotic_expansion_of_scaled_normalised_black(x / s, 0.5 * s) * normalised_vega(x, s)
     } else if is_region2(x, s) {
@@ -556,19 +556,19 @@ fn normalised_black<SpFn: SpecialFn>(x: f64, s: f64) -> f64 {
 }
 
 const ETA: f64 = -13.0;
-#[inline(always)]
+#[inline]
 fn is_region1(x: f64, s: f64) -> bool {
     x < s * ETA && s * (0.5 * s - (TAU + 0.5 + ETA)) + x < 0.0
 }
-#[inline(always)]
+#[inline]
 fn is_region2(x: f64, s: f64) -> bool {
     s * (s - (2.0 * TAU)) - x / ETA < 0.0
 }
 
-#[inline(always)]
+#[inline]
 fn scaled_normalised_black_and_ln_vega<SpFn: SpecialFn>(x: f64, s: f64) -> (f64, f64) {
-    assert!(x < 0.0, "x must be negative, got: {x}");
-    assert!(s > 0.0, "s must be positive, got: {s}");
+    assert!(x < 0.0);
+    assert!(s > 0.0);
     let ln_vega = ln_normalised_vega(x, s);
     if is_region1(x, s) {
         (
@@ -588,7 +588,7 @@ fn scaled_normalised_black_and_ln_vega<SpFn: SpecialFn>(x: f64, s: f64) -> (f64,
     }
 }
 
-#[inline(always)]
+#[inline]
 pub(crate) fn black<SpFn: SpecialFn>(f: f64, k: f64, sigma: f64, t: f64, q: bool) -> f64 {
     let s = sigma * t.sqrt();
     if k == f {
@@ -603,7 +603,7 @@ pub(crate) fn black<SpFn: SpecialFn>(f: f64, k: f64, sigma: f64, t: f64, q: bool
     }
 }
 
-#[inline(always)]
+#[inline]
 fn compute_f_lower_map_and_first_two_derivatives<SpFn: SpecialFn>(
     x: f64,
     s: f64,
@@ -626,14 +626,14 @@ fn compute_f_lower_map_and_first_two_derivatives<SpFn: SpecialFn>(
     )
 }
 
-#[inline(always)]
+#[inline]
 fn inverse_f_lower_map<SpFn: SpecialFn>(x: f64, f: f64) -> f64 {
     (x * ONE_OVER_SQRT_THREE
         / SpFn::inverse_norm_cdf(SQRT_THREE_OVER_THIRD_ROOT_TWO_PI * f.cbrt() / x.abs().cbrt()))
     .abs()
 }
 
-#[inline(always)]
+#[inline]
 fn compute_f_upper_map_and_first_two_derivatives<SpFn: SpecialFn>(
     x: f64,
     s: f64,
@@ -646,12 +646,12 @@ fn compute_f_upper_map_and_first_two_derivatives<SpFn: SpecialFn>(
     )
 }
 
-#[inline(always)]
+#[inline]
 fn inverse_f_upper_map<SpFn: SpecialFn>(f: f64) -> f64 {
     -2.0 * SpFn::inverse_norm_cdf(f)
 }
 
-#[inline(always)]
+#[inline]
 fn one_minus_erfcx<SpFn: SpecialFn>(x: f64) -> f64 {
     if !(-1.0 / 5.0..=1.0 / 3.0).contains(&x) {
         1.0 - SpFn::erfcx(x)
@@ -670,14 +670,14 @@ fn one_minus_erfcx<SpFn: SpecialFn>(x: f64) -> f64 {
     }
 }
 
-#[inline(always)]
+#[inline]
 fn implied_normalised_volatility_atm<SpFn: SpecialFn>(beta: f64) -> f64 {
     2.0 * SQRT_2 * SpFn::erfinv(beta)
 }
 
-#[inline(always)]
+#[inline]
 fn lets_be_rational<SpFn: SpecialFn>(beta: f64, x: f64) -> f64 {
-    assert!(x <= 0.0, "x must be non-positive, but got {x}");
+    assert!(x <= 0.0);
     if beta <= 0. {
         return if beta == 0.0 {
             0.0
@@ -701,9 +701,9 @@ fn lets_be_rational<SpFn: SpecialFn>(beta: f64, x: f64) -> f64 {
     let ome = one_minus_erfcx::<SpFn>(sqrt_ax);
     let b_c = 0.5 * b_max * ome;
     if beta < b_c {
-        assert!(x < 0.0, "x must be negative, but got {x}");
+        assert!(x < 0.0);
         let s_l = s_c - SQRT_PI_OVER_TWO * ome;
-        assert!(s_l > 0.0, "s_l must be positive, but got {s_l}");
+        assert!(s_l > 0.0);
         let b_l = b_l_over_b_max(s_c) * b_max;
         if beta < b_l {
             let (f_lower_map_l, d_f_lower_map_l_d_beta, d2_f_lower_map_l_d_beta2) =
@@ -731,13 +731,13 @@ fn lets_be_rational<SpFn: SpecialFn>(beta: f64, x: f64) -> f64 {
                 _ => {}
             }
             s = inverse_f_lower_map::<SpFn>(x, f);
-            assert!(s > 0.0, "s must be positive, but got {s}");
+            assert!(s > 0.0);
             let ln_beta = beta.ln();
 
             ds = 1.0_f64;
             let mut final_trial = false;
             while ds.abs() > f64::EPSILON * s {
-                assert!(s > 0.0, "s must be positive, but got {s}");
+                assert!(s > 0.0);
                 let (bx, ln_vega) = scaled_normalised_black_and_ln_vega::<SpFn>(x, s);
                 let ln_b = bx.ln() + ln_vega;
                 let bpob = bx.recip();
@@ -774,7 +774,7 @@ fn lets_be_rational<SpFn: SpecialFn>(beta: f64, x: f64) -> f64 {
                     householder3_factor(v, h2, h3)
                 };
                 s += ds;
-                assert!(s > 0.0, "s must be positive, but got {s}");
+                assert!(s > 0.0);
                 if final_trial {
                     return s;
                 } else {
@@ -790,11 +790,11 @@ fn lets_be_rational<SpFn: SpecialFn>(beta: f64, x: f64) -> f64 {
                     false,
                 >(h, s_c - s_l, inv_v, 0.0);
             s = rational_cubic_interpolation(beta - b_l, h, (s_l, s_c), inv_v, r_im);
-            assert!(s > 0.0, "s must be positive, but got {s}");
+            assert!(s > 0.0);
         }
     } else {
         let s_u = s_c + SQRT_PI_OVER_TWO * (2.0 - ome);
-        assert!(s_u > 0.0, "s_u must be positive, but got {s_u}");
+        assert!(s_u > 0.0);
         let b_u = b_u_over_b_max(s_c) * b_max;
         if beta <= b_u {
             let inv_v = (SQRT_TWO_PI / b_max, inv_normalised_vega(x, s_u));
@@ -804,7 +804,7 @@ fn lets_be_rational<SpFn: SpecialFn>(beta: f64, x: f64) -> f64 {
                     false,
                 >(h, s_u - s_c, inv_v, 0.0);
             s = rational_cubic_interpolation(beta - b_c, h, (s_c, s_u), inv_v, r_u_m);
-            assert!(s > 0.0, "s must be positive, but got {s}");
+            assert!(s > 0.0);
         } else {
             let (f_upper_map_h, d_f_upper_map_h_d_beta, d2_f_upper_map_h_d_beta2) =
                 compute_f_upper_map_and_first_two_derivatives::<SpFn>(x, s_u);
@@ -892,7 +892,7 @@ fn lets_be_rational<SpFn: SpecialFn>(beta: f64, x: f64) -> f64 {
         ds = nu * householder3_factor(nu, h2, h3);
         s += ds;
         // the upstream uses the following code, but it is not performant on my benchmark
-        // assert!(s > 0.0, "s must be positive, but got {s}");
+        // assert!(s > 0.0);
         // let b = normalised_black(x, s);
         // let inv_bp = inv_normalised_vega(x, s);
         // let v = (beta - b) * inv_bp;
@@ -906,7 +906,7 @@ fn lets_be_rational<SpFn: SpecialFn>(beta: f64, x: f64) -> f64 {
     s
 }
 
-#[inline(always)]
+#[inline]
 pub(crate) fn implied_black_volatility<SpFn: SpecialFn>(
     price: f64,
     f: f64,
