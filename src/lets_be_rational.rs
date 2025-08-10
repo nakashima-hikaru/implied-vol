@@ -589,12 +589,17 @@ fn scaled_normalised_black_and_ln_vega<SpFn: SpecialFn>(x: f64, s: f64) -> (f64,
 }
 
 #[inline(always)]
-pub(crate) fn black<SpFn: SpecialFn>(f: f64, k: f64, sigma: f64, t: f64, q: bool) -> f64 {
+pub(crate) fn black<SpFn: SpecialFn, const IS_CALL: bool>(
+    f: f64,
+    k: f64,
+    sigma: f64,
+    t: f64,
+) -> f64 {
     let s = sigma * t.sqrt();
     if k == f {
         f * SpFn::erf((0.5 * FRAC_1_SQRT_2) * s)
     } else {
-        (if q { f - k } else { k - f }).max(0.0)
+        (if IS_CALL { f - k } else { k - f }).max(0.0)
             + (if s <= 0.0 {
                 0.0
             } else {
@@ -907,17 +912,16 @@ fn lets_be_rational<SpFn: SpecialFn>(beta: f64, theta_x: f64) -> f64 {
 }
 
 #[inline(always)]
-pub(crate) fn implied_black_volatility<SpFn: SpecialFn>(
+pub(crate) fn implied_black_volatility<SpFn: SpecialFn, const IS_CALL: bool>(
     price: f64,
     f: f64,
     k: f64,
     t: f64,
-    q: bool,
 ) -> f64 {
-    if price >= if q { f } else { k } {
+    if price >= if IS_CALL { f } else { k } {
         return VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_ABOVE_MAXIMUM;
     }
-    let mu = if q { f - k } else { k - f };
+    let mu = if IS_CALL { f - k } else { k - f };
     lets_be_rational::<SpFn>(
         if mu > 0.0 { price - mu } else { price } / (f.sqrt() * k.sqrt()),
         (f / k).ln().abs().neg(),
@@ -985,9 +989,9 @@ mod tests {
             let f = 100.0;
             let k = f;
             let t = 1.0;
-            let q = true;
-            let sigma = implied_black_volatility::<DefaultSpecialFn>(price, f, k, t, q);
-            let reprice = black::<DefaultSpecialFn>(f, k, sigma, t, q);
+            const Q: bool = true;
+            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t);
+            let reprice = black::<DefaultSpecialFn, Q>(f, k, sigma, t);
             assert!(
                 (price - reprice).abs() / price < 4.0 * f64::EPSILON,
                 "{f},{k},{t},{sigma},{price},{reprice},{}",
@@ -1002,10 +1006,10 @@ mod tests {
             let f = 100.0;
             let k = f;
             let t = 1.0;
-            let q = true;
+            const Q: bool = true;
             let sigma = 0.001 * i as f64;
-            let price = black::<DefaultSpecialFn>(f, k, sigma, t, q);
-            let sigma2 = implied_black_volatility::<DefaultSpecialFn>(price, f, k, t, q);
+            let price = black::<DefaultSpecialFn, Q>(f, k, sigma, t);
+            let sigma2 = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t);
             // assert!((sigma - sigma2).abs() / sigma <= (1.0 + black_accuracy_factor((f / k).ln(), sigma * t.sqrt(),1.0).recip()) * f64::EPSILON, "f: {f}, k: {k}, t: {t}, sigma: {sigma}, sigma2; {sigma2}, {}, {}", (sigma - sigma2).abs() / sigma / f64::EPSILON, 1.0 + black_accuracy_factor((f / k).ln(), sigma * t.sqrt(), 1.0).recip());
             assert!(
                 (sigma - sigma2).abs() / sigma <= 50000. * f64::EPSILON,
@@ -1023,9 +1027,9 @@ mod tests {
             let f = 100.0;
             let k = f;
             let t = 1.0;
-            let q = false;
-            let sigma = implied_black_volatility::<DefaultSpecialFn>(price, f, k, t, q);
-            let reprice = black::<DefaultSpecialFn>(f, k, sigma, t, q);
+            const Q: bool = false;
+            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t);
+            let reprice = black::<DefaultSpecialFn, Q>(f, k, sigma, t);
             assert!((price - reprice).abs() < f64::EPSILON * 100.0);
         }
     }
@@ -1041,9 +1045,9 @@ mod tests {
             let f = r + 1e5 * r2;
             let k = f - price;
             let t = 1e5 * r3;
-            let q = true;
-            let sigma = implied_black_volatility::<DefaultSpecialFn>(price, f, k, t, q);
-            let reprice = black::<DefaultSpecialFn>(f, k, sigma, t, q);
+            const Q: bool = true;
+            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t);
+            let reprice = black::<DefaultSpecialFn, Q>(f, k, sigma, t);
             assert!((price - reprice).abs() <= f64::EPSILON);
         }
     }
@@ -1059,9 +1063,9 @@ mod tests {
             let f = 1.0;
             let k = 1.0 * r;
             let t = 1e5 * r3;
-            let q = true;
-            let sigma = implied_black_volatility::<DefaultSpecialFn>(price, f, k, t, q);
-            let reprice = black::<DefaultSpecialFn>(f, k, sigma, t, q);
+            const Q: bool = true;
+            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t);
+            let reprice = black::<DefaultSpecialFn, Q>(f, k, sigma, t);
             assert!(
                 (price - reprice).abs() <= 1.5 * f64::EPSILON,
                 "{f},{k},{t},{sigma},{price},{reprice},{}",
@@ -1081,9 +1085,9 @@ mod tests {
             let f = 1.0 * r;
             let k = 1.0;
             let t = 1e5 * r3;
-            let q = true;
-            let sigma = implied_black_volatility::<DefaultSpecialFn>(price, f, k, t, q);
-            let reprice = black::<DefaultSpecialFn>(f, k, sigma, t, q);
+            const Q: bool = true;
+            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t);
+            let reprice = black::<DefaultSpecialFn, Q>(f, k, sigma, t);
             assert!((price - reprice).abs() <= 1.5 * f64::EPSILON);
         }
     }
@@ -1099,9 +1103,9 @@ mod tests {
             let f = 1.0;
             let k = 1.0 * r;
             let t = 1e5 * r3;
-            let q = false;
-            let sigma = implied_black_volatility::<DefaultSpecialFn>(price, f, k, t, q);
-            let reprice = black::<DefaultSpecialFn>(f, k, sigma, t, q);
+            const Q: bool = false;
+            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t);
+            let reprice = black::<DefaultSpecialFn, Q>(f, k, sigma, t);
             // if (price - reprice).abs() > 1.5 * f64::EPSILON{
             //     println!("{:?}", (price, f, k, t, q, sigma));
             //     println!("{:?}", (price - reprice).abs() / f64::EPSILON);
@@ -1121,63 +1125,84 @@ mod tests {
             let f = 1.0 * r;
             let k = 1.0;
             let t = 1e5 * r3;
-            let q = false;
-            let sigma = implied_black_volatility::<DefaultSpecialFn>(price, f, k, t, q);
-            let reprice = black::<DefaultSpecialFn>(f, k, sigma, t, q);
+            const Q: bool = false;
+            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t);
+            let reprice = black::<DefaultSpecialFn, Q>(f, k, sigma, t);
             assert!((price - reprice).abs() <= 1.5 * f64::EPSILON);
         }
     }
 
     #[test]
     fn panic_case() {
-        let price = 73.425;
-        let f = 12173.425;
-        let k = 12100.0;
-        let t = 0.0077076327759348934;
-        let sigma = implied_black_volatility::<DefaultSpecialFn>(price, f, k, t, true);
-        let reprice = black::<DefaultSpecialFn>(f, k, sigma, t, true);
-        assert_eq!(price, reprice);
-        let price = 73.425;
-        let f = 12173.425;
-        let k = 12100.0;
-        let t = 0.007705811088032645;
-        let sigma = implied_black_volatility::<DefaultSpecialFn>(price, f, k, t, true);
-        let reprice = black::<DefaultSpecialFn>(f, k, sigma, t, true);
-        assert_eq!(price, reprice);
-        let price = 73.425;
-        let f = 12173.425;
-        let k = 12100.0;
-        let t = 0.007705808219781035;
-        let sigma = implied_black_volatility::<DefaultSpecialFn>(price, f, k, t, true);
-        let reprice = black::<DefaultSpecialFn>(f, k, sigma, t, true);
-        assert_eq!(price, reprice);
-        let price = 73.425;
-        let f = 12173.425;
-        let k = 12100.0;
-        let t = 0.007705804818688366;
-        let sigma = implied_black_volatility::<DefaultSpecialFn>(price, f, k, t, true);
-        let reprice = black::<DefaultSpecialFn>(f, k, sigma, t, true);
-        assert_eq!(price, reprice);
-        let price = 33.55;
-        let f = 11633.55;
-        let k = 12100.0;
-        let t = 0.007705800716005495;
-        let sigma = implied_black_volatility::<DefaultSpecialFn>(price, f, k, t, true);
-        let reprice = black::<DefaultSpecialFn>(f, k, sigma, t, true);
-        assert!(((price - reprice) / price).abs() <= 2.0 * f64::EPSILON);
-        let price = 33.55;
-        let f = 11633.55;
-        let t = 0.0016085064438058978;
-        let k = 11600.0;
-        let sigma = implied_black_volatility::<DefaultSpecialFn>(price, f, k, t, true);
-        let reprice = black::<DefaultSpecialFn>(f, k, sigma, t, true);
-        assert_eq!(price, reprice, "f: {f}, k: {k}, t: {t}, sigma: {sigma}");
-        let price = 33.55;
-        let f = 11633.55;
-        let t = 0.0016085064438058978;
-        let k = 11600.0;
-        let sigma = implied_black_volatility::<DefaultSpecialFn>(price, f, k, t, true);
-        let reprice = black::<DefaultSpecialFn>(f, k, sigma, t, true);
-        assert_eq!(price, reprice, "f: {f}, k: {k}, t: {t}, sigma: {sigma}");
+        {
+            let price = 73.425;
+            let f = 12173.425;
+            let k = 12100.0;
+            let t = 0.0077076327759348934;
+            const Q: bool = true;
+            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t);
+            let reprice = black::<DefaultSpecialFn, Q>(f, k, sigma, t);
+            assert_eq!(price, reprice);
+        }
+        {
+            let price = 73.425;
+            let f = 12173.425;
+            let k = 12100.0;
+            let t = 0.007705811088032645;
+            const Q: bool = true;
+            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t);
+            let reprice = black::<DefaultSpecialFn, Q>(f, k, sigma, t);
+            assert_eq!(price, reprice);
+        }
+        {
+            let price = 73.425;
+            let f = 12173.425;
+            let k = 12100.0;
+            let t = 0.007705808219781035;
+            const Q: bool = true;
+            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t);
+            let reprice = black::<DefaultSpecialFn, Q>(f, k, sigma, t);
+            assert_eq!(price, reprice);
+        }
+        {
+            let price = 73.425;
+            let f = 12173.425;
+            let k = 12100.0;
+            let t = 0.007705804818688366;
+            const Q: bool = true;
+            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t);
+            let reprice = black::<DefaultSpecialFn, Q>(f, k, sigma, t);
+            assert_eq!(price, reprice);
+        }
+        {
+            let price = 33.55;
+            let f = 11633.55;
+            let k = 12100.0;
+            let t = 0.007705800716005495;
+            const Q: bool = true;
+            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t);
+            let reprice = black::<DefaultSpecialFn, Q>(f, k, sigma, t);
+            assert!(((price - reprice) / price).abs() <= 2.0 * f64::EPSILON);
+        }
+        {
+            let price = 33.55;
+            let f = 11633.55;
+            let t = 0.0016085064438058978;
+            let k = 11600.0;
+            const Q: bool = true;
+            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t);
+            let reprice = black::<DefaultSpecialFn, Q>(f, k, sigma, t);
+            assert_eq!(price, reprice, "f: {f}, k: {k}, t: {t}, sigma: {sigma}");
+        }
+        {
+            let price = 33.55;
+            let f = 11633.55;
+            let t = 0.0016085064438058978;
+            let k = 11600.0;
+            const Q: bool = true;
+            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t);
+            let reprice = black::<DefaultSpecialFn, Q>(f, k, sigma, t);
+            assert_eq!(price, reprice, "f: {f}, k: {k}, t: {t}, sigma: {sigma}");
+        }
     }
 }

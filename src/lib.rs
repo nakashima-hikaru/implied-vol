@@ -79,13 +79,21 @@ pub fn implied_black_volatility(
     expiry: f64,
     is_call: bool,
 ) -> f64 {
-    lets_be_rational::implied_black_volatility::<DefaultSpecialFn>(
-        option_price,
-        forward,
-        strike,
-        expiry,
-        is_call,
-    )
+    if is_call {
+        lets_be_rational::implied_black_volatility::<DefaultSpecialFn, true>(
+            option_price,
+            forward,
+            strike,
+            expiry,
+        )
+    } else {
+        lets_be_rational::implied_black_volatility::<DefaultSpecialFn, false>(
+            option_price,
+            forward,
+            strike,
+            expiry,
+        )
+    }
 }
 
 /// Calculates the price of a European option using the Black-Scholes formula.
@@ -116,7 +124,11 @@ pub fn black_scholes_option_price(
     expiry: f64,
     is_call: bool,
 ) -> f64 {
-    lets_be_rational::black::<DefaultSpecialFn>(forward, strike, volatility, expiry, is_call)
+    if is_call {
+        lets_be_rational::black::<DefaultSpecialFn, true>(forward, strike, volatility, expiry)
+    } else {
+        lets_be_rational::black::<DefaultSpecialFn, false>(forward, strike, volatility, expiry)
+    }
 }
 
 /// Calculates the implied normal volatility.
@@ -241,7 +253,11 @@ pub mod black {
         expiry: f64,
         is_call: bool,
     ) -> f64 {
-        lets_be_rational::black::<SpFn>(forward, strike, volatility, expiry, is_call)
+        if is_call {
+            lets_be_rational::black::<SpFn, true>(forward, strike, volatility, expiry)
+        } else {
+            lets_be_rational::black::<SpFn, false>(forward, strike, volatility, expiry)
+        }
     }
 
     /// Computes the implied Black volatility from the European option price.
@@ -287,13 +303,21 @@ pub mod black {
         expiry: f64,
         is_call: bool,
     ) -> f64 {
-        lets_be_rational::implied_black_volatility::<SpFn>(
-            option_price,
-            forward,
-            strike,
-            expiry,
-            is_call,
-        )
+        if is_call {
+            lets_be_rational::implied_black_volatility::<SpFn, true>(
+                option_price,
+                forward,
+                strike,
+                expiry,
+            )
+        } else {
+            lets_be_rational::implied_black_volatility::<SpFn, false>(
+                option_price,
+                forward,
+                strike,
+                expiry,
+            )
+        }
     }
 }
 
