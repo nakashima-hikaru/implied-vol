@@ -15,7 +15,6 @@ fn main() {
         .flag("-ffp-contract=fast")
         .flag("-march=native")
         .flag("-Ofast")
-        .flag("-flto")
         .flag("-w")
         .include("source")
         .flag_if_supported("-std=c++23")
