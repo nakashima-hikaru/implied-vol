@@ -12,49 +12,41 @@ use crate::special_function::normal_distribution::{erfinv, inverse_norm_cdf, nor
 ///
 /// # Required Methods
 ///
-/// ### `erf`
+/// ## `erf`
 ///
 /// Computes the error function `erf(x)`. The error function gives the probability of a random variable
 /// from a normal distribution falling within a certain range of standard deviations.
 ///
-/// ### `erfc`
+/// ## `erfc`
 ///
 /// Computes the complementary error function `erfc(x)` which is defined as `1 - erf(x)`.
 /// It is often used to simplify formulas for survival or tail probability distributions.
 ///
-/// ### `erfcx`
+/// ## `erfcx`
 ///
 /// Computes the scaled complementary error function `erfcx(x)` defined as `exp(x^2) * erfc(x)`.
 /// It is often used to avoid numerical instability in calculations involving the complementary error function.
 ///
-/// ### `erfinv`
+/// ## `erfinv`
 ///
 /// Computes the inverse error function `erfinv(x)`. This function determines the value of the argument
 /// that produces the given value for the error function, i.e., it satisfies `erf(erfinv(x)) = x`.
 ///
-/// ### `inverse_norm_cdf`
+/// ## `inverse_norm_cdf`
 ///
 /// Computes the inverse of the cumulative distribution function (quantile function) for a standard
 /// normal distribution. That is, for a given probability `x` in the range `[0, 1]`, it returns
 /// the value `z` such that the probability of a standard normal random variable `N(0, 1)` being
 /// less than `z` equals `x`.
 ///
-/// ### `norm_pdf`
+/// ## `norm_pdf`
 ///
 /// Computes the probability density function of the standard normal distribution `N(0, 1)`.
 /// This function evaluates the PDF at a given input `x`.
 ///
-/// ## 7. `norm_cdf`
+/// ## `norm_cdf`
 /// Computes the Cumulative Distribution Function (CDF) of the standard normal distribution at a
 /// given `x`.
-/// - This method is only available if the `"normal-distribution"` feature is enabled.
-/// - The CDF quantifies the probability that a normally distributed random variable will be
-///   less than or equal to `x`.
-/// - This function delegates to `normal_distribution::norm_cdf`.
-///
-/// # Feature Flags
-/// - The method `norm_cdf` is available only when the `"normal-distribution"` feature flag is
-///   enabled.
 pub trait SpecialFn {
     #[inline(always)]
     fn erf(x: f64) -> f64 {

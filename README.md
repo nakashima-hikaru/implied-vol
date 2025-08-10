@@ -4,44 +4,44 @@
 [![Actions status](https://github.com/nakashima-hikaru/implied-vol/actions/workflows/ci.yaml/badge.svg)](https://github.com/nakashima-hikaru/implied-vol/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-More information about this crate can be found in
-the [crate documentation](https://docs.rs/implied-vol/1.0/implied_vol/).
+More details can be found in the [crate documentation](https://docs.rs/implied-vol/2.0/implied_vol/).
 
-## About
+## Overview
 
-`implied-vol` is a high-performance, pure Rust implementation of Peter Jäckel's implied volatility calculations. This
-library serves as a robust Rust reimplementation of the methodologies presented in Jäckel's works.
+`implied-vol` is a high-performance, pure Rust library for calculating implied volatility,
+implemented based on the methods described in Peter Jäckel's seminal papers.
 
-## Source Works
+## Source References
 
-Our library follows the methods presented in two pivotal papers by Peter Jäckel:
+This crate implements algorithms from two key papers by Peter Jäckel:
 
-1. [Let's Be Rational](http://www.jaeckel.org/LetsBeRational.pdf): This work presents an approach to deduce Black’s
-   volatility from option prices with high precision.
+1. [Let's Be Rational](http://www.jaeckel.org/LetsBeRational.pdf) — A method for accurately and efficiently
+   extracting Black implied volatility from option prices.
 
-2. [Implied Normal Volatility](http://www.jaeckel.org/ImpliedNormalVolatility.pdf): Here, Jäckel provides an analytical
-   formula to calculate implied normal volatility (also known as Bachelier volatility) from vanilla option prices.
+2. [Implied Normal Volatility](http://www.jaeckel.org/ImpliedNormalVolatility.pdf) — An analytical formula for
+   computing implied normal (Bachelier) volatility from vanilla option prices.
 
-Both resources can be accessed at [Peter Jäckel's homepage](http://www.jaeckel.org/).
+Both papers and related materials are available on [Peter Jäckel's website](http://www.jaeckel.org/).
 
 ## Performance
 
-Peter Jäckel, the author of the original paper, asserts that "the calculation of a single implied volatility is now down
-to just under 180 nanoseconds" based on his machine's benchmark measurements. By examining the benchmark measurements
-performed on this crate's [GitHub Actions](https://github.com/nakashima-hikaru/implied-vol/actions), it becomes clear
-that comparable performance is being achieved.
+Benchmark results, available via our [GitHub Actions](https://github.com/nakashima-hikaru/implied-vol/actions),
+compare the execution speed against Jäckel’s original reference C++ implementation.
+With aggressive compiler optimizations applied to both implementations, this Rust crate often outperforms the C++
+version,
+likely benefiting from Rust-specific optimizations beyond pure numerical computation.
 
 ## Precision
 
-On our machine, the relative error for both implied Black volatility and implied normal
-volatility calculations is confirmed to be less than twice the machine epsilon in random tests.
-
-Community contributions are always welcome!
+The prices reconstructed using implied volatilities (both Black and normal) calculated from given prices exhibit
+relative errors less than four times the machine epsilon (f64::epsilon) compared to the original prices, as confirmed by
+random tests.
 
 ## Cargo Feature Flags
 
-- `fma`: Enable FMA (Fused Multiply-Add) operations for improved performance. Approximately 10% ~ 20% faster than the default
-  implementation if FMA is available on the target architecture.
+* `fma`: Enables Fused Multiply-Add (FMA) instructions when supported by the target CPU, providing a slight performance
+  boost over the default implementation.
+
 ## License
 
-This project is licensed under the [MIT license](https://github.com/nakashima-hikaru/implied-vol/blob/main/LICENSE).
+This project is licensed under the [MIT License](https://github.com/nakashima-hikaru/implied-vol/blob/main/LICENSE).

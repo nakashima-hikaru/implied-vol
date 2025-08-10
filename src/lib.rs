@@ -94,7 +94,7 @@ pub fn implied_black_volatility(
 ///
 /// * `forward` - The current value of the underlying asset.
 /// * `strike` - The strike price of the option.
-/// * `volatility` - The volatility of the underlying asset.
+/// * `volatility` - The Black volatility of the underlying asset.
 /// * `expiry` - The time to expiration of the option.
 /// * `is_call` - A boolean flag indicating whether the option is a call (true) or put (false).
 ///
@@ -162,7 +162,7 @@ pub fn implied_normal_volatility(
 ///
 /// * `forward` - The forward price of the underlying asset.
 /// * `strike` - The strike price of the option.
-/// * `volatility` - The volatility of the underlying asset.
+/// * `volatility` - The normal volatility of the underlying asset.
 /// * `expiry` - The time to expiration in years.
 /// * `is_call` - A boolean flag indicating whether the option is a call (true) or a put (false).
 ///
