@@ -676,8 +676,8 @@ fn implied_normalised_volatility_atm<SpFn: SpecialFn>(beta: f64) -> f64 {
 }
 
 #[inline(always)]
-fn lets_be_rational<SpFn: SpecialFn>(beta: f64, x: f64) -> f64 {
-    assert!(x <= 0.0);
+fn lets_be_rational<SpFn: SpecialFn>(beta: f64, theta_x: f64) -> f64 {
+    assert!(theta_x <= 0.0);
     if beta <= 0. {
         return if beta == 0.0 {
             0.0
@@ -685,29 +685,29 @@ fn lets_be_rational<SpFn: SpecialFn>(beta: f64, x: f64) -> f64 {
             VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_BELOW_INTRINSIC
         };
     }
-    let b_max = (0.5 * x).exp();
+    let b_max = (0.5 * theta_x).exp();
     if beta >= b_max {
         return VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_ABOVE_MAXIMUM;
     }
-    if x == 0.0 {
+    if theta_x == 0.0 {
         return implied_normalised_volatility_atm::<SpFn>(beta);
     }
 
     let mut s;
     let mut ds = f64::MIN;
 
-    let sqrt_ax = x.neg().sqrt();
+    let sqrt_ax = theta_x.neg().sqrt();
     let s_c = SQRT_2 * sqrt_ax;
     let ome = one_minus_erfcx::<SpFn>(sqrt_ax);
     let b_c = 0.5 * b_max * ome;
     if beta < b_c {
-        assert!(x < 0.0);
+        debug_assert!(theta_x < 0.0);
         let s_l = s_c - SQRT_PI_OVER_TWO * ome;
-        assert!(s_l > 0.0);
+        debug_assert!(s_l > 0.0);
         let b_l = b_l_over_b_max(s_c) * b_max;
         if beta < b_l {
             let (f_lower_map_l, d_f_lower_map_l_d_beta, d2_f_lower_map_l_d_beta2) =
-                compute_f_lower_map_and_first_two_derivatives::<SpFn>(x, s_l);
+                compute_f_lower_map_and_first_two_derivatives::<SpFn>(theta_x, s_l);
             let r2 = convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side::<
                 true,
             >(
@@ -730,18 +730,18 @@ fn lets_be_rational<SpFn: SpecialFn>(beta: f64, x: f64) -> f64 {
                 }
                 _ => {}
             }
-            s = inverse_f_lower_map::<SpFn>(x, f);
-            assert!(s > 0.0);
+            s = inverse_f_lower_map::<SpFn>(theta_x, f);
+            debug_assert!(s > 0.0);
             let ln_beta = beta.ln();
 
             ds = 1.0_f64;
             let mut final_trial = false;
             while ds.abs() > f64::EPSILON * s {
                 assert!(s > 0.0);
-                let (bx, ln_vega) = scaled_normalised_black_and_ln_vega::<SpFn>(x, s);
+                let (bx, ln_vega) = scaled_normalised_black_and_ln_vega::<SpFn>(theta_x, s);
                 let ln_b = bx.ln() + ln_vega;
                 let bpob = bx.recip();
-                let h = x / s;
+                let h = theta_x / s;
                 let x2_over_s3 = h * h / s;
                 let b_h2 = x2_over_s3 - s * 0.25;
                 let v = (ln_beta - ln_b) * ln_b / ln_beta * bx;
@@ -754,7 +754,7 @@ fn lets_be_rational<SpFn: SpecialFn>(beta: f64, x: f64) -> f64 {
                 let bppob = b_h2 * bpob;
                 let mu = 6.0 * lambda * (1.0 + lambda);
                 let h3 = sq_bpob.mul_add2(2.0 + mu, b_h3) - (bppob * 3.0 * ot_lambda);
-                ds = v * if x < -190.0 {
+                ds = v * if theta_x < -190.0 {
                     householder4_factor(
                         v,
                         h2,
@@ -783,7 +783,7 @@ fn lets_be_rational<SpFn: SpecialFn>(beta: f64, x: f64) -> f64 {
             }
             return s;
         } else {
-            let inv_v = (SQRT_TWO_PI / b_max, inv_normalised_vega(x, s_l));
+            let inv_v = (SQRT_TWO_PI / b_max, inv_normalised_vega(theta_x, s_l));
             let h = b_c - b_l;
             let r_im =
                 convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side::<
@@ -797,7 +797,7 @@ fn lets_be_rational<SpFn: SpecialFn>(beta: f64, x: f64) -> f64 {
         assert!(s_u > 0.0);
         let b_u = b_u_over_b_max(s_c) * b_max;
         if beta <= b_u {
-            let inv_v = (SQRT_TWO_PI / b_max, inv_normalised_vega(x, s_u));
+            let inv_v = (SQRT_TWO_PI / b_max, inv_normalised_vega(theta_x, s_u));
             let h = b_u - b_c;
             let r_u_m =
                 convex_rational_cubic_control_parameter_to_fit_second_derivative_at_left_side::<
@@ -807,7 +807,7 @@ fn lets_be_rational<SpFn: SpecialFn>(beta: f64, x: f64) -> f64 {
             assert!(s > 0.0);
         } else {
             let (f_upper_map_h, d_f_upper_map_h_d_beta, d2_f_upper_map_h_d_beta2) =
-                compute_f_upper_map_and_first_two_derivatives::<SpFn>(x, s_u);
+                compute_f_upper_map_and_first_two_derivatives::<SpFn>(theta_x, s_u);
             let mut f = if d2_f_upper_map_h_d_beta2 > -SQRT_DBL_MAX
                 && d2_f_upper_map_h_d_beta2 < SQRT_DBL_MAX
             {
@@ -841,12 +841,12 @@ fn lets_be_rational<SpFn: SpecialFn>(beta: f64, x: f64) -> f64 {
                 let beta_bar = b_max - beta;
                 let mut final_trial = false;
                 while ds.abs() > f64::EPSILON * s {
-                    let h = x / s;
+                    let h = theta_x / s;
                     let t = s / 2.0;
                     let gp = SQRT_TWO_OVER_PI
                         / (SpFn::erfcx((t + h) * FRAC_1_SQRT_2)
                             + SpFn::erfcx((t - h) * FRAC_1_SQRT_2));
-                    let b_bar = normalised_vega(x, s) / gp;
+                    let b_bar = normalised_vega(theta_x, s) / gp;
                     let g = (beta_bar / b_bar).ln();
                     let x2_over_s3 = h * h / s;
                     let b_h2 = s.mul_add2(-0.25, x2_over_s3);
@@ -855,7 +855,7 @@ fn lets_be_rational<SpFn: SpecialFn>(beta: f64, x: f64) -> f64 {
                     let v = -g / gp;
                     let h2 = b_h2 + gp;
                     let h3 = b_h3 + gp * (2.0 * gp + 3.0 * b_h2);
-                    ds = v * if x < -580.0 {
+                    ds = v * if theta_x < -580.0 {
                         householder4_factor(
                             v,
                             h2,
@@ -883,10 +883,10 @@ fn lets_be_rational<SpFn: SpecialFn>(beta: f64, x: f64) -> f64 {
         if ds.abs() <= f64::EPSILON * s {
             break;
         }
-        let b = normalised_black::<SpFn>(x, s);
-        let bp = normalised_vega(x, s);
+        let b = normalised_black::<SpFn>(theta_x, s);
+        let bp = normalised_vega(theta_x, s);
         let nu = (beta - b) / bp;
-        let h = x / s;
+        let h = theta_x / s;
         let h2 = h * h / s - s * 0.25;
         let h3 = h2 * h2 - 3.0 * (h / s).powi(2) - 0.25;
         ds = nu * householder3_factor(nu, h2, h3);

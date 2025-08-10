@@ -1,4 +1,5 @@
 use crate::fused_multiply_add::MulAdd;
+use std::cmp::Ordering;
 use std::f64::consts::FRAC_1_SQRT_2;
 use std::ops::Neg;
 
@@ -161,8 +162,12 @@ pub(super) fn erfc_cody(x: f64) -> f64 {
 }
 
 #[inline(always)]
+#[allow(clippy::neg_cmp_op_on_partial_ord)] // for performance reason
 fn erfcx_cody_above_threshold(y: f64) -> f64 {
-    assert!(y > THRESHOLD);
+    assert!(matches!(
+        y.partial_cmp(&THRESHOLD),
+        Some(Ordering::Greater) | None
+    ));
     if y <= 4.0 {
         cd(y)
     } else {

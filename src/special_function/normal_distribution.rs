@@ -1,6 +1,6 @@
-use std::cmp::Ordering;
 use crate::SpecialFn;
 use crate::fused_multiply_add::MulAdd;
+use std::cmp::Ordering;
 use std::f64::consts::FRAC_1_SQRT_2;
 use std::ops::Neg;
 
