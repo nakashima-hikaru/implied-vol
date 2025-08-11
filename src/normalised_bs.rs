@@ -5,7 +5,7 @@ use crate::constants::{HALF_OF_LN_TWO_PI, SIXTEENTH_ROOT_DBL_EPSILON, SQRT_PI_OV
 use crate::fused_multiply_add::MulAdd;
 
 #[inline(always)]
-pub fn normalised_black<SpFn: SpecialFn>(x: f64, s: f64) -> f64 {
+pub(super) fn normalised_black<SpFn: SpecialFn>(x: f64, s: f64) -> f64 {
     debug_assert!(s > 0.0);
     debug_assert!(x < 0.0);
     if is_region1(x, s) {
@@ -30,7 +30,7 @@ fn is_region2(x: f64, s: f64) -> bool {
 }
 
 #[inline(always)]
-pub fn scaled_normalised_black_and_ln_vega<SpFn: SpecialFn>(x: f64, s: f64) -> (f64, f64) {
+pub(super) fn scaled_normalised_black_and_ln_vega<SpFn: SpecialFn>(x: f64, s: f64) -> (f64, f64) {
     assert!(x < 0.0);
     assert!(s > 0.0);
     let ln_vega = ln_normalised_vega(x, s);
@@ -435,7 +435,7 @@ fn normalised_black_with_optimal_use_of_codys_functions<SpFn: SpecialFn>(x: f64,
 }
 
 #[inline(always)]
-pub fn normalised_vega(x: f64, s: f64) -> f64 {
+pub(super) fn normalised_vega(x: f64, s: f64) -> f64 {
     assert!(s > 0.0);
     let h = x / s;
     let t = 0.5 * s;
@@ -443,7 +443,7 @@ pub fn normalised_vega(x: f64, s: f64) -> f64 {
 }
 
 #[inline(always)]
-pub fn inv_normalised_vega(x: f64, s: f64) -> f64 {
+pub(super) fn inv_normalised_vega(x: f64, s: f64) -> f64 {
     assert!(s > 0.0);
     let h = x / s;
     let t = 0.5 * s;
