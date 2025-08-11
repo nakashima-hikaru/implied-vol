@@ -685,16 +685,14 @@ fn implied_normalised_volatility_atm<SpFn: SpecialFn>(beta: f64) -> f64 {
 
 #[inline(always)]
 fn lets_be_rational<SpFn: SpecialFn>(beta: f64, theta_x: f64) -> Option<f64> {
-    if !(theta_x < 0.0 && beta > 0.0) {
+    debug_assert!(theta_x < 0.0);
+    debug_assert!(beta > 0.0);
+    let b_max = (0.5 * theta_x).exp();
+    if beta >= b_max {
+        // time value exceeds the supremum of the model
         None
     } else {
-        let b_max = (0.5 * theta_x).exp();
-        if beta >= b_max {
-            // time value exceeds the supremum of the model
-            None
-        } else {
-            Some(lets_be_rational_unchecked::<SpFn>(beta, theta_x, b_max))
-        }
+        Some(lets_be_rational_unchecked::<SpFn>(beta, theta_x, b_max))
     }
 }
 

@@ -113,7 +113,7 @@ pub fn implied_black_volatility(
 /// # Examples
 ///
 /// ```
-/// let price = implied_vol::black_scholes_option_price(100.0, 90.0, 0.07011701801482094, 30.0, true);
+/// let price = implied_vol::black_scholes_option_price(100.0, 90.0, 0.07011701801482094, 30.0, true).unwrap();
 /// assert!((price - 20.0).abs()<= 2.0 * f64::EPSILON * 20.0);
 /// ```
 #[inline(always)]
@@ -242,7 +242,7 @@ pub mod black {
     /// let expiry = 1.0; // 1 year
     /// let is_call = true; // Call option
     ///
-    /// let option_price = price::<DefaultSpecialFn>(forward, strike, volatility, expiry, is_call);
+    /// let option_price = price::<DefaultSpecialFn>(forward, strike, volatility, expiry, is_call).unwrap();
     /// println!("The option price is: {}", option_price);
     /// ```
     #[inline(always)]
@@ -292,7 +292,7 @@ pub mod black {
     /// let expiry = 1.0; // 1 year
     /// let is_call = true;
     ///
-    /// let iv = implied_volatility::<DefaultSpecialFn>(option_price, forward, strike, expiry, is_call);
+    /// let iv = implied_volatility::<DefaultSpecialFn>(option_price, forward, strike, expiry, is_call).unwrap();
     /// println!("Implied Volatility: {}", iv);
     /// ```
     #[inline(always)]
