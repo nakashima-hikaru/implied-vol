@@ -9,6 +9,4 @@ pub(crate) const SIXTEENTH_ROOT_DBL_EPSILON: f64 = f64::from_bits(0x3fbae89f995a
 
 pub(crate) const SQRT_DBL_MAX: f64 = f64::from_bits(0x5fefffffffffffff);
 pub(crate) const ONE_OVER_SQRT_TWO_PI: f64 = f64::from_bits(0x3fd9884533d43651);
-pub(crate) const VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_BELOW_INTRINSIC: f64 = f64::NEG_INFINITY;
-pub(crate) const VOLATILITY_VALUE_TO_SIGNAL_PRICE_IS_ABOVE_MAXIMUM: f64 = f64::INFINITY;
 pub(crate) const HALF_OF_LN_TWO_PI: f64 = f64::from_bits(0x3fed67f1c864beb4);

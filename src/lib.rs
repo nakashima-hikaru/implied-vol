@@ -27,10 +27,10 @@
 //! Then, in your code, bring the functions you need into scope with:
 //!
 //! ```rust
-//! let black_vol = implied_vol::implied_black_volatility(20.0, 100.0, 90.0, 30.0, true);
+//! let black_vol = implied_vol::implied_black_volatility(20.0, 100.0, 90.0, 30.0, true).unwrap();
 //! assert_eq!(black_vol, 0.07011701801482094);
 //!
-//! let price = implied_vol::black_scholes_option_price(100.0, 90.0, 0.07011701801482094, 30.0, true);
+//! let price = implied_vol::black_scholes_option_price(100.0, 90.0, 0.07011701801482094, 30.0, true).unwrap();
 //! assert!(((price - 20.0) / price).abs() <= 2.0 * f64::EPSILON);
 //!
 //! let normal_vol = implied_vol::implied_normal_volatility(20.0, 100.0, 90.0, 30.0, true);
@@ -68,7 +68,7 @@ pub mod special_function;
 /// # Examples
 ///
 /// ```
-/// let black_vol = implied_vol::implied_black_volatility(20.0, 100.0, 90.0, 30.0, true);
+/// let black_vol = implied_vol::implied_black_volatility(20.0, 100.0, 90.0, 30.0, true).unwrap();
 /// assert_eq!(black_vol, 0.07011701801482094);
 /// ```
 #[inline(always)]
@@ -78,7 +78,7 @@ pub fn implied_black_volatility(
     strike: f64,
     expiry: f64,
     is_call: bool,
-) -> f64 {
+) -> Option<f64> {
     if is_call {
         lets_be_rational::implied_black_volatility::<DefaultSpecialFn, true>(
             option_price,
@@ -123,7 +123,7 @@ pub fn black_scholes_option_price(
     volatility: f64,
     expiry: f64,
     is_call: bool,
-) -> f64 {
+) -> Option<f64> {
     if is_call {
         lets_be_rational::black::<DefaultSpecialFn, true>(forward, strike, volatility, expiry)
     } else {
@@ -252,7 +252,7 @@ pub mod black {
         volatility: f64,
         expiry: f64,
         is_call: bool,
-    ) -> f64 {
+    ) -> Option<f64> {
         if is_call {
             lets_be_rational::black::<SpFn, true>(forward, strike, volatility, expiry)
         } else {
@@ -302,7 +302,7 @@ pub mod black {
         strike: f64,
         expiry: f64,
         is_call: bool,
-    ) -> f64 {
+    ) -> Option<f64> {
         if is_call {
             lets_be_rational::implied_black_volatility::<SpFn, true>(
                 option_price,

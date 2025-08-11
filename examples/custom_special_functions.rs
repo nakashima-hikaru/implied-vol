@@ -32,16 +32,20 @@ fn main() {
     let is_call = true;
 
     // Use the custom special function implementation
-    let price = black::price::<MySpecialFn>(forward, strike, volatility, maturity, is_call);
+    let price =
+        black::price::<MySpecialFn>(forward, strike, volatility, maturity, is_call).unwrap();
     let implied_vol =
-        black::implied_volatility::<MySpecialFn>(price, forward, strike, maturity, is_call);
-    println!("Price: {}", price);
-    println!("Implied Volatility: {}", implied_vol);
+        black::implied_volatility::<MySpecialFn>(price, forward, strike, maturity, is_call)
+            .unwrap();
+    println!("Price: {price}");
+    println!("Implied Volatility: {implied_vol}");
 
     // Using the default special function implementation
-    let price = black::price::<DefaultSpecialFn>(forward, strike, volatility, maturity, is_call);
+    let price =
+        black::price::<DefaultSpecialFn>(forward, strike, volatility, maturity, is_call).unwrap();
     let implied_vol =
-        black::implied_volatility::<DefaultSpecialFn>(price, forward, strike, maturity, is_call);
-    println!("Price: {}", price);
-    println!("Implied Volatility: {}", implied_vol);
+        black::implied_volatility::<DefaultSpecialFn>(price, forward, strike, maturity, is_call)
+            .unwrap();
+    println!("Price: {price}");
+    println!("Implied Volatility: {implied_vol}");
 }
