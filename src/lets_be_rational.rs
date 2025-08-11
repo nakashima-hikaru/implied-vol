@@ -421,7 +421,7 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
             break;
         }
         assert!(s > 0.0);
-        assert!(theta_x < 0.0);
+        debug_assert!(theta_x < 0.0);
         let b = normalised_bs::normalised_black::<SpFn>(theta_x, s);
         let bp = normalised_bs::normalised_vega(theta_x, s);
         let nu = (beta - b) / bp;
@@ -446,41 +446,38 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
 }
 
 #[inline(always)]
-pub(crate) fn implied_black_volatility<SpFn: SpecialFn, const IS_CALL: bool>(
+pub(crate) fn implied_black_volatility_input_unchecked<SpFn: SpecialFn, const IS_CALL: bool>(
     price: f64,
     f: f64,
     k: f64,
     t: f64,
 ) -> Option<f64> {
-    if !(price >= 0.0 && f.is_finite() && k.is_finite() && t >= 0.0) {
-        None
-    } else {
-        if price >= if IS_CALL { f } else { k } {
-            return if price == if IS_CALL { f } else { k } {
-                Some(f64::INFINITY)
-            } else {
-                None
-            };
-        }
-        let intrinsic_value = if IS_CALL { f - k } else { k - f };
-        let normalized_time_value = if intrinsic_value > 0.0 {
-            price - intrinsic_value
+    assert!(price >= 0.0 && f.is_finite() && k.is_finite() && t >= 0.0);
+    if price >= if IS_CALL { f } else { k } {
+        return if price == if IS_CALL { f } else { k } {
+            Some(f64::INFINITY)
         } else {
-            price
-        } / (f.sqrt() * k.sqrt());
-        if normalized_time_value <= 0.0 {
-            return if normalized_time_value == 0.0 {
-                Some(0.0)
-            } else {
-                None
-            };
-        }
-        Some(if f == k {
-            implied_normalised_volatility_atm::<SpFn>(normalized_time_value) / t.sqrt()
-        } else {
-            lets_be_rational::<SpFn>(normalized_time_value, (f / k).ln().abs().neg())?.div(t.sqrt())
-        })
+            None
+        };
     }
+    let intrinsic_value = if IS_CALL { f - k } else { k - f };
+    let normalized_time_value = if intrinsic_value > 0.0 {
+        price - intrinsic_value
+    } else {
+        price
+    } / (f.sqrt() * k.sqrt());
+    if normalized_time_value <= 0.0 {
+        return if normalized_time_value == 0.0 {
+            Some(0.0)
+        } else {
+            None
+        };
+    }
+    Some(if f == k {
+        implied_normalised_volatility_atm::<SpFn>(normalized_time_value) / t.sqrt()
+    } else {
+        lets_be_rational::<SpFn>(normalized_time_value, (f / k).ln().abs().neg())?.div(t.sqrt())
+    })
 }
 
 #[cfg(test)]
@@ -546,7 +543,7 @@ mod tests {
             let k = f;
             let t = 1.0;
             const Q: bool = true;
-            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t).unwrap();
+            let sigma = implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t).unwrap();
             let reprice = black_input_unchecked::<DefaultSpecialFn, Q>(f, k, sigma, t).unwrap();
             assert!(
                 (price - reprice).abs() / price < 4.0 * f64::EPSILON,
@@ -565,7 +562,7 @@ mod tests {
             const Q: bool = true;
             let sigma = 0.001 * i as f64;
             let price = black_input_unchecked::<DefaultSpecialFn, Q>(f, k, sigma, t).unwrap();
-            let sigma2 = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t).unwrap();
+            let sigma2 = implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t).unwrap();
             // assert!((sigma - sigma2).abs() / sigma <= (1.0 + black_accuracy_factor((f / k).ln(), sigma * t.sqrt(),1.0).recip()) * f64::EPSILON, "f: {f}, k: {k}, t: {t}, sigma: {sigma}, sigma2; {sigma2}, {}, {}", (sigma - sigma2).abs() / sigma / f64::EPSILON, 1.0 + black_accuracy_factor((f / k).ln(), sigma * t.sqrt(), 1.0).recip());
             assert!(
                 (sigma - sigma2).abs() / sigma <= 50000. * f64::EPSILON,
@@ -584,7 +581,7 @@ mod tests {
             let k = f;
             let t = 1.0;
             const Q: bool = false;
-            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t).unwrap();
+            let sigma = implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t).unwrap();
             let reprice = black_input_unchecked::<DefaultSpecialFn, Q>(f, k, sigma, t).unwrap();
             assert!((price - reprice).abs() < f64::EPSILON * 100.0);
         }
@@ -602,7 +599,7 @@ mod tests {
             let k = f - price;
             let t = 1e5 * r3;
             const Q: bool = true;
-            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t).unwrap();
+            let sigma = implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t).unwrap();
             let reprice = black_input_unchecked::<DefaultSpecialFn, Q>(f, k, sigma, t).unwrap();
             assert!((price - reprice).abs() <= f64::EPSILON);
         }
@@ -620,7 +617,7 @@ mod tests {
             let k = 1.0 * r;
             let t = 1e5 * r3;
             const Q: bool = true;
-            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t).unwrap();
+            let sigma = implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t).unwrap();
             let reprice = black_input_unchecked::<DefaultSpecialFn, Q>(f, k, sigma, t).unwrap();
             assert!(
                 (price - reprice).abs() <= 1.5 * f64::EPSILON,
@@ -642,7 +639,7 @@ mod tests {
             let k = 1.0;
             let t = 1e5 * r3;
             const Q: bool = true;
-            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t).unwrap();
+            let sigma = implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t).unwrap();
             let reprice = black_input_unchecked::<DefaultSpecialFn, Q>(f, k, sigma, t).unwrap();
             assert!((price - reprice).abs() <= 1.5 * f64::EPSILON);
         }
@@ -660,7 +657,7 @@ mod tests {
             let k = 1.0 * r;
             let t = 1e5 * r3;
             const Q: bool = false;
-            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t).unwrap();
+            let sigma = implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t).unwrap();
             let reprice = black_input_unchecked::<DefaultSpecialFn, Q>(f, k, sigma, t).unwrap();
             // if (price - reprice).abs() > 1.5 * f64::EPSILON{
             //     println!("{:?}", (price, f, k, t, q, sigma));
@@ -682,7 +679,7 @@ mod tests {
             let k = 1.0;
             let t = 1e5 * r3;
             const Q: bool = false;
-            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t).unwrap();
+            let sigma = implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t).unwrap();
             let reprice = black_input_unchecked::<DefaultSpecialFn, Q>(f, k, sigma, t).unwrap();
             assert!((price - reprice).abs() <= 1.5 * f64::EPSILON);
         }
@@ -696,7 +693,7 @@ mod tests {
             let k = 12100.0;
             let t = 0.0077076327759348934;
             const Q: bool = true;
-            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t).unwrap();
+            let sigma = implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t).unwrap();
             let reprice = black_input_unchecked::<DefaultSpecialFn, Q>(f, k, sigma, t).unwrap();
             assert_eq!(price, reprice);
         }
@@ -706,7 +703,7 @@ mod tests {
             let k = 12100.0;
             let t = 0.007705811088032645;
             const Q: bool = true;
-            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t).unwrap();
+            let sigma = implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t).unwrap();
             let reprice = black_input_unchecked::<DefaultSpecialFn, Q>(f, k, sigma, t).unwrap();
             assert_eq!(price, reprice);
         }
@@ -716,7 +713,7 @@ mod tests {
             let k = 12100.0;
             let t = 0.007705808219781035;
             const Q: bool = true;
-            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t).unwrap();
+            let sigma = implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t).unwrap();
             let reprice = black_input_unchecked::<DefaultSpecialFn, Q>(f, k, sigma, t).unwrap();
             assert_eq!(price, reprice);
         }
@@ -726,7 +723,7 @@ mod tests {
             let k = 12100.0;
             let t = 0.007705804818688366;
             const Q: bool = true;
-            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t).unwrap();
+            let sigma = implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t).unwrap();
             let reprice = black_input_unchecked::<DefaultSpecialFn, Q>(f, k, sigma, t).unwrap();
             assert_eq!(price, reprice);
         }
@@ -736,7 +733,7 @@ mod tests {
             let k = 12100.0;
             let t = 0.007705800716005495;
             const Q: bool = true;
-            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t).unwrap();
+            let sigma = implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t).unwrap();
             let reprice = black_input_unchecked::<DefaultSpecialFn, Q>(f, k, sigma, t).unwrap();
             assert!(((price - reprice) / price).abs() <= 2.0 * f64::EPSILON);
         }
@@ -746,7 +743,7 @@ mod tests {
             let t = 0.0016085064438058978;
             let k = 11600.0;
             const Q: bool = true;
-            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t).unwrap();
+            let sigma = implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t).unwrap();
             let reprice = black_input_unchecked::<DefaultSpecialFn, Q>(f, k, sigma, t).unwrap();
             assert_eq!(price, reprice, "f: {f}, k: {k}, t: {t}, sigma: {sigma}");
         }
@@ -756,7 +753,7 @@ mod tests {
             let t = 0.0016085064438058978;
             let k = 11600.0;
             const Q: bool = true;
-            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t).unwrap();
+            let sigma = implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t).unwrap();
             let reprice = black_input_unchecked::<DefaultSpecialFn, Q>(f, k, sigma, t).unwrap();
             assert_eq!(price, reprice, "f: {f}, k: {k}, t: {t}, sigma: {sigma}");
         }
@@ -769,7 +766,7 @@ mod tests {
             let f = 100.0;
             let t = 1.0;
             const Q: bool = true;
-            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t);
+            let sigma = implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t);
             assert!(sigma.is_none());
         }
     }
@@ -781,7 +778,7 @@ mod tests {
             let k = 100.0;
             let t = 1.0;
             const Q: bool = true;
-            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t);
+            let sigma = implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t);
             assert!(sigma.is_none());
         }
     }
@@ -793,7 +790,7 @@ mod tests {
             let t = 1.0;
             let k = 100.0;
             const Q: bool = true;
-            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t);
+            let sigma = implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t);
             assert!(sigma.is_none());
         }
     }
@@ -805,7 +802,7 @@ mod tests {
             let f = 100.0;
             let k = 100.0;
             const Q: bool = true;
-            let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t);
+            let sigma = implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t);
             assert!(sigma.is_none());
         }
     }
@@ -817,7 +814,7 @@ mod tests {
         let k = 100.0;
         let t = f64::INFINITY;
         const Q: bool = true;
-        let sigma = implied_black_volatility::<DefaultSpecialFn, Q>(price, f, k, t);
+        let sigma = implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t);
         assert_eq!(sigma, Some(0.0));
     }
 }

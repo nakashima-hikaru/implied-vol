@@ -82,14 +82,14 @@ pub fn implied_black_volatility(
     is_call: bool,
 ) -> Option<f64> {
     if is_call {
-        lets_be_rational::implied_black_volatility::<DefaultSpecialFn, true>(
+        lets_be_rational::implied_black_volatility_input_unchecked::<DefaultSpecialFn, true>(
             option_price,
             forward,
             strike,
             expiry,
         )
     } else {
-        lets_be_rational::implied_black_volatility::<DefaultSpecialFn, false>(
+        lets_be_rational::implied_black_volatility_input_unchecked::<DefaultSpecialFn, false>(
             option_price,
             forward,
             strike,
@@ -301,14 +301,14 @@ impl ImpliedBlackVolatility {
 impl ImpliedBlackVolatility {
     pub fn calculate<SpFn: SpecialFn>(&self) -> Option<f64> {
         if self.is_call {
-            lets_be_rational::implied_black_volatility::<SpFn, true>(
+            lets_be_rational::implied_black_volatility_input_unchecked::<SpFn, true>(
                 self.option_price,
                 self.forward,
                 self.strike,
                 self.expiry,
             )
         } else {
-            lets_be_rational::implied_black_volatility::<SpFn, false>(
+            lets_be_rational::implied_black_volatility_input_unchecked::<SpFn, false>(
                 self.option_price,
                 self.forward,
                 self.strike,
