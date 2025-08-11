@@ -1,4 +1,7 @@
+use crate::SpecialFn;
 use crate::fused_multiply_add::MulAdd;
+use crate::special_function::normal_distribution;
+use crate::special_function::normal_distribution::U_MAX;
 use std::cmp::Ordering;
 use std::f64::consts::FRAC_1_SQRT_2;
 use std::ops::Neg;
@@ -194,9 +197,42 @@ pub(super) fn erfcx_cody(x: f64) -> f64 {
     }
 }
 
+#[inline(always)]
+pub(super) fn one_minus_erfcx<SpFn: SpecialFn + ?Sized>(x: f64) -> f64 {
+    if !(-1.0 / 5.0..=1.0 / 3.0).contains(&x) {
+        1.0 - SpFn::erfcx(x)
+    } else {
+        x * (x
+            .mul_add2(1.4069285713634565E-2, 1.406_918_874_460_965E-1)
+            .mul_add2(x, 5.768_900_120_887_374E-1)
+            .mul_add2(x, 1.1514967181784756)
+            .mul_add2(x, 1.0000000000000002)
+            / x.mul_add2(1.2463320728346347E-2, 1.358008134514386E-1)
+                .mul_add2(x, 6.248_608_165_864_026E-1)
+                .mul_add2(x, 1.5089908593742723)
+                .mul_add2(x, 1.9037494962421563)
+                .mul_add2(x, 1.0))
+        .mul_add2(-x, std::f64::consts::FRAC_2_SQRT_PI)
+    }
+}
+
+#[inline(always)]
+pub(super) fn erfinv(e: f64) -> f64 {
+    if e.abs() < 2.0 * U_MAX {
+        normal_distribution::inverse_norm_cdfm_half_for_midrange_probabilities(0.5 * e)
+            * FRAC_1_SQRT_2
+    } else {
+        (if e < 0.0 {
+            normal_distribution::inverse_norm_cdf_for_low_probabilities(e.mul_add2(0.5, 0.5))
+        } else {
+            -normal_distribution::inverse_norm_cdf_for_low_probabilities(e.mul_add2(-0.5, 0.5))
+        }) * FRAC_1_SQRT_2
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::special_function::erf_cody::{THRESHOLD, XBIG, XNEG, erfc_cody, erfcx_cody};
+    use crate::special_function::error_function::{THRESHOLD, XBIG, XNEG, erfc_cody, erfcx_cody};
 
     #[test]
     fn calerf_1() {

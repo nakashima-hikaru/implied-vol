@@ -12,7 +12,6 @@ use crate::rational_cubic::{
 use crate::special_function::SpecialFn;
 use std::f64::consts::{FRAC_1_SQRT_2, SQRT_2};
 use std::ops::{Div, Neg};
-
 #[inline(always)]
 fn householder3_factor(v: f64, h2: f64, h3: f64) -> f64 {
     v.mul_add2(0.5 * h2, 1.0) / v.mul_add2(h3 / 6.0, h2).mul_add2(v, 1.0)
@@ -660,25 +659,6 @@ fn inverse_f_upper_map<SpFn: SpecialFn>(f: f64) -> f64 {
 }
 
 #[inline(always)]
-fn one_minus_erfcx<SpFn: SpecialFn>(x: f64) -> f64 {
-    if !(-1.0 / 5.0..=1.0 / 3.0).contains(&x) {
-        1.0 - SpFn::erfcx(x)
-    } else {
-        x * (x
-            .mul_add2(1.4069285713634565E-2, 1.406_918_874_460_965E-1)
-            .mul_add2(x, 5.768_900_120_887_374E-1)
-            .mul_add2(x, 1.1514967181784756)
-            .mul_add2(x, 1.0000000000000002)
-            / x.mul_add2(1.2463320728346347E-2, 1.358008134514386E-1)
-                .mul_add2(x, 6.248_608_165_864_026E-1)
-                .mul_add2(x, 1.5089908593742723)
-                .mul_add2(x, 1.9037494962421563)
-                .mul_add2(x, 1.0))
-        .mul_add2(-x, std::f64::consts::FRAC_2_SQRT_PI)
-    }
-}
-
-#[inline(always)]
 fn implied_normalised_volatility_atm<SpFn: SpecialFn>(beta: f64) -> f64 {
     2.0 * SQRT_2 * SpFn::erfinv(beta)
 }
@@ -703,7 +683,7 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
 
     let sqrt_ax = theta_x.neg().sqrt();
     let s_c = SQRT_2 * sqrt_ax;
-    let ome = one_minus_erfcx::<SpFn>(sqrt_ax);
+    let ome = SpFn::one_minus_erfcx(sqrt_ax);
     let b_c = 0.5 * b_max * ome;
     if beta < b_c {
         debug_assert!(theta_x < 0.0);

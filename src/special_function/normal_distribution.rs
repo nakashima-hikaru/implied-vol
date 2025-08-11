@@ -41,10 +41,10 @@ pub(super) fn norm_cdf<SpFn: SpecialFn + ?Sized>(z: f64) -> f64 {
     0.5 * SpFn::erfc(-z * FRAC_1_SQRT_2)
 }
 
-const U_MAX: f64 = 0.3413447460685429;
+pub(super) const U_MAX: f64 = 0.3413447460685429;
 const U_MAX2: f64 = U_MAX * U_MAX;
 #[inline(always)]
-fn inverse_norm_cdfm_half_for_midrange_probabilities(u: f64) -> f64 {
+pub(super) fn inverse_norm_cdfm_half_for_midrange_probabilities(u: f64) -> f64 {
     assert_ne!(u.abs().partial_cmp(&U_MAX), Some(Ordering::Greater));
     let s = U_MAX2 - u * u;
     u * (s.mul_add2(
@@ -78,7 +78,7 @@ fn inverse_norm_cdfm_half_for_midrange_probabilities(u: f64) -> f64 {
 }
 
 #[inline(always)]
-fn inverse_norm_cdf_for_low_probabilities(p: f64) -> f64 {
+pub(super) fn inverse_norm_cdf_for_low_probabilities(p: f64) -> f64 {
     assert_ne!(p.partial_cmp(&0.15865525393146), Some(Ordering::Greater));
     let r = p.ln().neg().sqrt();
     if r < 2.05 {
@@ -235,18 +235,5 @@ pub(super) fn inverse_norm_cdf(p: f64) -> f64 {
         -inverse_norm_cdf_for_low_probabilities(1.0 - p)
     } else {
         inverse_norm_cdf_for_low_probabilities(p)
-    }
-}
-
-#[inline(always)]
-pub(super) fn erfinv(e: f64) -> f64 {
-    if e.abs() < 2.0 * U_MAX {
-        inverse_norm_cdfm_half_for_midrange_probabilities(0.5 * e) * FRAC_1_SQRT_2
-    } else {
-        (if e < 0.0 {
-            inverse_norm_cdf_for_low_probabilities(e.mul_add2(0.5, 0.5))
-        } else {
-            -inverse_norm_cdf_for_low_probabilities(e.mul_add2(-0.5, 0.5))
-        }) * FRAC_1_SQRT_2
     }
 }
