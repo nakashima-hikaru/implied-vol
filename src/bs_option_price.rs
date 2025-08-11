@@ -1,8 +1,10 @@
+use crate::SpecialFn;
+use crate::constants::{
+    HALF_OF_LN_TWO_PI, SIXTEENTH_ROOT_DBL_EPSILON, SQRT_PI_OVER_TWO, SQRT_TWO_PI,
+};
+use crate::fused_multiply_add::MulAdd;
 use std::f64::consts::FRAC_1_SQRT_2;
 use std::ops::Neg;
-use crate::SpecialFn;
-use crate::constants::{HALF_OF_LN_TWO_PI, SIXTEENTH_ROOT_DBL_EPSILON, SQRT_PI_OVER_TWO, SQRT_TWO_PI};
-use crate::fused_multiply_add::MulAdd;
 
 #[inline(always)]
 pub(super) fn normalised_black<SpFn: SpecialFn>(x: f64, s: f64) -> f64 {
@@ -460,4 +462,28 @@ fn ln_normalised_vega(x: f64, s: f64) -> f64 {
     } else {
         -HALF_OF_LN_TWO_PI - 0.5 * ((x / s).powi(2) + 0.25 * s * s)
     }
+}
+
+#[inline(always)]
+pub(super) fn black_input_unchecked<SpFn: SpecialFn, const IS_CALL: bool>(
+    f: f64,
+    k: f64,
+    sigma: f64,
+    t: f64,
+) -> Option<f64> {
+    let s = sigma * t.sqrt();
+    assert!(s >= 0.0);
+    Some(if k == f {
+        f * SpFn::erf((0.5 * FRAC_1_SQRT_2) * s)
+    } else {
+        (if IS_CALL { f - k } else { k - f }).max(0.0)
+            + (if s <= 0.0 {
+                0.0
+            } else {
+                debug_assert!(s > 0.0);
+                let theta_x = (f / k).ln().abs().neg();
+                debug_assert!(theta_x < 0.0);
+                f.sqrt() * k.sqrt() * normalised_black::<SpFn>(theta_x, s)
+            })
+    })
 }

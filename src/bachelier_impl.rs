@@ -11,7 +11,6 @@ fn intrinsic_value<const IS_CALL: bool>(forward: f64, strike: f64) -> f64 {
         forward - strike
     })
     .max(0.0)
-    .abs()
 }
 
 #[inline(always)]
@@ -28,7 +27,7 @@ fn phi_tilde_times_x(x: f64) -> f64 {
         return x.mul_add2(g, 0.5).mul_add2(x, ONE_OVER_SQRT_TWO_PI);
     }
 
-    if x.is_sign_positive() {
+    if x > 0.0 {
         return phi_tilde_times_x(-x) + x;
     }
 
@@ -83,9 +82,6 @@ fn inv_phi_tilde<SpFn: SpecialFn>(phi_tilde_star: f64) -> f64 {
     if phi_tilde_star > 1.0 {
         return -inv_phi_tilde::<SpFn>(1.0 - phi_tilde_star);
     }
-    if !phi_tilde_star.is_sign_negative() {
-        return f64::NAN;
-    }
     let x_bar = if phi_tilde_star < -0.00188203927 {
         // Equation (2.1)
         let g = (phi_tilde_star - 0.5).recip();
@@ -138,8 +134,9 @@ pub(crate) fn bachelier_price<const IS_CALL: bool>(
     sigma: f64,
     t: f64,
 ) -> f64 {
-    let s = sigma.abs() * t.sqrt();
-    if s < f64::MIN_POSITIVE {
+    assert!(!forward.is_nan() && !strike.is_nan() && sigma >= 0.0 && t >= 0.0);
+    let s = sigma * t.sqrt();
+    if s == 0.0 {
         return intrinsic_value::<IS_CALL>(forward, strike);
     }
     let moneyness = if IS_CALL {
@@ -152,24 +149,24 @@ pub(crate) fn bachelier_price<const IS_CALL: bool>(
 }
 
 #[inline(always)]
-pub(crate) fn implied_normal_volatility<SpFn: SpecialFn, const IS_CALL: bool>(
+pub(crate) fn implied_normal_volatility_input_unchecked<SpFn: SpecialFn, const IS_CALL: bool>(
     price: f64,
     forward: f64,
     strike: f64,
     t: f64,
-) -> f64 {
+) -> Option<f64> {
     if forward == strike {
-        return price * SQRT_TWO_PI / t.sqrt();
+        return Some(price * SQRT_TWO_PI / t.sqrt());
     }
     let intrinsic = intrinsic_value::<IS_CALL>(forward, strike);
     match price.total_cmp(&intrinsic) {
-        Ordering::Less => f64::NEG_INFINITY,
-        Ordering::Equal => 0.0,
+        Ordering::Less => None,
+        Ordering::Equal => Some(0.0),
         Ordering::Greater => {
             let absolute_moneyness = (forward - strike).abs();
             let phi_tilde_star = (intrinsic - price) / absolute_moneyness;
             let x_star = inv_phi_tilde::<SpFn>(phi_tilde_star);
-            absolute_moneyness / (x_star * t.sqrt()).abs()
+            Some(absolute_moneyness / (x_star * t.sqrt()).abs())
         }
     }
 }
@@ -187,7 +184,9 @@ mod tests {
             let f = 100.0;
             let k = f;
             let t = 1.0;
-            let sigma = implied_normal_volatility::<DefaultSpecialFn, true>(price, f, k, t);
+            let sigma =
+                implied_normal_volatility_input_unchecked::<DefaultSpecialFn, true>(price, f, k, t)
+                    .unwrap();
             let reprice = bachelier_price::<true>(f, k, sigma, t);
             assert!((price - reprice).abs() < 5e-14);
         }
@@ -200,7 +199,10 @@ mod tests {
             let f = 100.0;
             let k = f;
             let t = 1.0;
-            let sigma = implied_normal_volatility::<DefaultSpecialFn, false>(price, f, k, t);
+            let sigma = implied_normal_volatility_input_unchecked::<DefaultSpecialFn, false>(
+                price, f, k, t,
+            )
+            .unwrap();
             let reprice = bachelier_price::<false>(f, k, sigma, t);
             assert!((price - reprice).abs() < 5e-14);
         }
@@ -217,7 +219,9 @@ mod tests {
             let f = r + 1e5 * r2;
             let k = f - price;
             let t = 1e5 * r3;
-            let sigma = implied_normal_volatility::<DefaultSpecialFn, true>(price, f, k, t);
+            let sigma =
+                implied_normal_volatility_input_unchecked::<DefaultSpecialFn, true>(price, f, k, t)
+                    .unwrap();
             let reprice = bachelier_price::<true>(f, k, sigma, t);
             assert!((price - reprice).abs() <= 2.0 * f64::EPSILON);
         }
@@ -234,7 +238,9 @@ mod tests {
             let f = 1.0;
             let k = 1.0 * r;
             let t = 1e5 * r3;
-            let sigma = implied_normal_volatility::<DefaultSpecialFn, true>(price, f, k, t);
+            let sigma =
+                implied_normal_volatility_input_unchecked::<DefaultSpecialFn, true>(price, f, k, t)
+                    .unwrap();
             let reprice = bachelier_price::<true>(f, k, sigma, t);
             assert!((price - reprice).abs() <= 2.0 * f64::EPSILON);
         }
@@ -251,7 +257,9 @@ mod tests {
             let f = 1.0 * r;
             let k = 1.0;
             let t = 1e5 * r3;
-            let sigma = implied_normal_volatility::<DefaultSpecialFn, true>(price, f, k, t);
+            let sigma =
+                implied_normal_volatility_input_unchecked::<DefaultSpecialFn, true>(price, f, k, t)
+                    .unwrap();
             let reprice = bachelier_price::<true>(f, k, sigma, t);
             assert!((price - reprice).abs() <= 2.0 * f64::EPSILON);
         }
@@ -268,7 +276,10 @@ mod tests {
             let f = 1.0;
             let k = 1.0 * r;
             let t = 1e5 * r3;
-            let sigma = implied_normal_volatility::<DefaultSpecialFn, false>(price, f, k, t);
+            let sigma = implied_normal_volatility_input_unchecked::<DefaultSpecialFn, false>(
+                price, f, k, t,
+            )
+            .unwrap();
             let reprice = bachelier_price::<false>(f, k, sigma, t);
             assert!((price - reprice).abs() <= 2.0 * f64::EPSILON);
         }
@@ -285,7 +296,10 @@ mod tests {
             let f = 1.0 * r;
             let k = 1.0;
             let t = 1e5 * r3;
-            let sigma = implied_normal_volatility::<DefaultSpecialFn, false>(price, f, k, t);
+            let sigma = implied_normal_volatility_input_unchecked::<DefaultSpecialFn, false>(
+                price, f, k, t,
+            )
+            .unwrap();
             let reprice = bachelier_price::<false>(f, k, sigma, t);
             assert!((price - reprice).abs() <= 2.0 * f64::EPSILON);
         }

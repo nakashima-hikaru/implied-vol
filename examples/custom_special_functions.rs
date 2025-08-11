@@ -31,36 +31,45 @@ fn main() {
     let volatility = 0.2;
     let is_call = true;
 
-    // Use the custom special function implementation
-    let price = PriceBlackScholes::builder()
+    let price_builder = PriceBlackScholes::builder()
         .forward(forward)
         .strike(strike)
         .expiry(maturity)
         .is_call(is_call)
         .vol(volatility)
         .build()
-        .unwrap()
-        .calculate::<MySpecialFn>().unwrap();
-    let implied_vol = ImpliedBlackVolatility::builder()
+        .unwrap();
+
+    let implied_vol_builder = ImpliedBlackVolatility::builder()
         .forward(forward)
         .strike(strike)
         .expiry(maturity)
-        .is_call(is_call)
+        .is_call(is_call);
+
+    // Use the custom special function implementation
+    let price = price_builder.calculate::<MySpecialFn>().unwrap();
+    let implied_vol = implied_vol_builder
         .option_price(price)
         .build()
         .unwrap()
-        .calculate::<MySpecialFn>().unwrap();
-    // black::implied_volatility::<MySpecialFn>(price, forward, strike, maturity, is_call)
-    //     .unwrap();
+        .calculate::<MySpecialFn>()
+        .unwrap();
     println!("Price: {price}");
     println!("Implied Volatility: {implied_vol}");
 
     // Using the default special function implementation
-    // let price =
-    //     black::price::<DefaultSpecialFn>(forward, strike, volatility, maturity, is_call).unwrap();
-    // let implied_vol =
-    //     black::implied_volatility::<DefaultSpecialFn>(price, forward, strike, maturity, is_call)
-    //         .unwrap();
-    // println!("Price: {price}");
-    // println!("Implied Volatility: {implied_vol}");
+    let price = price_builder.calculate::<DefaultSpecialFn>().unwrap();
+    let implied_vol_builder = ImpliedBlackVolatility::builder()
+        .forward(forward)
+        .strike(strike)
+        .expiry(maturity)
+        .is_call(is_call);
+    let implied_vol = implied_vol_builder
+        .option_price(price)
+        .build()
+        .unwrap()
+        .calculate::<DefaultSpecialFn>()
+        .unwrap();
+    println!("Price: {price}");
+    println!("Implied Volatility: {implied_vol}");
 }

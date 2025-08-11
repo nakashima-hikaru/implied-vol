@@ -33,7 +33,7 @@
 //! let price = implied_vol::black_scholes_option_price(100.0, 90.0, 0.07011701801482094, 30.0, true).unwrap();
 //! assert!(((price - 20.0) / price).abs() <= 2.0 * f64::EPSILON);
 //!
-//! let normal_vol = implied_vol::implied_normal_volatility(20.0, 100.0, 90.0, 30.0, true);
+//! let normal_vol = implied_vol::implied_normal_volatility(20.0, 100.0, 90.0, 30.0, true).unwrap();
 //! assert_eq!(normal_vol, 6.614292466299764);
 //!
 //! let price = implied_vol::bachelier_option_price(100.0, 90.0, 6.614292466299764, 30.0, true);
@@ -46,12 +46,12 @@ use bon::bon;
 pub mod cxx;
 
 mod bachelier_impl;
+mod bs_option_price;
 mod constants;
 mod fused_multiply_add;
 mod lets_be_rational;
 mod rational_cubic;
 pub mod special_function;
-mod normalised_bs;
 
 /// Calculates the implied black volatility using a transformed rational guess with limited iterations.
 ///
@@ -127,9 +127,13 @@ pub fn black_scholes_option_price(
     is_call: bool,
 ) -> Option<f64> {
     if is_call {
-        lets_be_rational::black_input_unchecked::<DefaultSpecialFn, true>(forward, strike, volatility, expiry)
+        bs_option_price::black_input_unchecked::<DefaultSpecialFn, true>(
+            forward, strike, volatility, expiry,
+        )
     } else {
-        lets_be_rational::black_input_unchecked::<DefaultSpecialFn, false>(forward, strike, volatility, expiry)
+        bs_option_price::black_input_unchecked::<DefaultSpecialFn, false>(
+            forward, strike, volatility, expiry,
+        )
     }
 }
 
@@ -150,7 +154,7 @@ pub fn black_scholes_option_price(
 /// # Examples
 ///
 /// ```
-/// let normal_vol = implied_vol::implied_normal_volatility(20.0, 100.0, 90.0, 30.0, true);
+/// let normal_vol = implied_vol::implied_normal_volatility(20.0, 100.0, 90.0, 30.0, true).unwrap();
 /// assert_eq!(normal_vol, 6.614292466299764);
 /// ```
 #[inline(always)]
@@ -160,16 +164,16 @@ pub fn implied_normal_volatility(
     strike: f64,
     expiry: f64,
     is_call: bool,
-) -> f64 {
+) -> Option<f64> {
     if is_call {
-        bachelier_impl::implied_normal_volatility::<DefaultSpecialFn, true>(
+        bachelier_impl::implied_normal_volatility_input_unchecked::<DefaultSpecialFn, true>(
             option_price,
             forward,
             strike,
             expiry,
         )
     } else {
-        bachelier_impl::implied_normal_volatility::<DefaultSpecialFn, false>(
+        bachelier_impl::implied_normal_volatility_input_unchecked::<DefaultSpecialFn, false>(
             option_price,
             forward,
             strike,
@@ -213,7 +217,7 @@ pub fn bachelier_option_price(
     }
 }
 
-pub struct PriceBlackScholes{
+pub struct PriceBlackScholes {
     forward: f64,
     strike: f64,
     volatility: f64,
@@ -224,7 +228,13 @@ pub struct PriceBlackScholes{
 #[bon]
 impl PriceBlackScholes {
     #[builder]
-    pub fn new(forward: f64, strike: f64, vol: f64, expiry: f64, is_call: bool) -> Option<PriceBlackScholes> {
+    pub fn new(
+        forward: f64,
+        strike: f64,
+        vol: f64,
+        expiry: f64,
+        is_call: bool,
+    ) -> Option<PriceBlackScholes> {
         if !forward.is_finite() {
             return None;
         }
@@ -234,7 +244,10 @@ impl PriceBlackScholes {
         if matches!(vol.partial_cmp(&0.0), Some(std::cmp::Ordering::Less) | None) {
             return None;
         }
-        if matches!(expiry.partial_cmp(&0.0), Some(std::cmp::Ordering::Less) | None) {
+        if matches!(
+            expiry.partial_cmp(&0.0),
+            Some(std::cmp::Ordering::Less) | None
+        ) {
             return None;
         }
         Some(Self {
@@ -250,13 +263,22 @@ impl PriceBlackScholes {
 impl PriceBlackScholes {
     pub fn calculate<SpFn: SpecialFn>(&self) -> Option<f64> {
         if self.is_call {
-            lets_be_rational::black_input_unchecked::<SpFn, true>(self.forward, self.strike, self.volatility, self.expiry)
+            bs_option_price::black_input_unchecked::<SpFn, true>(
+                self.forward,
+                self.strike,
+                self.volatility,
+                self.expiry,
+            )
         } else {
-            lets_be_rational::black_input_unchecked::<SpFn, false>(self.forward, self.strike, self.volatility, self.expiry)
+            bs_option_price::black_input_unchecked::<SpFn, false>(
+                self.forward,
+                self.strike,
+                self.volatility,
+                self.expiry,
+            )
         }
     }
 }
-
 
 pub struct ImpliedBlackVolatility {
     forward: f64,
@@ -276,16 +298,31 @@ impl ImpliedBlackVolatility {
         is_call: bool,
         option_price: f64,
     ) -> Option<ImpliedBlackVolatility> {
-        if !forward.is_finite() {
+        if matches!(
+            forward.partial_cmp(&0.0),
+            Some(std::cmp::Ordering::Less) | None
+        ) || forward.is_infinite()
+        {
             return None;
         }
-        if !strike.is_finite() {
+        if matches!(
+            strike.partial_cmp(&0.0),
+            Some(std::cmp::Ordering::Less) | None
+        ) || strike.is_infinite()
+        {
             return None;
         }
-        if matches!(expiry.partial_cmp(&0.0), Some(std::cmp::Ordering::Less) | None) {
+        if matches!(
+            expiry.partial_cmp(&0.0),
+            Some(std::cmp::Ordering::Less) | None
+        ) {
             return None;
         }
-        if matches!(option_price.partial_cmp(&0.0), Some(std::cmp::Ordering::Less) | None) {
+        if matches!(
+            option_price.partial_cmp(&0.0),
+            Some(std::cmp::Ordering::Less) | None
+        ) || option_price.is_infinite()
+        {
             return None;
         }
         Some(Self {
@@ -318,192 +355,132 @@ impl ImpliedBlackVolatility {
     }
 }
 
-// /// A module implementing pricing and implied volatility computation using the Black-Scholes model.
-// pub mod black {
-//
-//     #[inline(always)]
-//     pub fn price<SpFn: SpecialFn>(
-//         forward: f64,
-//         strike: f64,
-//         volatility: f64,
-//         expiry: f64,
-//         is_call: bool,
-//     ) -> Option<f64> {
-//         if is_call {
-//             lets_be_rational::black::<SpFn, true>(forward, strike, volatility, expiry)
-//         } else {
-//             lets_be_rational::black::<SpFn, false>(forward, strike, volatility, expiry)
-//         }
-//     }
-//
-//     /// Computes the implied Black volatility from the European option price.
-//     ///
-//     /// # Parameters
-//     ///
-//     /// - `option_price`: The observed price of the option (call or put).
-//     /// - `forward`: The forward price of the underlying asset.
-//     /// - `strike`: The strike price of the option.
-//     /// - `expiry`: The time to expiration of the option, typically expressed in years.
-//     /// - `is_call`: A boolean flag indicating whether the option is a call (`true`) or a put (`false`).
-//     ///
-//     /// # Type Parameters
-//     ///
-//     /// - `SpFn`: A special function type implementing numerical methods, such as approximations for
-//     ///   probability distributions, required for calculating the implied volatility. This is a generic
-//     ///   placeholder for specialization traits used in numerical methods.
-//     ///
-//     /// # Returns
-//     ///
-//     /// The implied Black volatility.
-//     ///
-//     /// # Examples
-//     ///
-//     /// ```
-//     /// use implied_vol::black::implied_volatility;
-//     /// use implied_vol::DefaultSpecialFn;
-//     ///
-//     /// let option_price = 10.0;
-//     /// let forward = 100.0;
-//     /// let strike = 95.0;
-//     /// let expiry = 1.0; // 1 year
-//     /// let is_call = true;
-//     ///
-//     /// let iv = implied_volatility::<DefaultSpecialFn>(option_price, forward, strike, expiry, is_call).unwrap();
-//     /// println!("Implied Volatility: {}", iv);
-//     /// ```
-//     #[inline(always)]
-//     pub fn implied_volatility<SpFn: SpecialFn>(
-//         option_price: f64,
-//         forward: f64,
-//         strike: f64,
-//         expiry: f64,
-//         is_call: bool,
-//     ) -> Option<f64> {
-//         if is_call {
-//             lets_be_rational::implied_black_volatility::<SpFn, true>(
-//                 option_price,
-//                 forward,
-//                 strike,
-//                 expiry,
-//             )
-//         } else {
-//             lets_be_rational::implied_black_volatility::<SpFn, false>(
-//                 option_price,
-//                 forward,
-//                 strike,
-//                 expiry,
-//             )
-//         }
-//     }
-// }
-//
-// pub mod bachelier {
-//     use crate::{SpecialFn, bachelier_impl};
-//
-//     /// Calculates the European option price under the Bachelier model.
-//     ///
-//     /// # Parameters
-//     /// - `forward`: The forward price of the underlying asset.
-//     /// - `strike`: The strike price of the option.
-//     /// - `volatility`: The normal volatility of the underlying asset (constant for this model).
-//     /// - `expiry`: The time to expiry of the option, expressed in years.
-//     /// - `is_call`: A boolean indicating whether the option is a call option (`true`) or a put option (`false`).
-//     ///
-//     /// # Returns
-//     /// The computed price of the option.
-//     ///
-//     /// # type parameters
-//     /// - `SpFn`: A trait bound representing a special function type, used internally by the computation.
-//     ///
-//     /// # Example
-//     /// ```
-//     /// use implied_vol::bachelier::price;
-//     /// use implied_vol::DefaultSpecialFn;
-//     ///
-//     /// let forward = 100.0;
-//     /// let strike = 95.0;
-//     /// let volatility = 10.0;
-//     /// let expiry = 1.0;
-//     /// let is_call = true;
-//     ///
-//     /// let option_price = price::<DefaultSpecialFn>(forward, strike, volatility, expiry, is_call);
-//     /// println!("Option Price: {}", option_price);
-//     /// ```
-//     #[inline(always)]
-//     pub fn price<SpFn: SpecialFn>(
-//         forward: f64,
-//         strike: f64,
-//         volatility: f64,
-//         expiry: f64,
-//         is_call: bool,
-//     ) -> f64 {
-//         if is_call {
-//             bachelier_impl::bachelier_price::<true>(forward, strike, volatility, expiry)
-//         } else {
-//             bachelier_impl::bachelier_price::<false>(forward, strike, volatility, expiry)
-//         }
-//     }
-//
-//     /// Computes the implied normal volatility for a European option price.
-//     ///
-//     /// # Type Parameters
-//     /// * `SpFn`: A trait bound for objects that implement the `SpecialFn` trait, used
-//     ///   internally by the computation of the implied normal volatility.
-//     ///
-//     /// # Arguments
-//     /// * `option_price` - The observed market price of the option.
-//     /// * `forward` - The forward price of the underlying asset.
-//     /// * `strike` - The strike price of the option.
-//     /// * `expiry` - The time to expiry of the option (in years).
-//     /// * `is_call` - A boolean indicating whether the option is a call option (`true`)
-//     ///   or a put option (`false`).
-//     ///
-//     /// # Returns
-//     /// The implied normal volatility.
-//     ///
-//     /// # Example
-//     /// ```
-//     /// use implied_vol::bachelier::implied_volatility;
-//     /// use implied_vol::DefaultSpecialFn;
-//     ///
-//     /// let option_price = 1.50;
-//     /// let forward = 100.0;
-//     /// let strike = 102.0;
-//     /// let expiry = 0.5;
-//     /// let is_call = true;
-//     ///
-//     /// let vol = implied_volatility::<DefaultSpecialFn>(
-//     ///     option_price,
-//     ///     forward,
-//     ///     strike,
-//     ///     expiry,
-//     ///     is_call
-//     /// );
-//     ///
-//     /// println!("Implied Volatility: {}", vol);
-//     /// ```
-//     #[inline(always)]
-//     pub fn implied_volatility<SpFn: SpecialFn>(
-//         option_price: f64,
-//         forward: f64,
-//         strike: f64,
-//         expiry: f64,
-//         is_call: bool,
-//     ) -> f64 {
-//         if is_call {
-//             bachelier_impl::implied_normal_volatility::<SpFn, true>(
-//                 option_price,
-//                 forward,
-//                 strike,
-//                 expiry,
-//             )
-//         } else {
-//             bachelier_impl::implied_normal_volatility::<SpFn, false>(
-//                 option_price,
-//                 forward,
-//                 strike,
-//                 expiry,
-//             )
-//         }
-//     }
-// }
+pub struct PriceBachelier {
+    forward: f64,
+    strike: f64,
+    volatility: f64,
+    expiry: f64,
+    is_call: bool,
+}
+
+#[bon]
+impl PriceBachelier {
+    #[builder]
+    pub fn new(
+        forward: f64,
+        strike: f64,
+        vol: f64,
+        expiry: f64,
+        is_call: bool,
+    ) -> Option<PriceBachelier> {
+        if !forward.is_finite() {
+            return None;
+        }
+        if !strike.is_finite() {
+            return None;
+        }
+        if matches!(vol.partial_cmp(&0.0), Some(std::cmp::Ordering::Less) | None) {
+            return None;
+        }
+        if matches!(
+            expiry.partial_cmp(&0.0),
+            Some(std::cmp::Ordering::Less) | None
+        ) {
+            return None;
+        }
+        Some(Self {
+            forward,
+            strike,
+            volatility: vol,
+            expiry,
+            is_call,
+        })
+    }
+}
+
+impl PriceBachelier {
+    pub fn calculate<SpFn: SpecialFn>(&self) -> f64 {
+        if self.is_call {
+            bachelier_impl::bachelier_price::<true>(
+                self.forward,
+                self.strike,
+                self.volatility,
+                self.expiry,
+            )
+        } else {
+            bachelier_impl::bachelier_price::<false>(
+                self.forward,
+                self.strike,
+                self.volatility,
+                self.expiry,
+            )
+        }
+    }
+}
+
+pub struct ImpliedNormalVolatility {
+    forward: f64,
+    strike: f64,
+    expiry: f64,
+    is_call: bool,
+    option_price: f64,
+}
+
+#[bon]
+impl ImpliedNormalVolatility {
+    #[builder]
+    pub fn new(
+        forward: f64,
+        strike: f64,
+        expiry: f64,
+        is_call: bool,
+        option_price: f64,
+    ) -> Option<ImpliedNormalVolatility> {
+        if !forward.is_finite() {
+            return None;
+        }
+        if !strike.is_finite() {
+            return None;
+        }
+        if matches!(
+            expiry.partial_cmp(&0.0),
+            Some(std::cmp::Ordering::Less) | None
+        ) {
+            return None;
+        }
+        if matches!(
+            option_price.partial_cmp(&0.0),
+            Some(std::cmp::Ordering::Less) | None
+        ) || option_price.is_infinite()
+        {
+            return None;
+        }
+        Some(Self {
+            forward,
+            strike,
+            expiry,
+            is_call,
+            option_price,
+        })
+    }
+}
+
+impl ImpliedNormalVolatility {
+    pub fn calculate<SpFn: SpecialFn>(&self) -> Option<f64> {
+        if self.is_call {
+            bachelier_impl::implied_normal_volatility_input_unchecked::<SpFn, true>(
+                self.option_price,
+                self.forward,
+                self.strike,
+                self.expiry,
+            )
+        } else {
+            bachelier_impl::implied_normal_volatility_input_unchecked::<SpFn, false>(
+                self.option_price,
+                self.forward,
+                self.strike,
+                self.expiry,
+            )
+        }
+    }
+}
