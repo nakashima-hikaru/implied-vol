@@ -5,11 +5,11 @@ use std::cmp::Ordering;
 
 #[inline(always)]
 fn intrinsic_value<const IS_CALL: bool>(forward: f64, strike: f64) -> f64 {
-    (if !IS_CALL {
-        strike - forward
-    } else {
+    if IS_CALL {
         forward - strike
-    })
+    } else {
+        strike - forward
+    }
     .max(0.0)
 }
 

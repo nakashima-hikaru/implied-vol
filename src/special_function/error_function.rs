@@ -199,9 +199,7 @@ pub(super) fn erfcx_cody(x: f64) -> f64 {
 
 #[inline(always)]
 pub(super) fn one_minus_erfcx<SpFn: SpecialFn + ?Sized>(x: f64) -> f64 {
-    if !(-1.0 / 5.0..=1.0 / 3.0).contains(&x) {
-        1.0 - SpFn::erfcx(x)
-    } else {
+    if (-1.0 / 5.0..=1.0 / 3.0).contains(&x) {
         x * (x
             .mul_add2(1.4069285713634565E-2, 1.406_918_874_460_965E-1)
             .mul_add2(x, 5.768_900_120_887_374E-1)
@@ -213,6 +211,8 @@ pub(super) fn one_minus_erfcx<SpFn: SpecialFn + ?Sized>(x: f64) -> f64 {
                 .mul_add2(x, 1.9037494962421563)
                 .mul_add2(x, 1.0))
         .mul_add2(-x, std::f64::consts::FRAC_2_SQRT_PI)
+    } else {
+        1.0 - SpFn::erfcx(x)
     }
 }
 

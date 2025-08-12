@@ -50,35 +50,43 @@ use error_function::erfinv;
 /// given `x`.
 pub trait SpecialFn {
     #[inline(always)]
+    #[must_use]
     fn erf(x: f64) -> f64 {
         erf_cody(x)
     }
     #[inline(always)]
+    #[must_use]
     fn erfc(x: f64) -> f64 {
         erfc_cody(x)
     }
     #[inline(always)]
+    #[must_use]
     fn erfcx(x: f64) -> f64 {
         erfcx_cody(x)
     }
     #[inline(always)]
+    #[must_use]
     fn erfinv(x: f64) -> f64 {
         erfinv(x)
     }
     #[inline(always)]
+    #[must_use]
     fn inverse_norm_cdf(x: f64) -> f64 {
         inverse_norm_cdf(x)
     }
     #[inline(always)]
+    #[must_use]
     fn norm_pdf(x: f64) -> f64 {
         norm_pdf(x)
     }
     #[inline(always)]
+    #[must_use]
     fn norm_cdf(x: f64) -> f64 {
         normal_distribution::norm_cdf::<Self>(x)
     }
 
     #[inline(always)]
+    #[must_use]
     fn one_minus_erfcx(x: f64) -> f64 {
         error_function::one_minus_erfcx::<Self>(x)
     }

@@ -284,9 +284,8 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
                 assert!(s > 0.0);
                 if final_trial {
                     return s;
-                } else {
-                    final_trial = true;
                 }
+                final_trial = true;
             }
             return s;
         } else {
@@ -384,9 +383,8 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
                     s += ds;
                     if final_trial {
                         break;
-                    } else {
-                        final_trial = true;
                     }
+                    final_trial = true;
                 }
                 return s;
             }

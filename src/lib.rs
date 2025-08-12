@@ -82,6 +82,7 @@ pub mod special_function;
 /// - `strike` is positive and finite.
 /// - `expiry` is positive (but can be positive infinity).
 #[inline(always)]
+#[must_use]
 pub fn implied_black_volatility(
     option_price: f64,
     forward: f64,
@@ -129,6 +130,7 @@ pub fn implied_black_volatility(
 /// # Note
 /// You must check that the inputs are valid on your own, as this function does not perform input validation.
 #[inline(always)]
+#[must_use]
 pub fn black_scholes_option_price(
     forward: f64,
     strike: f64,
@@ -170,6 +172,7 @@ pub fn black_scholes_option_price(
 /// # Note
 /// You must check that the inputs are valid on your own, as this function does not perform input validation.
 #[inline(always)]
+#[must_use]
 pub fn implied_normal_volatility(
     option_price: f64,
     forward: f64,
@@ -217,6 +220,7 @@ pub fn implied_normal_volatility(
 /// # Note
 /// You must check that the inputs are valid on your own, as this function does not perform input validation.
 #[inline(always)]
+#[must_use]
 pub fn bachelier_option_price(
     forward: f64,
     strike: f64,
@@ -275,6 +279,7 @@ impl PriceBlackScholes {
 }
 
 impl PriceBlackScholes {
+    #[must_use]
     pub fn calculate<SpFn: SpecialFn>(&self) -> Option<f64> {
         assert!(
             self.volatility >= 0.0
@@ -358,6 +363,7 @@ impl ImpliedBlackVolatility {
 }
 
 impl ImpliedBlackVolatility {
+    #[must_use]
     pub fn calculate<SpFn: SpecialFn>(&self) -> Option<f64> {
         assert!(
             self.option_price >= 0.0
@@ -430,6 +436,7 @@ impl PriceBachelier {
 }
 
 impl PriceBachelier {
+    #[must_use]
     pub fn calculate<SpFn: SpecialFn>(&self) -> f64 {
         assert!(
             self.volatility.is_finite()
@@ -505,6 +512,7 @@ impl ImpliedNormalVolatility {
 }
 
 impl ImpliedNormalVolatility {
+    #[must_use]
     pub fn calculate<SpFn: SpecialFn>(&self) -> Option<f64> {
         assert!(
             self.option_price >= 0.0
