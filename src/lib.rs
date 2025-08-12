@@ -417,6 +417,14 @@ impl PriceBachelier {
 
 impl PriceBachelier {
     pub fn calculate<SpFn: SpecialFn>(&self) -> f64 {
+        assert!(
+            self.volatility.is_finite()
+                && self.forward >= 0.0
+                && self.forward.is_finite()
+                && self.strike >= 0.0
+                && self.strike.is_finite()
+                && self.expiry >= 0.0
+        );
         if self.is_call {
             bachelier_impl::bachelier_price::<true>(
                 self.forward,
@@ -484,6 +492,15 @@ impl ImpliedNormalVolatility {
 
 impl ImpliedNormalVolatility {
     pub fn calculate<SpFn: SpecialFn>(&self) -> Option<f64> {
+        assert!(
+            self.option_price >= 0.0
+                && self.option_price.is_finite()
+                && self.forward >= 0.0
+                && self.forward.is_finite()
+                && self.strike >= 0.0
+                && self.strike.is_finite()
+                && self.expiry >= 0.0
+        );
         if self.is_call {
             bachelier_impl::implied_normal_volatility_input_unchecked::<SpFn, true>(
                 self.option_price,
