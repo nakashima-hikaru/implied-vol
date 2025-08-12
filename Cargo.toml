@@ -27,14 +27,14 @@ optional = true
 [build-dependencies]
 cxx-build = "1"
 
-[workspace.lints.rust]
+[lints.rust]
 unsafe_code = "forbid"
 
-[workspace.lints.clippy]
+[lints.clippy]
 pedantic = "warn"
-restriction = "warn"
+#restriction = "warn"
 cargo = "warn"
-nursery = "warn"
+#nursery = "warn"
 
 [profile.bench]
 lto = true

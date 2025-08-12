@@ -65,7 +65,7 @@ pub mod special_function;
 ///
 /// # Returns
 ///
-/// The implied Black volatility.
+/// The implied Black volatility if it exists, or `None`.
 ///
 /// # Examples
 ///
@@ -73,6 +73,14 @@ pub mod special_function;
 /// let black_vol = implied_vol::implied_black_volatility(20.0, 100.0, 90.0, 30.0, true).unwrap();
 /// assert_eq!(black_vol, 0.07011701801482094);
 /// ```
+///
+/// # Note
+/// You must check that the inputs are valid on your own, as this function does not perform input validation.
+/// Otherwise, this function can panic.
+/// - `option_price` is non-negative and finite.
+/// - `forward` is positive and finite.
+/// - `strike` is positive and finite.
+/// - `expiry` is positive (but can be positive infinity).
 #[inline(always)]
 pub fn implied_black_volatility(
     option_price: f64,
@@ -118,6 +126,8 @@ pub fn implied_black_volatility(
 /// let price = implied_vol::black_scholes_option_price(100.0, 90.0, 0.07011701801482094, 30.0, true).unwrap();
 /// assert!((price - 20.0).abs()<= 2.0 * f64::EPSILON * 20.0);
 /// ```
+/// # Note
+/// You must check that the inputs are valid on your own, as this function does not perform input validation.
 #[inline(always)]
 pub fn black_scholes_option_price(
     forward: f64,
@@ -157,6 +167,8 @@ pub fn black_scholes_option_price(
 /// let normal_vol = implied_vol::implied_normal_volatility(20.0, 100.0, 90.0, 30.0, true).unwrap();
 /// assert_eq!(normal_vol, 6.614292466299764);
 /// ```
+/// # Note
+/// You must check that the inputs are valid on your own, as this function does not perform input validation.
 #[inline(always)]
 pub fn implied_normal_volatility(
     option_price: f64,
@@ -202,6 +214,8 @@ pub fn implied_normal_volatility(
 /// let price = implied_vol::bachelier_option_price(100.0, 90.0, 6.614292466299764, 30.0, true);
 /// assert!((price - 20.0).abs()<= 2.0 * f64::EPSILON * 20.0);
 /// ```
+/// # Note
+/// You must check that the inputs are valid on your own, as this function does not perform input validation.
 #[inline(always)]
 pub fn bachelier_option_price(
     forward: f64,
