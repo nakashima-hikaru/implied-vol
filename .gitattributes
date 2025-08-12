@@ -1,0 +1,2 @@
+source/**/*.h linguist-vendored
+source/**/*.cpp linguist-vendored
