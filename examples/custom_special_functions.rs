@@ -47,7 +47,7 @@ fn main() {
         .is_call(is_call);
 
     // Use the custom special function implementation
-    let price = price_builder.calculate::<MySpecialFn>().unwrap();
+    let price = price_builder.calculate::<MySpecialFn>();
     let implied_vol = implied_vol_builder
         .option_price(price)
         .build()
@@ -58,7 +58,7 @@ fn main() {
     println!("Implied Volatility: {implied_vol}");
 
     // Using the default special function implementation
-    let price = price_builder.calculate::<DefaultSpecialFn>().unwrap();
+    let price = price_builder.calculate::<DefaultSpecialFn>();
     let implied_vol_builder = ImpliedBlackVolatility::builder()
         .forward(forward)
         .strike(strike)

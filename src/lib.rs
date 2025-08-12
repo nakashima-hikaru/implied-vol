@@ -30,7 +30,7 @@
 //! let black_vol = implied_vol::implied_black_volatility(20.0, 100.0, 90.0, 30.0, true).unwrap();
 //! assert_eq!(black_vol, 0.07011701801482094);
 //!
-//! let price = implied_vol::black_scholes_option_price(100.0, 90.0, 0.07011701801482094, 30.0, true).unwrap();
+//! let price = implied_vol::black_scholes_option_price(100.0, 90.0, 0.07011701801482094, 30.0, true);
 //! assert!(((price - 20.0) / price).abs() <= 2.0 * f64::EPSILON);
 //!
 //! let normal_vol = implied_vol::implied_normal_volatility(20.0, 100.0, 90.0, 30.0, true).unwrap();
@@ -124,7 +124,7 @@ pub fn implied_black_volatility(
 /// # Examples
 ///
 /// ```
-/// let price = implied_vol::black_scholes_option_price(100.0, 90.0, 0.07011701801482094, 30.0, true).unwrap();
+/// let price = implied_vol::black_scholes_option_price(100.0, 90.0, 0.07011701801482094, 30.0, true);
 /// assert!((price - 20.0).abs()<= 2.0 * f64::EPSILON * 20.0);
 /// ```
 /// # Note
@@ -137,7 +137,7 @@ pub fn black_scholes_option_price(
     volatility: f64,
     expiry: f64,
     is_call: bool,
-) -> Option<f64> {
+) -> f64 {
     if is_call {
         bs_option_price::black_input_unchecked::<DefaultSpecialFn, true>(
             forward, strike, volatility, expiry,
@@ -280,7 +280,7 @@ impl PriceBlackScholes {
 
 impl PriceBlackScholes {
     #[must_use]
-    pub fn calculate<SpFn: SpecialFn>(&self) -> Option<f64> {
+    pub fn calculate<SpFn: SpecialFn>(&self) -> f64 {
         assert!(
             self.volatility >= 0.0
                 && self.forward >= 0.0

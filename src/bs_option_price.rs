@@ -470,10 +470,10 @@ pub(super) fn black_input_unchecked<SpFn: SpecialFn, const IS_CALL: bool>(
     k: f64,
     sigma: f64,
     t: f64,
-) -> Option<f64> {
+) -> f64 {
     let s = sigma * t.sqrt();
     assert!(s >= 0.0);
-    Some(if k == f {
+    if k == f {
         f * SpFn::erf((0.5 * FRAC_1_SQRT_2) * s)
     } else {
         (if IS_CALL { f - k } else { k - f }).max(0.0)
@@ -485,5 +485,5 @@ pub(super) fn black_input_unchecked<SpFn: SpecialFn, const IS_CALL: bool>(
                 debug_assert!(theta_x < 0.0);
                 f.sqrt() * k.sqrt() * normalised_black::<SpFn>(theta_x, s)
             })
-    })
+    }
 }
