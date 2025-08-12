@@ -262,6 +262,14 @@ impl PriceBlackScholes {
 
 impl PriceBlackScholes {
     pub fn calculate<SpFn: SpecialFn>(&self) -> Option<f64> {
+        assert!(
+            self.volatility >= 0.0
+                && self.forward >= 0.0
+                && self.forward.is_finite()
+                && self.strike >= 0.0
+                && self.strike.is_finite()
+                && self.expiry >= 0.0
+        );
         if self.is_call {
             bs_option_price::black_input_unchecked::<SpFn, true>(
                 self.forward,
@@ -337,6 +345,15 @@ impl ImpliedBlackVolatility {
 
 impl ImpliedBlackVolatility {
     pub fn calculate<SpFn: SpecialFn>(&self) -> Option<f64> {
+        assert!(
+            self.option_price >= 0.0
+                && self.option_price.is_finite()
+                && self.forward >= 0.0
+                && self.forward.is_finite()
+                && self.strike >= 0.0
+                && self.strike.is_finite()
+                && self.expiry >= 0.0
+        );
         if self.is_call {
             lets_be_rational::implied_black_volatility_input_unchecked::<SpFn, true>(
                 self.option_price,
@@ -482,5 +499,108 @@ impl ImpliedNormalVolatility {
                 self.expiry,
             )
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn strike_anomaly() {
+        for k in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            let price = 100.0;
+            let f = 100.0;
+            let t = 1.0;
+            const Q: bool = true;
+            assert!(
+                ImpliedBlackVolatility::builder()
+                    .option_price(price)
+                    .forward(f)
+                    .strike(k)
+                    .expiry(t)
+                    .is_call(Q)
+                    .build()
+                    .is_none()
+            );
+        }
+    }
+
+    #[test]
+    fn forward_anomaly() {
+        for f in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            let price = 100.0;
+            let k = 100.0;
+            let t = 1.0;
+            const Q: bool = true;
+            assert!(
+                ImpliedBlackVolatility::builder()
+                    .option_price(price)
+                    .forward(f)
+                    .strike(k)
+                    .expiry(t)
+                    .is_call(Q)
+                    .build()
+                    .is_none()
+            );
+        }
+    }
+
+    #[test]
+    fn price_anomaly() {
+        for price in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            let f = 100.0;
+            let t = 1.0;
+            let k = 100.0;
+            const Q: bool = true;
+            assert!(
+                ImpliedBlackVolatility::builder()
+                    .option_price(price)
+                    .forward(f)
+                    .strike(k)
+                    .expiry(t)
+                    .is_call(Q)
+                    .build()
+                    .is_none()
+            );
+        }
+    }
+
+    #[test]
+    fn time_anomaly() {
+        for t in [f64::NAN, f64::NEG_INFINITY] {
+            let price = 10.0;
+            let f = 100.0;
+            let k = 100.0;
+            const Q: bool = true;
+            assert!(
+                ImpliedBlackVolatility::builder()
+                    .option_price(price)
+                    .forward(f)
+                    .strike(k)
+                    .expiry(t)
+                    .is_call(Q)
+                    .build()
+                    .is_none()
+            );
+        }
+    }
+
+    #[test]
+    fn time_inf() {
+        let price = 10.0;
+        let f = 100.0;
+        let k = 100.0;
+        let t = f64::INFINITY;
+        const Q: bool = true;
+        assert!(
+            ImpliedBlackVolatility::builder()
+                .option_price(price)
+                .forward(f)
+                .strike(k)
+                .expiry(t)
+                .is_call(Q)
+                .build()
+                .is_some()
+        )
     }
 }

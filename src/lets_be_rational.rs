@@ -428,7 +428,6 @@ pub(crate) fn implied_black_volatility_input_unchecked<SpFn: SpecialFn, const IS
     k: f64,
     t: f64,
 ) -> Option<f64> {
-    assert!(price >= 0.0 && f >= 0.0 && k >= 0.0 && t >= 0.0);
     if price >= if IS_CALL { f } else { k } {
         return if price == if IS_CALL { f } else { k } {
             Some(f64::INFINITY)
@@ -766,65 +765,14 @@ mod tests {
     }
 
     #[test]
-    fn strike_anomaly() {
-        for k in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
-            let price = 100.0;
-            let f = 100.0;
-            let t = 1.0;
-            const Q: bool = true;
-            let sigma =
-                implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t);
-            assert!(sigma.is_none());
-        }
-    }
-
-    #[test]
-    fn forward_anomaly() {
-        for f in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
-            let price = 100.0;
-            let k = 100.0;
-            let t = 1.0;
-            const Q: bool = true;
-            let sigma =
-                implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t);
-            assert!(sigma.is_none());
-        }
-    }
-
-    #[test]
-    fn price_anomaly() {
-        for price in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
-            let f = 100.0;
-            let t = 1.0;
-            let k = 100.0;
-            const Q: bool = true;
-            let sigma =
-                implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t);
-            assert!(sigma.is_none());
-        }
-    }
-
-    #[test]
-    fn time_anomaly() {
-        for t in [f64::NAN, f64::NEG_INFINITY] {
-            let price = 10.0;
-            let f = 100.0;
-            let k = 100.0;
-            const Q: bool = true;
-            let sigma =
-                implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t);
-            assert!(sigma.is_none());
-        }
-    }
-
-    #[test]
     fn time_inf() {
-        let price = 10.0;
+        let price = 20.0;
         let f = 100.0;
         let k = 100.0;
         let t = f64::INFINITY;
         const Q: bool = true;
-        let sigma = implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t);
-        assert_eq!(sigma, Some(0.0));
+        let sigma = implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t)
+            .unwrap();
+        assert_eq!(sigma, 0.0);
     }
 }
