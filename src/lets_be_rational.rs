@@ -73,7 +73,7 @@ fn b_u_over_b_max(s_c: f64) -> f64 {
 
 #[inline(always)]
 fn b_l_over_b_max(s_c: f64) -> f64 {
-    if s_c < 0.7099295739719539 {
+    if s_c < 0.709_929_573_971_953_9 {
         let g = s_c
             .mul_add2(4.542_510_209_361_606_4E-7, -6.403_639_934_147_98E-6)
             .mul_add2(s_c, 5.971_692_845_958_919E-3)
@@ -85,8 +85,12 @@ fn b_l_over_b_max(s_c: f64) -> f64 {
                 .mul_add2(s_c, 1.365_880_147_571_179)
                 .mul_add2(s_c, 1.859_497_767_228_766_5)
                 .mul_add2(s_c, 1.0);
-        (s_c * s_c) * (0.075_609_966_402_963_62 + s_c * (s_c * g - 0.096_727_192_813_394_37))
-    } else if s_c < 2.6267851073127395 {
+        (s_c * s_c)
+            * s_c.mul_add2(
+                s_c.mul_add2(g, -0.096_727_192_813_394_37),
+                0.075_609_966_402_963_62,
+            )
+    } else if s_c < 2.626_785_107_312_739_5 {
         s_c.mul_add2(6.971_140_063_983_471E-4, 6.584_925_270_230_231E-3)
             .mul_add2(s_c, 2.953_705_895_096_301_8E-2)
             .mul_add2(s_c, 6.917_130_174_466_835E-2)
@@ -100,7 +104,7 @@ fn b_l_over_b_max(s_c: f64) -> f64 {
                 .mul_add2(s_c, 2.129_710_354_999_518)
                 .mul_add2(s_c, 2.194_144_852_558_658)
                 .mul_add2(s_c, 1.0)
-    } else if s_c < 7.348469228349534 {
+    } else if s_c < 7.348_469_228_349_534 {
         s_c.mul_add2(1.701_257_940_724_605_5E-3, 1.002_291_337_825_409E-2)
             .mul_add2(s_c, 3.922_517_740_768_760_6E-2)
             .mul_add2(s_c, 7.403_965_818_682_282E-2)
@@ -148,9 +152,11 @@ fn compute_f_lower_map_and_first_two_derivatives<SpFn: SpecialFn>(
         std::f64::consts::TAU * y * phi2 * s2.mul_add2(0.125, y).exp(),
         std::f64::consts::FRAC_PI_6 * y / (s2 * s)
             * phi_m
-            * (8.0 * SQRT_THREE * s * ax
-                + (3.0 * s2 * (s2 - 8.0) - 8.0 * x * x) * phi_m / SpFn::norm_pdf(z))
-            * (2.0 * y + 0.25 * s2).exp(),
+            * (8.0 * SQRT_THREE * s).mul_add2(
+                ax,
+                (3.0 * s2).mul_add2(s2 - 8.0, -(8.0 * x * x)) * phi_m / SpFn::norm_pdf(z),
+            )
+            * 2.0f64.mul_add2(y, 0.25 * s2).exp(),
     )
 }
 
@@ -170,7 +176,7 @@ fn compute_f_upper_map_and_first_two_derivatives<SpFn: SpecialFn>(
     (
         0.5 * SpFn::erfc((0.5 * FRAC_1_SQRT_2) * s),
         -0.5 * (0.5 * w).exp(),
-        SQRT_PI_OVER_TWO * ((w + 0.125 * s * s).exp()) * w / s,
+        SQRT_PI_OVER_TWO * ((0.125 * s).mul_add2(s, w).exp()) * w / s,
     )
 }
 
@@ -208,7 +214,7 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
     let b_c = 0.5 * b_max * ome;
     if beta < b_c {
         debug_assert!(theta_x < 0.0);
-        let s_l = s_c - SQRT_PI_OVER_TWO * ome;
+        let s_l = SQRT_PI_OVER_TWO.mul_add2(-ome, s_c);
         debug_assert!(s_l > 0.0);
         let b_l = b_l_over_b_max(s_c) * b_max;
         if beta < b_l {
@@ -232,7 +238,7 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
             match f.partial_cmp(&0.0) {
                 Some(std::cmp::Ordering::Greater) | None => {
                     let t = beta / b_l;
-                    f = (f_lower_map_l * t + b_l * (1.0 - t)) * t;
+                    f = f_lower_map_l.mul_add2(t, b_l * (1.0 - t)) * t;
                 }
                 _ => {}
             }
@@ -250,32 +256,36 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
                 let bpob = bx.recip();
                 let h = theta_x / s;
                 let x2_over_s3 = h * h / s;
-                let b_h2 = x2_over_s3 - s * 0.25;
+                let b_h2 = s.mul_add2(-0.25, x2_over_s3);
                 let v = (ln_beta - ln_b) * ln_b / ln_beta * bx;
                 let lambda = ln_b.recip();
                 let ot_lambda = lambda.mul_add2(2.0, 1.0);
                 let h2 = ot_lambda.mul_add2(-bpob, b_h2);
                 let c = 3.0 * (x2_over_s3 / s);
-                let b_h3 = b_h2 * b_h2 - c - 0.25;
+                let b_h3 = b_h2.mul_add2(b_h2, -c) - 0.25;
                 let sq_bpob = bpob * bpob;
                 let bppob = b_h2 * bpob;
                 let mu = 6.0 * lambda * (1.0 + lambda);
-                let h3 = sq_bpob.mul_add2(2.0 + mu, b_h3) - (bppob * 3.0 * ot_lambda);
+                let h3 = (bppob * 3.0).mul_add2(-ot_lambda, sq_bpob.mul_add2(2.0 + mu, b_h3));
                 ds = v * if theta_x < -190.0 {
                     householder4_factor(
                         v,
                         h2,
                         h3,
-                        ((b_h2 * (b_h3 - 0.5)) - (b_h2 - 2.0 / s) * 2.0 * c)
-                            - (bpob
-                                * (sq_bpob
-                                    * lambda
-                                        .mul_add2(24.0, 36.0)
-                                        .mul_add2(lambda, 22.0)
-                                        .mul_add2(lambda, 6.0)
-                                    - (bppob * mu.mul_add2(6.0, 12.0)))
-                                - bppob * 3.0 * ot_lambda
-                                - b_h3 * bpob * 4.0 * ot_lambda),
+                        b_h2.mul_add2(b_h3 - 0.5, -((b_h2 - 2.0 / s) * 2.0 * c))
+                            - (b_h3 * bpob * 4.0).mul_add2(
+                                -ot_lambda,
+                                bpob.mul_add2(
+                                    sq_bpob.mul_add2(
+                                        lambda
+                                            .mul_add2(24.0, 36.0)
+                                            .mul_add2(lambda, 22.0)
+                                            .mul_add2(lambda, 6.0),
+                                        -(bppob * mu.mul_add2(6.0, 12.0)),
+                                    ),
+                                    -(bppob * 3.0 * ot_lambda),
+                                ),
+                            ),
                     )
                 } else {
                     householder3_factor(v, h2, h3)
@@ -288,21 +298,19 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
                 final_trial = true;
             }
             return s;
-        } else {
-            let inv_v = (
-                SQRT_TWO_PI / b_max,
-                bs_option_price::inv_normalised_vega(theta_x, s_l),
-            );
-            let h = b_c - b_l;
-            let r_im =
-                convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side::<
-                    false,
-                >(h, s_c - s_l, inv_v, 0.0);
-            s = rational_cubic_interpolation(beta - b_l, h, (s_l, s_c), inv_v, r_im);
-            assert!(s > 0.0);
         }
+        let inv_v = (
+            SQRT_TWO_PI / b_max,
+            bs_option_price::inv_normalised_vega(theta_x, s_l),
+        );
+        let h = b_c - b_l;
+        let r_im = convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side::<
+            false,
+        >(h, s_c - s_l, inv_v, 0.0);
+        s = rational_cubic_interpolation(beta - b_l, h, (s_l, s_c), inv_v, r_im);
+        assert!(s > 0.0);
     } else {
-        let s_u = s_c + SQRT_PI_OVER_TWO * (2.0 - ome);
+        let s_u = SQRT_PI_OVER_TWO.mul_add2(2.0 - ome, s_c);
         assert!(s_u > 0.0);
         let b_u = b_u_over_b_max(s_c) * b_max;
         if beta <= b_u {
@@ -346,7 +354,7 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
             if f <= 0.0 {
                 let h = b_max - b_u;
                 let t = (beta - b_u) / h;
-                f = (f_upper_map_h * (1.0 - t) + 0.5 * h * t) * (1.0 - t);
+                f = f_upper_map_h.mul_add2(1.0 - t, 0.5 * h * t) * (1.0 - t);
             }
             s = inverse_f_upper_map::<SpFn>(f);
             if beta > 0.5 * b_max {
@@ -366,16 +374,19 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
                     let b_h3 = b_h2.mul_add2(b_h2, -c - 0.25);
                     let v = -g / gp;
                     let h2 = b_h2 + gp;
-                    let h3 = b_h3 + gp * (2.0 * gp + 3.0 * b_h2);
+                    let h3 = gp.mul_add2(2.0f64.mul_add2(gp, 3.0 * b_h2), b_h3);
                     ds = v * if theta_x < -580.0 {
                         householder4_factor(
                             v,
                             h2,
                             h3,
-                            (b_h2 * (b_h3 - 0.5) - (b_h2 - 2.0 / s) * 2.0 * c)
-                                + gp * (6.0 * gp * b_h2.mul_add2(2.0, gp)
-                                    + 3.0 * b_h2 * b_h2
-                                    + 4.0 * b_h3),
+                            gp.mul_add2(
+                                4.0f64.mul_add2(
+                                    b_h3,
+                                    (6.0 * gp).mul_add2(b_h2.mul_add2(2.0, gp), 3.0 * b_h2 * b_h2),
+                                ),
+                                b_h2.mul_add2(b_h3 - 0.5, -((b_h2 - 2.0 / s) * 2.0 * c)),
+                            ),
                         )
                     } else {
                         householder3_factor(v, h2, h3)
@@ -400,8 +411,8 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
         let bp = bs_option_price::normalised_vega(theta_x, s);
         let nu = (beta - b) / bp;
         let h = theta_x / s;
-        let h2 = h * h / s - s * 0.25;
-        let h3 = h2 * h2 - 3.0 * (h / s).powi(2) - 0.25;
+        let h2 = s.mul_add2(-0.25, h * h / s);
+        let h3 = h2.mul_add2(h2, -(3.0 * (h / s).powi(2))) - 0.25;
         ds = nu * householder3_factor(nu, h2, h3);
         s += ds;
         // the upstream uses the following code, but it is not performant on my benchmark
@@ -420,7 +431,7 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
 }
 
 #[inline(always)]
-pub(crate) fn implied_black_volatility_input_unchecked<SpFn: SpecialFn, const IS_CALL: bool>(
+pub fn implied_black_volatility_input_unchecked<SpFn: SpecialFn, const IS_CALL: bool>(
     price: f64,
     f: f64,
     k: f64,
@@ -530,7 +541,7 @@ mod tests {
 
     #[test]
     fn reconstruction_call_atm2() {
-        for i in 1..10000 {
+        for i in 1..=10000 {
             let f = 100.0;
             let k = f;
             let t = 1.0;
@@ -540,9 +551,11 @@ mod tests {
             let sigma2 =
                 implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t)
                     .unwrap();
-            // assert!((sigma - sigma2).abs() / sigma <= (1.0 + black_accuracy_factor((f / k).ln(), sigma * t.sqrt(),1.0).recip()) * f64::EPSILON, "f: {f}, k: {k}, t: {t}, sigma: {sigma}, sigma2; {sigma2}, {}, {}", (sigma - sigma2).abs() / sigma / f64::EPSILON, 1.0 + black_accuracy_factor((f / k).ln(), sigma * t.sqrt(), 1.0).recip());
             assert!(
-                (sigma - sigma2).abs() / sigma <= 50000. * f64::EPSILON,
+                (sigma - sigma2).abs() / sigma
+                    <= 1.0
+                        + black_accuracy_factor((f / k).ln(), sigma * t.sqrt(), 1.0).recip()
+                            * f64::EPSILON,
                 "f: {f}, k: {k}, t: {t}, sigma: {sigma}, sigma2; {sigma2}, price: {price}, {}, {}",
                 (sigma - sigma2).abs() / sigma / f64::EPSILON,
                 1.0 + black_accuracy_factor((f / k).ln(), sigma * t.sqrt(), 1.0).recip()
@@ -734,7 +747,11 @@ mod tests {
                 implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t)
                     .unwrap();
             let reprice = black_input_unchecked::<DefaultSpecialFn, Q>(f, k, sigma, t);
-            assert!(((price - reprice) / price).abs() <= 2.0 * f64::EPSILON);
+            assert!(
+                ((price - reprice) / price).abs() <= 2.0 * f64::EPSILON,
+                "{}",
+                ((price - reprice) / price).abs() / f64::EPSILON
+            );
         }
         {
             let price = 33.55;

@@ -5,11 +5,7 @@ use crate::special_function::error_function::{erf_cody, erfc_cody, erfcx_cody};
 use crate::special_function::normal_distribution::{inverse_norm_cdf, norm_pdf};
 use error_function::erfinv;
 
-/// The `SpecialFn` trait provides a collection of special mathematical functions that are commonly
-/// used in statistics, probability, and scientific computations. These methods are implemented
-/// to calculate specific special functions such as the error function (`erf`) and its complement,
-/// inverse error functions, the normal probability density function, and the inverse cumulative
-/// distribution function for a standard normal distribution.
+/// The `SpecialFn` trait provides a collection of special mathematical functions.
 ///
 /// # Required Methods
 ///

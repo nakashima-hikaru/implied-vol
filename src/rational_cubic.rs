@@ -1,8 +1,8 @@
-const MINIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE: f64 = -(1f64 - 0.000000014901161193847656);
+const MINIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE: f64 = -(1f64 - 0.000_000_014_901_161_193_847_656);
 const MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE: f64 = 2f64 / (f64::EPSILON * f64::EPSILON);
 
 #[inline(always)]
-pub(crate) const fn rational_cubic_interpolation(
+pub const fn rational_cubic_interpolation(
     x_minus_x_l: f64,
     h: f64,
     y: (f64, f64),
@@ -112,7 +112,7 @@ const fn minimum_rational_cubic_control_parameter<
 }
 
 #[inline(always)]
-pub(crate) const fn convex_rational_cubic_control_parameter_to_fit_second_derivative_at_left_side<
+pub const fn convex_rational_cubic_control_parameter_to_fit_second_derivative_at_left_side<
     const PREFER_SHAPE_PRESERVATION_OVER_SMOOTHNESS: bool,
 >(
     h: f64,
@@ -133,7 +133,7 @@ pub(crate) const fn convex_rational_cubic_control_parameter_to_fit_second_deriva
 }
 
 #[inline(always)]
-pub(crate) const fn convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side<
+pub const fn convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side<
     const PREFER_SHAPE_PRESERVATION_OVER_SMOOTHNESS: bool,
 >(
     h: f64,

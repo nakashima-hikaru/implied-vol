@@ -4,7 +4,7 @@ use std::cmp::Ordering;
 use std::f64::consts::FRAC_1_SQRT_2;
 use std::ops::Neg;
 
-const FRAC_SQRT_2_PI: f64 = f64::from_bits(0x3fd9884533d43651);
+const FRAC_SQRT_2_PI: f64 = f64::from_bits(0x3fd9_8845_33d4_3651);
 
 #[inline(always)]
 pub(super) fn norm_pdf(x: f64) -> f64 {
@@ -14,7 +14,7 @@ pub(super) fn norm_pdf(x: f64) -> f64 {
 #[inline(always)]
 pub(super) fn norm_cdf<SpFn: SpecialFn + ?Sized>(z: f64) -> f64 {
     const NORM_CDF_ASYMPTOTIC_EXPANSION_FIRST_THRESHOLD: f64 = -10.0;
-    const NORM_CDF_ASYMPTOTIC_EXPANSION_SECOND_THRESHOLD: f64 = -67108864.0;
+    const NORM_CDF_ASYMPTOTIC_EXPANSION_SECOND_THRESHOLD: f64 = -67_108_864.0;
     if z <= NORM_CDF_ASYMPTOTIC_EXPANSION_FIRST_THRESHOLD {
         let mut sum = 1.0;
         if z >= NORM_CDF_ASYMPTOTIC_EXPANSION_SECOND_THRESHOLD {
@@ -41,12 +41,12 @@ pub(super) fn norm_cdf<SpFn: SpecialFn + ?Sized>(z: f64) -> f64 {
     0.5 * SpFn::erfc(-z * FRAC_1_SQRT_2)
 }
 
-pub(super) const U_MAX: f64 = 0.3413447460685429;
+pub(super) const U_MAX: f64 = 0.341_344_746_068_542_9;
 const U_MAX2: f64 = U_MAX * U_MAX;
 #[inline(always)]
 pub(super) fn inverse_norm_cdfm_half_for_midrange_probabilities(u: f64) -> f64 {
     assert_ne!(u.abs().partial_cmp(&U_MAX), Some(Ordering::Greater));
-    let s = U_MAX2 - u * u;
+    let s = u.mul_add2(-u, U_MAX2);
     u * (s.mul_add2(
         s.mul_add2(
             s.mul_add2(
@@ -79,7 +79,7 @@ pub(super) fn inverse_norm_cdfm_half_for_midrange_probabilities(u: f64) -> f64 {
 
 #[inline(always)]
 pub(super) fn inverse_norm_cdf_for_low_probabilities(p: f64) -> f64 {
-    assert_ne!(p.partial_cmp(&0.15865525393146), Some(Ordering::Greater));
+    assert_ne!(p.partial_cmp(&0.158_655_253_931_46), Some(Ordering::Greater));
     let r = p.ln().neg().sqrt();
     if r < 2.05 {
         // Branch I: Accuracy better than 7.6E-17
@@ -213,7 +213,7 @@ pub(super) fn inverse_norm_cdf_for_low_probabilities(p: f64) -> f64 {
             r.mul_add2(
                 r.mul_add2(
                     r.mul_add2(
-                        r.mul_add2(0.000000000023135343206304888, 0.000_747_144_799_216_722_6),
+                        r.mul_add2(0.000_000_000_023_135_343_206_304_888, 0.000_747_144_799_216_722_6),
                         0.046_054_974_512_474_44,
                     ),
                     0.613_208_413_291_975,

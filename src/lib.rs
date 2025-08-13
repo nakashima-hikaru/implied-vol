@@ -246,13 +246,7 @@ pub struct PriceBlackScholes {
 #[bon]
 impl PriceBlackScholes {
     #[builder]
-    pub fn new(
-        forward: f64,
-        strike: f64,
-        vol: f64,
-        expiry: f64,
-        is_call: bool,
-    ) -> Option<PriceBlackScholes> {
+    pub fn new(forward: f64, strike: f64, vol: f64, expiry: f64, is_call: bool) -> Option<Self> {
         if !forward.is_finite() {
             return None;
         }
@@ -324,7 +318,7 @@ impl ImpliedBlackVolatility {
         expiry: f64,
         is_call: bool,
         option_price: f64,
-    ) -> Option<ImpliedBlackVolatility> {
+    ) -> Option<Self> {
         if matches!(
             forward.partial_cmp(&0.0),
             Some(std::cmp::Ordering::Less) | None
@@ -403,13 +397,7 @@ pub struct PriceBachelier {
 #[bon]
 impl PriceBachelier {
     #[builder]
-    pub fn new(
-        forward: f64,
-        strike: f64,
-        vol: f64,
-        expiry: f64,
-        is_call: bool,
-    ) -> Option<PriceBachelier> {
+    pub fn new(forward: f64, strike: f64, vol: f64, expiry: f64, is_call: bool) -> Option<Self> {
         if !forward.is_finite() {
             return None;
         }
@@ -481,7 +469,7 @@ impl ImpliedNormalVolatility {
         expiry: f64,
         is_call: bool,
         option_price: f64,
-    ) -> Option<ImpliedNormalVolatility> {
+    ) -> Option<Self> {
         if !forward.is_finite() {
             return None;
         }
@@ -489,13 +477,13 @@ impl ImpliedNormalVolatility {
             return None;
         }
         if matches!(
-            expiry.partial_cmp(&0.0),
+            expiry.partial_cmp(&0.0_f64),
             Some(std::cmp::Ordering::Less) | None
         ) {
             return None;
         }
         if matches!(
-            option_price.partial_cmp(&0.0),
+            option_price.partial_cmp(&0.0_f64),
             Some(std::cmp::Ordering::Less) | None
         ) || option_price.is_infinite()
         {
@@ -513,16 +501,15 @@ impl ImpliedNormalVolatility {
 
 impl ImpliedNormalVolatility {
     #[must_use]
+    #[inline]
     pub fn calculate<SpFn: SpecialFn>(&self) -> Option<f64> {
         assert!(
-            self.option_price >= 0.0
+            self.option_price >= 0.0_f64
                 && self.option_price.is_finite()
-                && self.forward >= 0.0
                 && self.forward.is_finite()
-                && self.strike >= 0.0
                 && self.strike.is_finite()
-                && self.expiry >= 0.0
-        );
+                && self.expiry >= 0.0_f64
+        );  // never panics because this is validated in the builder
         if self.is_call {
             bachelier_impl::implied_normal_volatility_input_unchecked::<SpFn, true>(
                 self.option_price,

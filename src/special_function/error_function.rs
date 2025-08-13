@@ -9,7 +9,7 @@ use std::ops::Neg;
 #[inline(always)]
 fn ab(z: f64) -> f64 {
     const A: [f64; 5] = [
-        3.1611237438705656,
+        3.161_123_743_870_565_6,
         113.864_154_151_050_16,
         377.485_237_685_302,
         3_209.377_589_138_469_4,
@@ -201,14 +201,14 @@ pub(super) fn erfcx_cody(x: f64) -> f64 {
 pub(super) fn one_minus_erfcx<SpFn: SpecialFn + ?Sized>(x: f64) -> f64 {
     if (-1.0 / 5.0..=1.0 / 3.0).contains(&x) {
         x * (x
-            .mul_add2(1.4069285713634565E-2, 1.406_918_874_460_965E-1)
+            .mul_add2(1.406_928_571_363_456_5E-2, 1.406_918_874_460_965E-1)
             .mul_add2(x, 5.768_900_120_887_374E-1)
-            .mul_add2(x, 1.1514967181784756)
-            .mul_add2(x, 1.0000000000000002)
-            / x.mul_add2(1.2463320728346347E-2, 1.358008134514386E-1)
+            .mul_add2(x, 1.151_496_718_178_475_6)
+            .mul_add2(x, 1.000_000_000_000_000_2)
+            / x.mul_add2(1.246_332_072_834_634_7E-2, 1.358_008_134_514_386E-1)
                 .mul_add2(x, 6.248_608_165_864_026E-1)
-                .mul_add2(x, 1.5089908593742723)
-                .mul_add2(x, 1.9037494962421563)
+                .mul_add2(x, 1.508_990_859_374_272_3)
+                .mul_add2(x, 1.903_749_496_242_156_3)
                 .mul_add2(x, 1.0))
         .mul_add2(-x, std::f64::consts::FRAC_2_SQRT_PI)
     } else {
@@ -237,22 +237,22 @@ mod tests {
     #[test]
     fn calerf_1() {
         let x = erfc_cody(THRESHOLD + f64::EPSILON);
-        assert_eq!(x, 0.5073865267820618);
+        assert_eq!(x, 0.507_386_526_782_061_8);
         let x = erfc_cody(THRESHOLD - f64::EPSILON);
-        assert_eq!(x, 0.5073865267820623);
+        assert_eq!(x, 0.507_386_526_782_062_3);
         let x = erfc_cody(-THRESHOLD - f64::EPSILON);
-        assert_eq!(x, 1.4926134732179381);
+        assert_eq!(x, 1.492_613_473_217_938_1);
         let x = erfc_cody(-THRESHOLD + f64::EPSILON);
-        assert_eq!(x, 1.4926134732179377);
+        assert_eq!(x, 1.492_613_473_217_937_7);
 
         let x = erfc_cody(4.0 + f64::EPSILON);
-        assert_eq!(x, 1.541725790028002e-8);
+        assert_eq!(x, 1.541_725_790_028_002e-8);
         let x = erfc_cody(4.0 - f64::EPSILON);
-        assert_eq!(x, 1.541725790028002e-8);
+        assert_eq!(x, 1.541_725_790_028_002e-8);
         let x = erfc_cody(-4.0 - f64::EPSILON);
-        assert_eq!(x, 1.999999984582742);
+        assert_eq!(x, 1.999_999_984_582_742);
         let x = erfc_cody(-4.0 + f64::EPSILON);
-        assert_eq!(x, 1.999999984582742);
+        assert_eq!(x, 1.999_999_984_582_742);
 
         let x = erfc_cody(XBIG + f64::EPSILON);
         assert_eq!(x, 0.0);
@@ -264,9 +264,9 @@ mod tests {
         assert_eq!(x, 2.0);
 
         let x = erfc_cody(0.0 + f64::EPSILON);
-        assert_eq!(x, 0.9999999999999998);
+        assert_eq!(x, 0.999_999_999_999_999_8);
         let x = erfc_cody(0.0 - f64::EPSILON);
-        assert_eq!(x, 1.0000000000000002);
+        assert_eq!(x, 1.000_000_000_000_000_2);
 
         let x = erfc_cody(XNEG + f64::EPSILON);
         assert_eq!(x, 2.0);
@@ -277,40 +277,40 @@ mod tests {
     #[test]
     fn calerf_2() {
         let x = erfcx_cody(THRESHOLD + f64::EPSILON);
-        assert_eq!(x, 0.6320696892495559);
+        assert_eq!(x, 0.632_069_689_249_555_9);
         let x = erfcx_cody(THRESHOLD - f64::EPSILON);
-        assert_eq!(x, 0.6320696892495563);
+        assert_eq!(x, 0.632_069_689_249_556_3);
         let x = erfcx_cody(-THRESHOLD - f64::EPSILON);
-        assert_eq!(x, 1.8594024168714227);
+        assert_eq!(x, 1.859_402_416_871_422_7);
         let x = erfcx_cody(-THRESHOLD + f64::EPSILON);
-        assert_eq!(x, 1.8594024168714214);
+        assert_eq!(x, 1.859_402_416_871_421_4);
 
         let x = erfcx_cody(4.0 + f64::EPSILON);
-        assert_eq!(x, 0.1369994576250614);
+        assert_eq!(x, 0.136_999_457_625_061_4);
         let x = erfcx_cody(4.0 - f64::EPSILON);
-        assert_eq!(x, 0.1369994576250614);
+        assert_eq!(x, 0.136_999_457_625_061_4);
         let x = erfcx_cody(-4.0 - f64::EPSILON);
-        assert_eq!(x, 17772220.904016286);
+        assert_eq!(x, 17_772_220.904_016_286);
         let x = erfcx_cody(-4.0 + f64::EPSILON);
-        assert_eq!(x, 17772220.904016286);
+        assert_eq!(x, 17_772_220.904_016_286);
 
         let x = erfcx_cody(XBIG + f64::EPSILON);
-        assert_eq!(x, 0.026624994527838793);
+        assert_eq!(x, 0.026_624_994_527_838_793);
         let x = erfcx_cody(XBIG - f64::EPSILON);
-        assert_eq!(x, 0.026624994527838793);
+        assert_eq!(x, 0.026_624_994_527_838_793);
         let x = erfcx_cody(-XBIG - f64::EPSILON);
-        assert_eq!(x, 1.8831722547514706e306);
+        assert_eq!(x, 1.883_172_254_751_470_6e306);
         let x = erfcx_cody(-XBIG + f64::EPSILON);
-        assert_eq!(x, 1.8831722547514706e306);
+        assert_eq!(x, 1.883_172_254_751_470_6e306);
 
         let x = erfcx_cody(0.0 + f64::EPSILON);
-        assert_eq!(x, 0.9999999999999998);
+        assert_eq!(x, 0.999_999_999_999_999_8);
         let x = erfcx_cody(0.0 - f64::EPSILON);
-        assert_eq!(x, 1.0000000000000002);
+        assert_eq!(x, 1.000_000_000_000_000_2);
 
         let x = erfcx_cody(XNEG + f64::EPSILON);
-        assert_eq!(x, 1.728618506590026e308);
+        assert_eq!(x, 1.728_618_506_590_026e308);
         let x = erfcx_cody(XNEG - f64::EPSILON);
-        assert_eq!(x, 1.728618506590026e308);
+        assert_eq!(x, 1.728_618_506_590_026e308);
     }
 }

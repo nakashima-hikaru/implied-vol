@@ -7,7 +7,7 @@ use std::f64::consts::FRAC_1_SQRT_2;
 use std::ops::Neg;
 
 #[inline(always)]
-pub(super) fn normalised_black<SpFn: SpecialFn>(x: f64, s: f64) -> f64 {
+pub fn normalised_black<SpFn: SpecialFn>(x: f64, s: f64) -> f64 {
     debug_assert!(s > 0.0);
     debug_assert!(x < 0.0);
     if is_region1(x, s) {
@@ -23,16 +23,16 @@ pub const ETA: f64 = -13.0;
 
 #[inline(always)]
 fn is_region1(x: f64, s: f64) -> bool {
-    x < s * ETA && s * (0.5 * s - (TAU + 0.5 + ETA)) + x < 0.0
+    x < s * ETA && s.mul_add2(0.5f64.mul_add2(s, -(TAU + 0.5 + ETA)), x) < 0.0
 }
 
 #[inline(always)]
 fn is_region2(x: f64, s: f64) -> bool {
-    s * (s - (2.0 * TAU)) - x / ETA < 0.0
+    s.mul_add2(2.0f64.mul_add2(-TAU, s), -(x / ETA)) < 0.0
 }
 
 #[inline(always)]
-pub(super) fn scaled_normalised_black_and_ln_vega<SpFn: SpecialFn>(x: f64, s: f64) -> (f64, f64) {
+pub fn scaled_normalised_black_and_ln_vega<SpFn: SpecialFn>(x: f64, s: f64) -> (f64, f64) {
     assert!(x < 0.0);
     assert!(s > 0.0);
     let ln_vega = ln_normalised_vega(x, s);
@@ -92,91 +92,91 @@ fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
     #[inline(always)]
     fn a6(e: f64) -> f64 {
         e.mul_add2(2.079E4, 1.62162E6)
-            .mul_add2(e, 1.486485E7)
-            .mul_add2(e, 3.567564E7)
-            .mul_add2(e, 2.675673E7)
+            .mul_add2(e, 1.486_485E7)
+            .mul_add2(e, 3.567_564E7)
+            .mul_add2(e, 2.675_673E7)
             .mul_add2(e, 5.94594E6)
             .mul_add2(e, 2.7027E5)
     }
     #[inline(always)]
     fn a7(e: f64) -> f64 {
-        e.mul_add2(-2.7027E5, -2.837835E7)
-            .mul_add2(e, -3.6891855E8)
-            .mul_add2(e, -1.35270135E9)
-            .mul_add2(e, -1.73918745E9)
-            .mul_add2(e, -8.1162081E8)
-            .mul_add2(e, -1.2297285E8)
+        e.mul_add2(-2.7027E5, -2.837_835E7)
+            .mul_add2(e, -3.689_185_5E8)
+            .mul_add2(e, -1.352_701_35E9)
+            .mul_add2(e, -1.739_187_45E9)
+            .mul_add2(e, -8.116_208_1E8)
+            .mul_add2(e, -1.229_728_5E8)
             .mul_add2(e, -4.05405E6)
     }
     #[inline(always)]
     fn a8(e: f64) -> f64 {
-        e.mul_add2(4.05405E6, 5.513508E8)
-            .mul_add2(e, 9.648639E9)
-            .mul_add2(e, 5.01729228E10)
-            .mul_add2(e, 9.85539555E10)
-            .mul_add2(e, 7.88431644E10)
-            .mul_add2(e, 2.50864614E10)
-            .mul_add2(e, 2.756754E9)
-            .mul_add2(e, 6.891885E7)
+        e.mul_add2(4.05405E6, 5.513_508E8)
+            .mul_add2(e, 9.648_639E9)
+            .mul_add2(e, 5.017_292_28E10)
+            .mul_add2(e, 9.855_395_55E10)
+            .mul_add2(e, 7.884_316_44E10)
+            .mul_add2(e, 2.508_646_14E10)
+            .mul_add2(e, 2.756_754E9)
+            .mul_add2(e, 6.891_885E7)
     }
     #[inline(always)]
     fn a9(e: f64) -> f64 {
-        e.mul_add2(-6.891885E7, -1.178512335E10)
-            .mul_add2(e, -2.671294626E11)
-            .mul_add2(e, -1.8699062382E12)
-            .mul_add2(e, -5.2090245207E12)
-            .mul_add2(e, -6.3665855253E12)
-            .mul_add2(e, -3.4726830138E12)
-            .mul_add2(e, -8.013883878E11)
-            .mul_add2(e, -6.678236565E10)
-            .mul_add2(e, -1.30945815E9)
+        e.mul_add2(-6.891_885E7, -1.178_512_335E10)
+            .mul_add2(e, -2.671_294_626E11)
+            .mul_add2(e, -1.869_906_238_2E12)
+            .mul_add2(e, -5.209_024_520_7E12)
+            .mul_add2(e, -6.366_585_525_3E12)
+            .mul_add2(e, -3.472_683_013_8E12)
+            .mul_add2(e, -8.013_883_878E11)
+            .mul_add2(e, -6.678_236_565E10)
+            .mul_add2(e, -1.309_458_15E9)
     }
     #[inline(always)]
     fn a10(e: f64) -> f64 {
-        e.mul_add2(1.30945815E9, 2.749862115E11)
-            .mul_add2(e, 7.83710702775E12)
-            .mul_add2(e, 7.10564370516E13)
-            .mul_add2(e, 2.664616389435E14)
-            .mul_add2(e, 4.618668408354E14)
-            .mul_add2(e, 3.848890340295E14)
-            .mul_add2(e, 1.52263793682E14)
-            .mul_add2(e, 2.664616389435E13)
-            .mul_add2(e, 1.7415793395E12)
-            .mul_add2(e, 2.749862115E10)
+        e.mul_add2(1.309_458_15E9, 2.749_862_115E11)
+            .mul_add2(e, 7.837_107_027_75E12)
+            .mul_add2(e, 7.105_643_705_16E13)
+            .mul_add2(e, 2.664_616_389_435E14)
+            .mul_add2(e, 4.618_668_408_354E14)
+            .mul_add2(e, 3.848_890_340_295E14)
+            .mul_add2(e, 1.522_637_936_82E14)
+            .mul_add2(e, 2.664_616_389_435E13)
+            .mul_add2(e, 1.741_579_339_5E12)
+            .mul_add2(e, 2.749_862_115E10)
     }
     #[inline(always)]
     fn a11(e: f64) -> f64 {
-        e.mul_add2(-2.749862115E10, -6.95715115095E12)
-            .mul_add2(e, -2.4350029028325E14)
-            .mul_add2(e, -2.77590330922905E15)
-            .mul_add2(e, -1.34829589305411E16)
-            .mul_add2(e, -3.14602375045959E16)
-            .mul_add2(e, -3.71802806872497E16)
-            .mul_add2(e, -2.24715982175685E16)
-            .mul_add2(e, -6.74147946527055E15)
-            .mul_add2(e, -9.2530110307635E14)
-            .mul_add2(e, -4.870005805665E13)
-            .mul_add2(e, -6.3246828645E11)
+        e.mul_add2(-2.749_862_115E10, -6.957_151_150_95E12)
+            .mul_add2(e, -2.435_002_902_832_5E14)
+            .mul_add2(e, -2.775_903_309_229_05E15)
+            .mul_add2(e, -1.348_295_893_054_11E16)
+            .mul_add2(e, -3.146_023_750_459_59E16)
+            .mul_add2(e, -3.718_028_068_724_97E16)
+            .mul_add2(e, -2.247_159_821_756_85E16)
+            .mul_add2(e, -6.741_479_465_270_55E15)
+            .mul_add2(e, -9.253_011_030_763_5E14)
+            .mul_add2(e, -4.870_005_805_665E13)
+            .mul_add2(e, -6.324_682_864_5E11)
     }
     #[inline(always)]
     fn a12(e: f64) -> f64 {
-        e.mul_add2(6.3246828645E11, 1.89740485935E14)
-            .mul_add2(e, 8.0007238235925E15)
-            .mul_add2(e, 1.12010133530295E17)
+        e.mul_add2(6.324_682_864_5E11, 1.897_404_859_35E14)
+            .mul_add2(e, 8.000_723_823_592_5E15)
+            .mul_add2(e, 1.120_101_335_302_95E17)
             .mul_add2(e, 6.840_618_869_171_588E17)
-            .mul_add2(e, 2.067387036016302E18)
-            .mul_add2(e, 3.289024830025935E18)
-            .mul_add2(e, 2.81916414002223E18)
+            .mul_add2(e, 2.067_387_036_016_302E18)
+            .mul_add2(e, 3.289_024_830_025_935E18)
+            .mul_add2(e, 2.819_164_140_022_23E18)
             .mul_add2(e, 1.292_116_897_510_188_8E18)
-            .mul_add2(e, 3.04027505296515E17)
-            .mul_add2(e, 3.36030400590885E16)
-            .mul_add2(e, 1.454677058835E15)
-            .mul_add2(e, 1.581170716125E13)
+            .mul_add2(e, 3.040_275_052_965_15E17)
+            .mul_add2(e, 3.360_304_005_908_85E16)
+            .mul_add2(e, 1.454_677_058_835E15)
+            .mul_add2(e, 1.581_170_716_125E13)
     }
     #[inline(always)]
     fn a13(e: f64) -> f64 {
-        e.mul_add2(-1.581170716125E13, -5.54990921359875E15)
-            .mul_add2(e, -2.774954606799375E17)
+        e.mul_add2(-1.581_170_716_125E13, -5.549_909_213_598_75E15)
+            .mul_add2(e, -2.774_954_606_799_375E17)
             .mul_add2(e, -4.680_423_436_801_613E18)
             .mul_add2(e, -3.510_317_577_601_209_5E19)
             .mul_add2(e, -1.333_920_679_488_459_6E20)
@@ -185,13 +185,13 @@ fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
             .mul_add2(e, -2.061_513_777_391_255_6E20)
             .mul_add2(e, -7.410_670_441_602_553E19)
             .mul_add2(e, -1.404_127_031_040_483_7E19)
-            .mul_add2(e, -1.2764791191277125E18)
-            .mul_add2(e, -4.624924344665625E16)
-            .mul_add2(e, -4.2691609335375E14)
+            .mul_add2(e, -1.276_479_119_127_712_5E18)
+            .mul_add2(e, -4.624_924_344_665_625E16)
+            .mul_add2(e, -4.269_160_933_537_5E14)
     }
     #[inline(always)]
     fn a14(e: f64) -> f64 {
-        e.mul_add2(4.2691609335375E14, 1.733279339016225E17)
+        e.mul_add2(4.269_160_933_537_5E14, 1.733_279_339_016_225E17)
             .mul_add2(e, 1.013_968_413_324_491_6E19)
             .mul_add2(e, 2.027_936_826_648_983_3E20)
             .mul_add2(e, 1.832_385_775_507_831_3E21)
@@ -203,12 +203,12 @@ fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
             .mul_add2(e, 4.275_566_809_518_273E21)
             .mul_add2(e, 6.663_221_001_846_66E20)
             .mul_add2(e, 5.069_842_066_622_458E19)
-            .mul_add2(e, 1.5599514051146025E18)
-            .mul_add2(e, 1.238056670725875E16)
+            .mul_add2(e, 1.559_951_405_114_602_5E18)
+            .mul_add2(e, 1.238_056_670_725_875E16)
     }
     #[inline(always)]
     fn a15(e: f64) -> f64 {
-        e.mul_add2(-1.238056670725875E16, -5.756_963_518_875_318E18)
+        e.mul_add2(-1.238_056_670_725_875E16, -5.756_963_518_875_318E18)
             .mul_add2(e, -3.895_545_314_438_965_5E20)
             .mul_add2(e, -9.115_576_035_787_18E21)
             .mul_add2(e, -9.766_688_609_771_979E22)
@@ -222,11 +222,11 @@ fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
             .mul_add2(e, -3.255_562_869_923_992_8E22)
             .mul_add2(e, -2.103_594_469_797_041_5E21)
             .mul_add2(e, -5.565_064_734_912_808E19)
-            .mul_add2(e, -3.8379756792502125E17)
+            .mul_add2(e, -3.837_975_679_250_212_5E17)
     }
     #[inline(always)]
     fn a16(e: f64) -> f64 {
-        e.mul_add2(3.8379756792502125E17, 2.026_451_158_644_112E20)
+        e.mul_add2(3.837_975_679_250_212_5E17, 2.026_451_158_644_112E20)
             .mul_add2(e, 1.570_499_647_949_187E22)
             .mul_add2(e, 4.250_819_047_115_799E23)
             .mul_add2(e, 5.328_705_305_491_592E24)
@@ -304,9 +304,6 @@ fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
 
 #[inline(always)]
 fn small_t_expansion_of_scaled_normalised_black<SpFn: SpecialFn>(h: f64, t: f64) -> f64 {
-    let a = y_prime::<SpFn>(h);
-    let h2 = h * h;
-    let t2 = t * t;
     #[inline(always)]
     fn b0(a: f64) -> f64 {
         2.0 * a
@@ -321,44 +318,52 @@ fn small_t_expansion_of_scaled_normalised_black<SpFn: SpecialFn>(h: f64, t: f64)
     }
     #[inline(always)]
     fn b3(a: f64, h2: f64) -> f64 {
-        (h2.mul_add2(21.0 + h2, 105.0).mul_add2(h2, 105.0) * a + h2.mul_add2(-18.0 - h2, -57.0))
+        h2.mul_add2(21.0 + h2, 105.0)
+            .mul_add2(h2, 105.0)
+            .mul_add2(a, h2.mul_add2(-18.0 - h2, -57.0))
             / 2520.0
     }
     #[inline(always)]
     fn b4(a: f64, h2: f64) -> f64 {
-        (h2.mul_add2(-33.0 - h2, -285.0).mul_add2(h2, -561.0)
-            + h2.mul_add2(36.0 + h2, 378.0)
-                .mul_add2(h2, 1260.0)
-                .mul_add2(h2, 945.0)
-                * a)
-            / 181440.0
+        h2.mul_add2(36.0 + h2, 378.0)
+            .mul_add2(h2, 1260.0)
+            .mul_add2(h2, 945.0)
+            .mul_add2(a, h2.mul_add2(-33.0 - h2, -285.0).mul_add2(h2, -561.0))
+            / 181_440.0
     }
     #[inline(always)]
     fn b5(a: f64, h2: f64) -> f64 {
-        (h2.mul_add2(-52.0 - h2, -840.0)
-            .mul_add2(h2, -4680.0)
-            .mul_add2(h2, -6555.0)
-            + h2.mul_add2(55.0 + h2, 990.0)
-                .mul_add2(h2, 6930.0)
-                .mul_add2(h2, 17325.0)
-                .mul_add2(h2, 10395.0)
-                * a)
-            / 19958400.0
+        h2.mul_add2(55.0 + h2, 990.0)
+            .mul_add2(h2, 6930.0)
+            .mul_add2(h2, 17325.0)
+            .mul_add2(h2, 10395.0)
+            .mul_add2(
+                a,
+                h2.mul_add2(-52.0 - h2, -840.0)
+                    .mul_add2(h2, -4680.0)
+                    .mul_add2(h2, -6555.0),
+            )
+            / 19_958_400.0
     }
     #[inline(always)]
     fn b6(a: f64, h2: f64) -> f64 {
-        (h2.mul_add2(-75.0 - h2, -1926.0)
-            .mul_add2(h2, -20370.0)
-            .mul_add2(h2, -82845.0)
-            .mul_add2(h2, -89055.0)
-            + h2.mul_add2(78.0 + h2, 2145.0)
-                .mul_add2(h2, 25740.0)
-                .mul_add2(h2, 135135.0)
-                .mul_add2(h2, 270270.0)
-                .mul_add2(h2, 135135.0)
-                * a)
-            / 3113510400.0
+        h2.mul_add2(78.0 + h2, 2145.0)
+            .mul_add2(h2, 25740.0)
+            .mul_add2(h2, 135_135.0)
+            .mul_add2(h2, 270_270.0)
+            .mul_add2(h2, 135_135.0)
+            .mul_add2(
+                a,
+                h2.mul_add2(-75.0 - h2, -1926.0)
+                    .mul_add2(h2, -20370.0)
+                    .mul_add2(h2, -82845.0)
+                    .mul_add2(h2, -89055.0),
+            )
+            / 3_113_510_400.0
     }
+    let a = y_prime::<SpFn>(h);
+    let h2 = h * h;
+    let t2 = t * t;
     t2.mul_add2(b6(a, h2), b5(a, h2))
         .mul_add2(t2, b4(a, h2))
         .mul_add2(t2, b3(a, h2))
@@ -424,48 +429,55 @@ fn normalised_black_with_optimal_use_of_codys_functions<SpFn: SpecialFn>(x: f64,
     let q2 = -FRAC_1_SQRT_2 * (h - t);
     let two_b = if q1 < CODYS_THRESHOLD {
         if q2 < CODYS_THRESHOLD {
-            (0.5 * x).exp() * SpFn::erfc(q1) - (-0.5 * x).exp() * SpFn::erfc(q2)
+            (0.5 * x)
+                .exp()
+                .mul_add2(SpFn::erfc(q1), -((-0.5 * x).exp() * SpFn::erfc(q2)))
         } else {
-            (0.5 * x).exp() * SpFn::erfc(q1) - (-0.5 * (h * h + t * t)).exp() * SpFn::erfcx(q2)
+            (0.5 * x).exp().mul_add2(
+                SpFn::erfc(q1),
+                -((-0.5 * h.mul_add2(h, t * t)).exp() * SpFn::erfcx(q2)),
+            )
         }
     } else if q2 < CODYS_THRESHOLD {
-        (-0.5 * (h * h + t * t)).exp() * SpFn::erfcx(q1) - (-0.5 * x).exp() * SpFn::erfc(q2)
+        (-0.5 * h.mul_add2(h, t * t))
+            .exp()
+            .mul_add2(SpFn::erfcx(q1), -((-0.5 * x).exp() * SpFn::erfc(q2)))
     } else {
-        (-0.5 * (h * h + t * t)).exp() * (SpFn::erfcx(q1) - SpFn::erfcx(q2))
+        (-0.5 * h.mul_add2(h, t * t)).exp() * (SpFn::erfcx(q1) - SpFn::erfcx(q2))
     };
     (0.5 * two_b).max(0.0)
 }
 
 #[inline(always)]
-pub(super) fn normalised_vega(x: f64, s: f64) -> f64 {
+pub fn normalised_vega(x: f64, s: f64) -> f64 {
     assert!(s > 0.0);
     let h = x / s;
     let t = 0.5 * s;
-    SQRT_TWO_PI.recip() * (-0.5 * (h * h + t * t)).exp()
+    SQRT_TWO_PI.recip() * (-0.5 * h.mul_add2(h, t * t)).exp()
 }
 
 #[inline(always)]
-pub(super) fn inv_normalised_vega(x: f64, s: f64) -> f64 {
+pub fn inv_normalised_vega(x: f64, s: f64) -> f64 {
     assert!(s > 0.0);
     let h = x / s;
     let t = 0.5 * s;
-    SQRT_TWO_PI * (0.5 * (h * h + t * t)).exp()
+    SQRT_TWO_PI * (0.5 * h.mul_add2(h, t * t)).exp()
 }
 
 #[inline(always)]
 fn ln_normalised_vega(x: f64, s: f64) -> f64 {
     let ax = x.abs();
     if ax <= 0.0 {
-        -HALF_OF_LN_TWO_PI - 0.125 * s * s
+        (0.125 * s).mul_add2(-s, -HALF_OF_LN_TWO_PI)
     } else if s <= 0.0 {
         f64::MIN
     } else {
-        -HALF_OF_LN_TWO_PI - 0.5 * ((x / s).powi(2) + 0.25 * s * s)
+        0.5f64.mul_add2(-(0.25 * s).mul_add2(s, (x / s).powi(2)), -HALF_OF_LN_TWO_PI)
     }
 }
 
 #[inline(always)]
-pub(super) fn black_input_unchecked<SpFn: SpecialFn, const IS_CALL: bool>(
+pub fn black_input_unchecked<SpFn: SpecialFn, const IS_CALL: bool>(
     f: f64,
     k: f64,
     sigma: f64,

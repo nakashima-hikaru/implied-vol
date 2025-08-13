@@ -16,7 +16,7 @@ fn intrinsic_value<const IS_CALL: bool>(forward: f64, strike: f64) -> f64 {
 #[inline(always)]
 fn phi_tilde_times_x(x: f64) -> f64 {
     if x.abs() <= 0.612_003_180_962_480_7 {
-        let h = (x * x - 1.872_739_467_540_974_8E-1) * 5.339_771_053_755_08;
+        let h = x.mul_add2(x, -1.872_739_467_540_974_8E-1) * 5.339_771_053_755_08;
         let g = h
             .mul_add2(3.095_828_855_856_471E-5, 2.944_481_222_626_891_4E-3)
             .mul_add2(h, 1.964_154_984_377_470_3E-1)
@@ -69,7 +69,7 @@ fn phi_tilde_times_x(x: f64) -> f64 {
             .mul_add2(w, 8.384_852_209_273_714E1)
             .mul_add2(w, 1.0);
 
-    ONE_OVER_SQRT_TWO_PI * (-0.5 * x * x).exp() * w * (1.0 - g * w)
+    ONE_OVER_SQRT_TWO_PI * (-0.5 * x * x).exp() * w * g.mul_add2(-w, 1.0)
 }
 
 #[inline(always)]
@@ -82,27 +82,32 @@ fn inv_phi_tilde<SpFn: SpecialFn>(phi_tilde_star: f64) -> f64 {
     if phi_tilde_star > 1.0 {
         return -inv_phi_tilde::<SpFn>(1.0 - phi_tilde_star);
     }
-    let x_bar = if phi_tilde_star < -0.00188203927 {
+    let x_bar = if phi_tilde_star < -0.001_882_039_27 {
         // Equation (2.1)
         let g = (phi_tilde_star - 0.5).recip();
         let g2 = g * g;
         // Equation (2.2)
-        let xi_bar = (0.032114372355
-            - g2 * (0.016969777977 - g2 * (0.002620733246 - 0.000096066952861 * g2)))
-            / g2.mul_add2(-0.010472855461, 0.14528712196)
-                .mul_add2(-g2, 0.6635646938)
-                .mul_add2(-g2, 1.0);
+        let xi_bar = g2.mul_add2(
+            -g2.mul_add2(
+                -0.000_096_066_952_861_f64.mul_add2(-g2, 0.002_620_733_246),
+                0.016_969_777_977,
+            ),
+            0.032_114_372_355,
+        ) / g2
+            .mul_add2(-0.010_472_855_461, 0.145_287_121_96)
+            .mul_add2(-g2, 0.663_564_693_8)
+            .mul_add2(-g2, 1.0);
         // Equation (2.3)
-        g * (ONE_OVER_SQRT_TWO_PI + xi_bar * g2)
+        g * xi_bar.mul_add2(g2, ONE_OVER_SQRT_TWO_PI)
     } else {
         // Equation (2.4)
         let h = (-(-phi_tilde_star).ln()).sqrt();
         // Equation (2.5)
-        h.mul_add2(2.1464093351, 0.58556997323)
-            .mul_add2(-h, 9.6320903635)
-            .mul_add2(-h, 9.4883409779)
-            / h.mul_add2(0.000066437847132, 1.5120247828)
-                .mul_add2(h, 0.65174820867)
+        h.mul_add2(2.146_409_335_1, 0.585_569_973_23)
+            .mul_add2(-h, 9.632_090_363_5)
+            .mul_add2(-h, 9.488_340_977_9)
+            / h.mul_add2(0.000_066_437_847_132, 1.512_024_782_8)
+                .mul_add2(h, 0.651_748_208_67)
                 .mul_add2(-h, 1.0)
     };
     // Equation (2.7)
@@ -110,9 +115,14 @@ fn inv_phi_tilde<SpFn: SpecialFn>(phi_tilde_star: f64) -> f64 {
     let x2 = x_bar * x_bar;
     // Equation (2.6)
     x_bar
-        + 3.0 * q * x2 * (2.0 - q * x_bar * (2.0 + x2))
-            / (6.0
-                + q * x_bar * (-12.0 + x_bar * (6.0 * q + x_bar * (-6.0 + q * x_bar * (3.0 + x2)))))
+        + 3.0 * q * x2 * (q * x_bar).mul_add2(-(2.0 + x2), 2.0)
+            / (q * x_bar).mul_add2(
+                x_bar.mul_add2(
+                    6.0f64.mul_add2(q, x_bar * (q * x_bar).mul_add2(3.0 + x2, -6.0)),
+                    -12.0,
+                ),
+                6.0,
+            )
 }
 
 /// Calculates the price of an option using Bachelier's model.
@@ -128,12 +138,7 @@ fn inv_phi_tilde<SpFn: SpecialFn>(phi_tilde_star: f64) -> f64 {
 /// # Returns
 ///
 /// The price of the option.
-pub(crate) fn bachelier_price<const IS_CALL: bool>(
-    forward: f64,
-    strike: f64,
-    sigma: f64,
-    t: f64,
-) -> f64 {
+pub fn bachelier_price<const IS_CALL: bool>(forward: f64, strike: f64, sigma: f64, t: f64) -> f64 {
     assert!(!forward.is_nan() && !strike.is_nan() && sigma >= 0.0 && t >= 0.0);
     let s = sigma * t.sqrt();
     if s == 0.0 {
@@ -149,7 +154,7 @@ pub(crate) fn bachelier_price<const IS_CALL: bool>(
 }
 
 #[inline(always)]
-pub(crate) fn implied_normal_volatility_input_unchecked<SpFn: SpecialFn, const IS_CALL: bool>(
+pub fn implied_normal_volatility_input_unchecked<SpFn: SpecialFn, const IS_CALL: bool>(
     price: f64,
     forward: f64,
     strike: f64,
