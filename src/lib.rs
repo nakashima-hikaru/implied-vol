@@ -509,7 +509,7 @@ impl ImpliedNormalVolatility {
                 && self.forward.is_finite()
                 && self.strike.is_finite()
                 && self.expiry >= 0.0_f64
-        );  // never panics because this is validated in the builder
+        ); // never panics because this is validated in the builder
         if self.is_call {
             bachelier_impl::implied_normal_volatility_input_unchecked::<SpFn, true>(
                 self.option_price,

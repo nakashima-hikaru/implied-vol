@@ -79,7 +79,10 @@ pub(super) fn inverse_norm_cdfm_half_for_midrange_probabilities(u: f64) -> f64 {
 
 #[inline(always)]
 pub(super) fn inverse_norm_cdf_for_low_probabilities(p: f64) -> f64 {
-    assert_ne!(p.partial_cmp(&0.158_655_253_931_46), Some(Ordering::Greater));
+    assert_ne!(
+        p.partial_cmp(&0.158_655_253_931_46),
+        Some(Ordering::Greater)
+    );
     let r = p.ln().neg().sqrt();
     if r < 2.05 {
         // Branch I: Accuracy better than 7.6E-17
@@ -213,7 +216,10 @@ pub(super) fn inverse_norm_cdf_for_low_probabilities(p: f64) -> f64 {
             r.mul_add2(
                 r.mul_add2(
                     r.mul_add2(
-                        r.mul_add2(0.000_000_000_023_135_343_206_304_888, 0.000_747_144_799_216_722_6),
+                        r.mul_add2(
+                            0.000_000_000_023_135_343_206_304_888,
+                            0.000_747_144_799_216_722_6,
+                        ),
                         0.046_054_974_512_474_44,
                     ),
                     0.613_208_413_291_975,
