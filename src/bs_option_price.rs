@@ -1,7 +1,5 @@
 use crate::SpecialFn;
-use crate::constants::{
-    HALF_OF_LN_TWO_PI, SIXTEENTH_ROOT_DBL_EPSILON, SQRT_PI_OVER_TWO, SQRT_TWO_PI,
-};
+use crate::constants::{HALF_OF_LN_2_PI, SIXTEENTH_ROOT_DBL_EPSILON, SQRT_2_PI, SQRT_PI_OVER_2};
 use crate::fused_multiply_add::MulAdd;
 use std::f64::consts::FRAC_1_SQRT_2;
 use std::ops::Neg;
@@ -398,7 +396,7 @@ fn y_prime<SpFn: SpecialFn>(h: f64) -> f64 {
                 .mul_add2(-h, 1.872_428_636_958_916_3)
                 .mul_add2(-h, 1.0)
     } else {
-        SpFn::erfcx(-FRAC_1_SQRT_2 * h).mul_add2(h * SQRT_PI_OVER_TWO, 1.0)
+        SpFn::erfcx(-FRAC_1_SQRT_2 * h).mul_add2(h * SQRT_PI_OVER_2, 1.0)
     }
 }
 
@@ -453,7 +451,7 @@ pub fn normalised_vega(x: f64, s: f64) -> f64 {
     assert!(s > 0.0);
     let h = x / s;
     let t = 0.5 * s;
-    SQRT_TWO_PI.recip() * (-0.5 * h.mul_add2(h, t * t)).exp()
+    SQRT_2_PI.recip() * (-0.5 * h.mul_add2(h, t * t)).exp()
 }
 
 #[inline(always)]
@@ -461,18 +459,18 @@ pub fn inv_normalised_vega(x: f64, s: f64) -> f64 {
     assert!(s > 0.0);
     let h = x / s;
     let t = 0.5 * s;
-    SQRT_TWO_PI * (0.5 * h.mul_add2(h, t * t)).exp()
+    SQRT_2_PI * (0.5 * h.mul_add2(h, t * t)).exp()
 }
 
 #[inline(always)]
 fn ln_normalised_vega(x: f64, s: f64) -> f64 {
     let ax = x.abs();
     if ax <= 0.0 {
-        (0.125 * s).mul_add2(-s, -HALF_OF_LN_TWO_PI)
+        (0.125 * s).mul_add2(-s, -HALF_OF_LN_2_PI)
     } else if s <= 0.0 {
         f64::MIN
     } else {
-        0.5f64.mul_add2(-(0.25 * s).mul_add2(s, (x / s).powi(2)), -HALF_OF_LN_TWO_PI)
+        0.5f64.mul_add2(-(0.25 * s).mul_add2(s, (x / s).powi(2)), -HALF_OF_LN_2_PI)
     }
 }
 

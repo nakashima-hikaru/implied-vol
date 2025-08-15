@@ -1,8 +1,7 @@
 use crate::bs_option_price;
 use crate::constants::{
-    ONE_OVER_SQRT_THREE, SQRT_DBL_MAX, SQRT_PI_OVER_TWO, SQRT_THREE,
-    SQRT_THREE_OVER_THIRD_ROOT_TWO_PI, SQRT_TWO_OVER_PI, SQRT_TWO_PI,
-    TWO_PI_OVER_SQRT_TWENTY_SEVEN,
+    FRAC_2_PI_SQRT_27, FRAC_ONE_SQRT_3, FRAC_SQRT_3_CUBIC_ROOT_2_PI, SQRT_2_OVER_PI, SQRT_2_PI,
+    SQRT_3, SQRT_DBL_MAX, SQRT_PI_OVER_2,
 };
 use crate::fused_multiply_add::MulAdd;
 use crate::rational_cubic::{
@@ -11,8 +10,10 @@ use crate::rational_cubic::{
     rational_cubic_interpolation,
 };
 use crate::special_function::SpecialFn;
+use crate::special_function::normal_distribution::inv_norm_pdf;
 use std::f64::consts::{FRAC_1_SQRT_2, SQRT_2};
 use std::ops::{Div, Neg};
+
 #[inline(always)]
 fn householder3_factor(v: f64, h2: f64, h3: f64) -> f64 {
     v.mul_add2(0.5 * h2, 1.0) / v.mul_add2(h3 / 6.0, h2).mul_add2(v, 1.0)
@@ -141,20 +142,20 @@ fn compute_f_lower_map_and_first_two_derivatives<SpFn: SpecialFn>(
     s: f64,
 ) -> (f64, f64, f64) {
     let ax = x.abs();
-    let z = ONE_OVER_SQRT_THREE * ax / s;
+    let z = FRAC_ONE_SQRT_3 * ax / s;
     let y = z * z;
     let s2 = s * s;
     let phi_m = 0.5 * SpFn::erfc(FRAC_1_SQRT_2 * z);
 
     let phi2 = phi_m * phi_m;
     (
-        TWO_PI_OVER_SQRT_TWENTY_SEVEN * ax * (phi2 * phi_m),
+        FRAC_2_PI_SQRT_27 * ax * (phi2 * phi_m),
         std::f64::consts::TAU * y * phi2 * s2.mul_add2(0.125, y).exp(),
         std::f64::consts::FRAC_PI_6 * y / (s2 * s)
             * phi_m
-            * (8.0 * SQRT_THREE * s).mul_add2(
+            * (8.0 * SQRT_3 * s).mul_add2(
                 ax,
-                (3.0 * s2).mul_add2(s2 - 8.0, -(8.0 * x * x)) * phi_m / SpFn::norm_pdf(z),
+                (3.0 * s2).mul_add2(s2 - 8.0, -(8.0 * x * x)) * phi_m * inv_norm_pdf(z),
             )
             * 2.0f64.mul_add2(y, 0.25 * s2).exp(),
     )
@@ -162,8 +163,8 @@ fn compute_f_lower_map_and_first_two_derivatives<SpFn: SpecialFn>(
 
 #[inline(always)]
 fn inverse_f_lower_map<SpFn: SpecialFn>(x: f64, f: f64) -> f64 {
-    (x * ONE_OVER_SQRT_THREE
-        / SpFn::inverse_norm_cdf(SQRT_THREE_OVER_THIRD_ROOT_TWO_PI * f.cbrt() / x.abs().cbrt()))
+    (x * FRAC_ONE_SQRT_3
+        / SpFn::inverse_norm_cdf(FRAC_SQRT_3_CUBIC_ROOT_2_PI * f.cbrt() / x.abs().cbrt()))
     .abs()
 }
 
@@ -176,7 +177,7 @@ fn compute_f_upper_map_and_first_two_derivatives<SpFn: SpecialFn>(
     (
         0.5 * SpFn::erfc((0.5 * FRAC_1_SQRT_2) * s),
         -0.5 * (0.5 * w).exp(),
-        SQRT_PI_OVER_TWO * ((0.125 * s).mul_add2(s, w).exp()) * w / s,
+        SQRT_PI_OVER_2 * ((0.125 * s).mul_add2(s, w).exp()) * w / s,
     )
 }
 
@@ -206,17 +207,16 @@ fn lets_be_rational<SpFn: SpecialFn>(beta: f64, theta_x: f64) -> Option<f64> {
 #[inline(always)]
 fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f64) -> f64 {
     let mut s;
-    let mut ds = f64::MIN;
-
     let sqrt_ax = theta_x.neg().sqrt();
     let s_c = SQRT_2 * sqrt_ax;
     let ome = SpFn::one_minus_erfcx(sqrt_ax);
     let b_c = 0.5 * b_max * ome;
     if beta < b_c {
         debug_assert!(theta_x < 0.0);
-        let s_l = SQRT_PI_OVER_TWO.mul_add2(-ome, s_c);
+        let s_l = SQRT_PI_OVER_2.mul_add2(-ome, s_c);
         debug_assert!(s_l > 0.0);
         let b_l = b_l_over_b_max(s_c) * b_max;
+        // no return
         if beta < b_l {
             let (f_lower_map_l, d_f_lower_map_l_d_beta, d2_f_lower_map_l_d_beta2) =
                 compute_f_lower_map_and_first_two_derivatives::<SpFn>(theta_x, s_l);
@@ -242,11 +242,11 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
                 }
                 _ => {}
             }
-            s = inverse_f_lower_map::<SpFn>(theta_x, f);
+            let mut s = inverse_f_lower_map::<SpFn>(theta_x, f);
             debug_assert!(s > 0.0);
             let ln_beta = beta.ln();
 
-            ds = 1.0_f64;
+            let mut ds = 1.0_f64;
             let mut final_trial = false;
             while ds.abs() > f64::EPSILON * s {
                 assert!(s > 0.0);
@@ -300,7 +300,7 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
             return s;
         }
         let inv_v = (
-            SQRT_TWO_PI / b_max,
+            SQRT_2_PI / b_max,
             bs_option_price::inv_normalised_vega(theta_x, s_l),
         );
         let h = b_c - b_l;
@@ -310,12 +310,12 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
         s = rational_cubic_interpolation(beta - b_l, h, (s_l, s_c), inv_v, r_im);
         assert!(s > 0.0);
     } else {
-        let s_u = SQRT_PI_OVER_TWO.mul_add2(2.0 - ome, s_c);
+        let s_u = SQRT_PI_OVER_2.mul_add2(2.0 - ome, s_c);
         assert!(s_u > 0.0);
         let b_u = b_u_over_b_max(s_c) * b_max;
         if beta <= b_u {
             let inv_v = (
-                SQRT_TWO_PI / b_max,
+                SQRT_2_PI / b_max,
                 bs_option_price::inv_normalised_vega(theta_x, s_u),
             );
             let h = b_u - b_c;
@@ -359,11 +359,12 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
             s = inverse_f_upper_map::<SpFn>(f);
             if beta > 0.5 * b_max {
                 let beta_bar = b_max - beta;
+                let mut ds = f64::MIN;
                 let mut final_trial = false;
                 while ds.abs() > f64::EPSILON * s {
                     let h = theta_x / s;
                     let t = s / 2.0;
-                    let gp = SQRT_TWO_OVER_PI
+                    let gp = SQRT_2_OVER_PI
                         / (SpFn::erfcx((t + h) * FRAC_1_SQRT_2)
                             + SpFn::erfcx((t - h) * FRAC_1_SQRT_2));
                     let b_bar = bs_option_price::normalised_vega(theta_x, s) / gp;
@@ -401,6 +402,7 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
             }
         }
     }
+    let mut ds = f64::MIN;
     for _ in 0..2 {
         if ds.abs() <= f64::EPSILON * s {
             break;
@@ -493,7 +495,7 @@ mod tests {
         assert!(s > 0.0 && theta_x != 0.0);
         (if theta_x > 0.0 {
             normalised_intrinsic(theta_x)
-                * SQRT_TWO_PI
+                * SQRT_2_PI
                 * (0.5 * ((theta_x / s).powi(2) + 0.25 * s * s)).exp()
         } else {
             0.0
@@ -508,7 +510,7 @@ mod tests {
                 1.0
             } else {
                 s / (DefaultSpecialFn::erf((0.5 * FRAC_1_SQRT_2) * s)
-                    * SQRT_TWO_PI
+                    * SQRT_2_PI
                     * (0.125 * s * s).exp())
             };
         }

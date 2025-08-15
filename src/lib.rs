@@ -41,7 +41,7 @@
 //! ```
 
 pub use crate::special_function::{DefaultSpecialFn, SpecialFn};
-use bon::bon;
+use bon::Builder;
 #[cfg(feature = "bench")]
 pub mod cxx;
 
@@ -235,6 +235,42 @@ pub fn bachelier_option_price(
     }
 }
 
+/// A struct representing the parameters required for calculating the price of an option
+/// using the Black-Scholes model.
+///
+/// This struct is marked with the `Builder` derive macro, which provides a builder pattern
+/// for constructing instances of `PriceBlackScholes`. The builder derives `Clone` and `Debug`
+/// traits for convenient usage.
+///
+/// # Fields
+/// - `forward` (f64): The forward price of the underlying asset.
+/// - `strike` (f64): The strike price of the option.
+/// - `volatility` (f64): The volatility of the underlying asset.
+/// - `expiry` (f64): The time to expiration of the option, expressed in years.
+/// - `is_call` (bool): A flag indicating whether the option is a call option (`true`)
+///   or a put option (`false`).
+///
+/// # Builder
+/// - The `builder` provides a convenient way to create an instance of `PriceBlackScholes`.
+/// - The custom `finish_fn` is named `build_internal` and has private visibility to
+///   restrict its direct usage, ensuring encapsulation.
+///
+/// # Example
+/// ```rust
+/// use implied_vol::PriceBlackScholes;
+///
+/// let option_params = PriceBlackScholes::builder()
+///     .forward(100.0)
+///     .strike(95.0)
+///     .volatility(0.2)
+///     .expiry(1.0)
+///     .is_call(true)
+///     .build()
+///     .unwrap();
+/// ```
+#[derive(Builder)]
+#[builder(derive(Clone, Debug))]
+#[builder(finish_fn(vis = "", name = build_internal))]
 pub struct PriceBlackScholes {
     forward: f64,
     strike: f64,
@@ -243,46 +279,34 @@ pub struct PriceBlackScholes {
     is_call: bool,
 }
 
-#[bon]
-impl PriceBlackScholes {
-    #[builder]
-    pub fn new(forward: f64, strike: f64, vol: f64, expiry: f64, is_call: bool) -> Option<Self> {
-        if !forward.is_finite() {
+impl<S: price_black_scholes_builder::IsComplete> PriceBlackScholesBuilder<S> {
+    pub fn build(self) -> Option<PriceBlackScholes> {
+        let price_black_scholes = self.build_internal();
+        if !price_black_scholes.forward.is_finite() {
             return None;
         }
-        if !strike.is_finite() {
-            return None;
-        }
-        if matches!(vol.partial_cmp(&0.0), Some(std::cmp::Ordering::Less) | None) {
+        if !price_black_scholes.strike.is_finite() {
             return None;
         }
         if matches!(
-            expiry.partial_cmp(&0.0),
+            price_black_scholes.volatility.partial_cmp(&0.0),
             Some(std::cmp::Ordering::Less) | None
         ) {
             return None;
         }
-        Some(Self {
-            forward,
-            strike,
-            volatility: vol,
-            expiry,
-            is_call,
-        })
+        if matches!(
+            price_black_scholes.expiry.partial_cmp(&0.0),
+            Some(std::cmp::Ordering::Less) | None
+        ) {
+            return None;
+        }
+        Some(price_black_scholes)
     }
 }
 
 impl PriceBlackScholes {
     #[must_use]
     pub fn calculate<SpFn: SpecialFn>(&self) -> f64 {
-        assert!(
-            self.volatility >= 0.0
-                && self.forward >= 0.0
-                && self.forward.is_finite()
-                && self.strike >= 0.0
-                && self.strike.is_finite()
-                && self.expiry >= 0.0
-        );
         if self.is_call {
             bs_option_price::black_input_unchecked::<SpFn, true>(
                 self.forward,
@@ -301,6 +325,9 @@ impl PriceBlackScholes {
     }
 }
 
+#[derive(Builder)]
+#[builder(derive(Clone, Debug))]
+#[builder(finish_fn(vis = "", name = build_internal))]
 pub struct ImpliedBlackVolatility {
     forward: f64,
     strike: f64,
@@ -309,65 +336,44 @@ pub struct ImpliedBlackVolatility {
     option_price: f64,
 }
 
-#[bon]
-impl ImpliedBlackVolatility {
-    #[builder]
-    pub fn new(
-        forward: f64,
-        strike: f64,
-        expiry: f64,
-        is_call: bool,
-        option_price: f64,
-    ) -> Option<Self> {
+impl<S: implied_black_volatility_builder::IsComplete> ImpliedBlackVolatilityBuilder<S> {
+    pub fn build(self) -> Option<ImpliedBlackVolatility> {
+        let implied_black_volatility = self.build_internal();
+
         if matches!(
-            forward.partial_cmp(&0.0),
+            implied_black_volatility.forward.partial_cmp(&0.0),
             Some(std::cmp::Ordering::Less) | None
-        ) || forward.is_infinite()
+        ) || implied_black_volatility.forward.is_infinite()
         {
             return None;
         }
         if matches!(
-            strike.partial_cmp(&0.0),
+            implied_black_volatility.strike.partial_cmp(&0.0),
             Some(std::cmp::Ordering::Less) | None
-        ) || strike.is_infinite()
+        ) || implied_black_volatility.strike.is_infinite()
         {
             return None;
         }
         if matches!(
-            expiry.partial_cmp(&0.0),
+            implied_black_volatility.expiry.partial_cmp(&0.0),
             Some(std::cmp::Ordering::Less) | None
         ) {
             return None;
         }
         if matches!(
-            option_price.partial_cmp(&0.0),
+            implied_black_volatility.option_price.partial_cmp(&0.0),
             Some(std::cmp::Ordering::Less) | None
-        ) || option_price.is_infinite()
+        ) || implied_black_volatility.option_price.is_infinite()
         {
             return None;
         }
-        Some(Self {
-            forward,
-            strike,
-            expiry,
-            is_call,
-            option_price,
-        })
+        Some(implied_black_volatility)
     }
 }
 
 impl ImpliedBlackVolatility {
     #[must_use]
     pub fn calculate<SpFn: SpecialFn>(&self) -> Option<f64> {
-        assert!(
-            self.option_price >= 0.0
-                && self.option_price.is_finite()
-                && self.forward >= 0.0
-                && self.forward.is_finite()
-                && self.strike >= 0.0
-                && self.strike.is_finite()
-                && self.expiry >= 0.0
-        );
         if self.is_call {
             lets_be_rational::implied_black_volatility_input_unchecked::<SpFn, true>(
                 self.option_price,
@@ -386,6 +392,9 @@ impl ImpliedBlackVolatility {
     }
 }
 
+#[derive(Builder)]
+#[builder(derive(Clone, Debug))]
+#[builder(finish_fn(vis = "", name = build_internal))]
 pub struct PriceBachelier {
     forward: f64,
     strike: f64,
@@ -394,46 +403,34 @@ pub struct PriceBachelier {
     is_call: bool,
 }
 
-#[bon]
-impl PriceBachelier {
-    #[builder]
-    pub fn new(forward: f64, strike: f64, vol: f64, expiry: f64, is_call: bool) -> Option<Self> {
-        if !forward.is_finite() {
+impl<S: price_bachelier_builder::IsComplete> PriceBachelierBuilder<S> {
+    pub fn build(self) -> Option<PriceBachelier> {
+        let price_bachelier = self.build_internal();
+        if !price_bachelier.forward.is_finite() {
             return None;
         }
-        if !strike.is_finite() {
-            return None;
-        }
-        if matches!(vol.partial_cmp(&0.0), Some(std::cmp::Ordering::Less) | None) {
+        if !price_bachelier.strike.is_finite() {
             return None;
         }
         if matches!(
-            expiry.partial_cmp(&0.0),
+            price_bachelier.volatility.partial_cmp(&0.0),
             Some(std::cmp::Ordering::Less) | None
         ) {
             return None;
         }
-        Some(Self {
-            forward,
-            strike,
-            volatility: vol,
-            expiry,
-            is_call,
-        })
+        if matches!(
+            price_bachelier.expiry.partial_cmp(&0.0),
+            Some(std::cmp::Ordering::Less) | None
+        ) {
+            return None;
+        }
+        Some(price_bachelier)
     }
 }
 
 impl PriceBachelier {
     #[must_use]
     pub fn calculate<SpFn: SpecialFn>(&self) -> f64 {
-        assert!(
-            self.volatility.is_finite()
-                && self.forward >= 0.0
-                && self.forward.is_finite()
-                && self.strike >= 0.0
-                && self.strike.is_finite()
-                && self.expiry >= 0.0
-        );
         if self.is_call {
             bachelier_impl::bachelier_price::<true>(
                 self.forward,
@@ -452,6 +449,9 @@ impl PriceBachelier {
     }
 }
 
+#[derive(Builder)]
+#[builder(derive(Clone, Debug))]
+#[builder(finish_fn(vis = "", name = build_internal))]
 pub struct ImpliedNormalVolatility {
     forward: f64,
     strike: f64,
@@ -460,42 +460,29 @@ pub struct ImpliedNormalVolatility {
     option_price: f64,
 }
 
-#[bon]
-impl ImpliedNormalVolatility {
-    #[builder]
-    pub fn new(
-        forward: f64,
-        strike: f64,
-        expiry: f64,
-        is_call: bool,
-        option_price: f64,
-    ) -> Option<Self> {
-        if !forward.is_finite() {
+impl<S: implied_normal_volatility_builder::IsComplete> ImpliedNormalVolatilityBuilder<S> {
+    pub fn build(self) -> Option<ImpliedNormalVolatility> {
+        let implied_normal_volatility = self.build_internal();
+        if !implied_normal_volatility.forward.is_finite() {
             return None;
         }
-        if !strike.is_finite() {
+        if !implied_normal_volatility.strike.is_finite() {
             return None;
         }
         if matches!(
-            expiry.partial_cmp(&0.0_f64),
+            implied_normal_volatility.expiry.partial_cmp(&0.0_f64),
             Some(std::cmp::Ordering::Less) | None
         ) {
             return None;
         }
         if matches!(
-            option_price.partial_cmp(&0.0_f64),
+            implied_normal_volatility.option_price.partial_cmp(&0.0_f64),
             Some(std::cmp::Ordering::Less) | None
-        ) || option_price.is_infinite()
+        ) || implied_normal_volatility.option_price.is_infinite()
         {
             return None;
         }
-        Some(Self {
-            forward,
-            strike,
-            expiry,
-            is_call,
-            option_price,
-        })
+        Some(implied_normal_volatility)
     }
 }
 

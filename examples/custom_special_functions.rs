@@ -36,7 +36,7 @@ fn main() {
         .strike(strike)
         .expiry(maturity)
         .is_call(is_call)
-        .vol(volatility)
+        .volatility(volatility)
         .build()
         .unwrap();
 
@@ -45,6 +45,7 @@ fn main() {
         .strike(strike)
         .expiry(maturity)
         .is_call(is_call);
+    let implied_vol_builder2 = implied_vol_builder.clone();
 
     // Use the custom special function implementation
     let price = price_builder.calculate::<MySpecialFn>();
@@ -59,12 +60,7 @@ fn main() {
 
     // Using the default special function implementation
     let price = price_builder.calculate::<DefaultSpecialFn>();
-    let implied_vol_builder = ImpliedBlackVolatility::builder()
-        .forward(forward)
-        .strike(strike)
-        .expiry(maturity)
-        .is_call(is_call);
-    let implied_vol = implied_vol_builder
+    let implied_vol = implied_vol_builder2
         .option_price(price)
         .build()
         .unwrap()

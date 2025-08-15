@@ -2,7 +2,7 @@ mod error_function;
 pub mod normal_distribution;
 
 use crate::special_function::error_function::{erf_cody, erfc_cody, erfcx_cody};
-use crate::special_function::normal_distribution::{inverse_norm_cdf, norm_pdf};
+use crate::special_function::normal_distribution::inverse_norm_cdf;
 use error_function::erfinv;
 
 /// The `SpecialFn` trait provides a collection of special mathematical functions.
@@ -72,15 +72,9 @@ pub trait SpecialFn {
     }
     #[inline(always)]
     #[must_use]
-    fn norm_pdf(x: f64) -> f64 {
-        norm_pdf(x)
-    }
-    #[inline(always)]
-    #[must_use]
     fn norm_cdf(x: f64) -> f64 {
         normal_distribution::norm_cdf::<Self>(x)
     }
-
     #[inline(always)]
     #[must_use]
     fn one_minus_erfcx(x: f64) -> f64 {
