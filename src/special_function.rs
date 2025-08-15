@@ -36,11 +36,6 @@ use error_function::erfinv;
 /// the value `z` such that the probability of a standard normal random variable `N(0, 1)` being
 /// less than `z` equals `x`.
 ///
-/// ## `norm_pdf`
-///
-/// Computes the probability density function of the standard normal distribution `N(0, 1)`.
-/// This function evaluates the PDF at a given input `x`.
-///
 /// ## `norm_cdf`
 /// Computes the Cumulative Distribution Function (CDF) of the standard normal distribution at a
 /// given `x`.
