@@ -605,15 +605,17 @@ mod tests {
         let k = 100.0;
         let t = f64::INFINITY;
         const Q: bool = true;
-        assert!(
-            ImpliedBlackVolatility::builder()
-                .option_price(price)
-                .forward(f)
-                .strike(k)
-                .expiry(t)
-                .is_call(Q)
-                .build()
-                .is_some()
-        )
+
+        let vol = ImpliedBlackVolatility::builder()
+            .option_price(price)
+            .forward(f)
+            .strike(k)
+            .expiry(t)
+            .is_call(Q)
+            .build()
+            .unwrap()
+            .calculate::<DefaultSpecialFn>()
+            .unwrap();
+        assert_eq!(vol, 0.0);
     }
 }
