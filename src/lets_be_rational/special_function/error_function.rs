@@ -1,7 +1,6 @@
-use crate::SpecialFn;
 use crate::fused_multiply_add::MulAdd;
-use crate::special_function::normal_distribution;
-use crate::special_function::normal_distribution::U_MAX;
+use crate::lets_be_rational::SpecialFn;
+use crate::lets_be_rational::special_function::normal_distribution;
 use std::cmp::Ordering;
 use std::f64::consts::FRAC_1_SQRT_2;
 use std::ops::Neg;
@@ -218,7 +217,7 @@ pub(super) fn one_minus_erfcx<SpFn: SpecialFn + ?Sized>(x: f64) -> f64 {
 
 #[inline(always)]
 pub(super) fn erfinv(e: f64) -> f64 {
-    if e.abs() < 2.0 * U_MAX {
+    if e.abs() < 2.0 * normal_distribution::U_MAX {
         normal_distribution::inverse_norm_cdfm_half_for_midrange_probabilities(0.5 * e)
             * FRAC_1_SQRT_2
     } else {
@@ -232,7 +231,9 @@ pub(super) fn erfinv(e: f64) -> f64 {
 
 #[cfg(test)]
 mod tests {
-    use crate::special_function::error_function::{THRESHOLD, XBIG, XNEG, erfc_cody, erfcx_cody};
+    use crate::lets_be_rational::special_function::error_function::{
+        THRESHOLD, XBIG, XNEG, erfc_cody, erfcx_cody,
+    };
 
     #[test]
     fn calerf_1() {

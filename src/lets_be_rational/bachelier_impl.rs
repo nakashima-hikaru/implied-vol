@@ -1,7 +1,7 @@
-use crate::constants::{ONE_OVER_SQRT_2_PI, SQRT_2_PI};
 use crate::fused_multiply_add::MulAdd;
-use crate::special_function::SpecialFn;
-use crate::special_function::normal_distribution::inv_norm_pdf;
+use crate::lets_be_rational::constants::{ONE_OVER_SQRT_2_PI, SQRT_2_PI};
+use crate::lets_be_rational::special_function::SpecialFn;
+use crate::lets_be_rational::special_function::normal_distribution::inv_norm_pdf;
 use std::cmp::Ordering;
 
 #[inline(always)]
@@ -180,7 +180,7 @@ pub fn implied_normal_volatility_input_unchecked<SpFn: SpecialFn, const IS_CALL:
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::special_function::DefaultSpecialFn;
+    use crate::lets_be_rational::special_function::DefaultSpecialFn;
     use rand::Rng;
 
     #[test]

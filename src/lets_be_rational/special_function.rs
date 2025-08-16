@@ -1,8 +1,8 @@
 mod error_function;
 pub mod normal_distribution;
 
-use crate::special_function::error_function::{erf_cody, erfc_cody, erfcx_cody};
-use crate::special_function::normal_distribution::inverse_norm_cdf;
+use crate::lets_be_rational::special_function::error_function::{erf_cody, erfc_cody, erfcx_cody};
+use crate::lets_be_rational::special_function::normal_distribution::inverse_norm_cdf;
 use error_function::erfinv;
 
 /// The `SpecialFn` trait provides a collection of special mathematical functions.
@@ -43,40 +43,69 @@ pub trait SpecialFn {
     #[inline(always)]
     #[must_use]
     fn erf(x: f64) -> f64 {
-        erf_cody(x)
+        DefaultSpecialFn::erf(x)
     }
     #[inline(always)]
     #[must_use]
     fn erfc(x: f64) -> f64 {
-        erfc_cody(x)
+        DefaultSpecialFn::erfc(x)
     }
     #[inline(always)]
     #[must_use]
     fn erfcx(x: f64) -> f64 {
-        erfcx_cody(x)
+        DefaultSpecialFn::erfcx(x)
     }
     #[inline(always)]
     #[must_use]
     fn erfinv(x: f64) -> f64 {
-        erfinv(x)
+        DefaultSpecialFn::erfinv(x)
     }
     #[inline(always)]
     #[must_use]
     fn inverse_norm_cdf(x: f64) -> f64 {
-        inverse_norm_cdf(x)
+        DefaultSpecialFn::inverse_norm_cdf(x)
     }
     #[inline(always)]
     #[must_use]
     fn norm_cdf(x: f64) -> f64 {
-        normal_distribution::norm_cdf::<Self>(x)
+        DefaultSpecialFn::norm_cdf(x)
     }
     #[inline(always)]
     #[must_use]
     fn one_minus_erfcx(x: f64) -> f64 {
-        error_function::one_minus_erfcx::<Self>(x)
+        DefaultSpecialFn::one_minus_erfcx(x)
     }
 }
 
 /// A struct representing the default implementation of a special function.
 pub struct DefaultSpecialFn;
-impl SpecialFn for DefaultSpecialFn {}
+impl SpecialFn for DefaultSpecialFn {
+    #[inline(always)]
+    fn erf(x: f64) -> f64 {
+        erf_cody(x)
+    }
+    #[inline(always)]
+    fn erfc(x: f64) -> f64 {
+        erfc_cody(x)
+    }
+    #[inline(always)]
+    fn erfcx(x: f64) -> f64 {
+        erfcx_cody(x)
+    }
+    #[inline(always)]
+    fn erfinv(x: f64) -> f64 {
+        erfinv(x)
+    }
+    #[inline(always)]
+    fn inverse_norm_cdf(x: f64) -> f64 {
+        inverse_norm_cdf(x)
+    }
+    #[inline(always)]
+    fn norm_cdf(x: f64) -> f64 {
+        normal_distribution::norm_cdf::<Self>(x)
+    }
+    #[inline(always)]
+    fn one_minus_erfcx(x: f64) -> f64 {
+        error_function::one_minus_erfcx::<Self>(x)
+    }
+}

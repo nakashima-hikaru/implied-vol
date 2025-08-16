@@ -1,16 +1,22 @@
-use crate::bs_option_price;
-use crate::constants::{
+pub(super) mod bachelier_impl;
+pub(super) mod bs_option_price;
+mod constants;
+mod rational_cubic;
+pub mod special_function;
+
+use crate::fused_multiply_add::MulAdd;
+
+use crate::lets_be_rational::constants::{
     FRAC_2_PI_SQRT_27, FRAC_ONE_SQRT_3, FRAC_SQRT_3_CUBIC_ROOT_2_PI, SQRT_2_OVER_PI, SQRT_2_PI,
     SQRT_3, SQRT_DBL_MAX, SQRT_PI_OVER_2,
 };
-use crate::fused_multiply_add::MulAdd;
-use crate::rational_cubic::{
+use crate::lets_be_rational::rational_cubic::{
     convex_rational_cubic_control_parameter_to_fit_second_derivative_at_left_side,
     convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side,
     rational_cubic_interpolation,
 };
-use crate::special_function::SpecialFn;
-use crate::special_function::normal_distribution::inv_norm_pdf;
+use crate::lets_be_rational::special_function::SpecialFn;
+use crate::lets_be_rational::special_function::normal_distribution::inv_norm_pdf;
 use std::f64::consts::{FRAC_1_SQRT_2, SQRT_2};
 use std::ops::{Div, Neg};
 
@@ -469,8 +475,10 @@ pub fn implied_black_volatility_input_unchecked<SpFn: SpecialFn, const IS_CALL: 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::bs_option_price::{black_input_unchecked, scaled_normalised_black_and_ln_vega};
-    use crate::special_function::DefaultSpecialFn;
+    use crate::lets_be_rational::bs_option_price::{
+        black_input_unchecked, scaled_normalised_black_and_ln_vega,
+    };
+    use crate::lets_be_rational::special_function::DefaultSpecialFn;
     use rand::Rng;
 
     pub(crate) const FOURTH_ROOT_DBL_EPSILON: f64 = f64::from_bits(0x3f20000000000000);

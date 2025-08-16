@@ -1,6 +1,8 @@
-use crate::SpecialFn;
-use crate::constants::{HALF_OF_LN_2_PI, SIXTEENTH_ROOT_DBL_EPSILON, SQRT_2_PI, SQRT_PI_OVER_2};
 use crate::fused_multiply_add::MulAdd;
+use crate::lets_be_rational::constants::{
+    HALF_OF_LN_2_PI, SIXTEENTH_ROOT_DBL_EPSILON, SQRT_2_PI, SQRT_PI_OVER_2,
+};
+use crate::lets_be_rational::special_function::SpecialFn;
 use std::f64::consts::FRAC_1_SQRT_2;
 use std::ops::Neg;
 

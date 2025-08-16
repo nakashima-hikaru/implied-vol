@@ -1,5 +1,4 @@
-//! This module provides a Rust implementation of Peter Jäckel's original C++ code for calculating
-//! implied volatilities in financial derivatives.
+//! This module provides a pure Rust implementation of calculating implied volatilities.
 //! To learn more about the algorithms, please refer to Peter Jäckel's papers [Let's Be Rational](http://www.jaeckel.org/LetsBeRational.pdf) and [Implied Normal Volatility](http://www.jaeckel.org/ImpliedNormalVolatility.pdf).
 //!
 //! # Features
@@ -40,18 +39,15 @@
 //! assert!(((price - 20.0) / price).abs()<= 2.0 * f64::EPSILON);
 //! ```
 
-pub use crate::special_function::{DefaultSpecialFn, SpecialFn};
 use bon::Builder;
 #[cfg(feature = "bench")]
 pub mod cxx;
 
-mod bachelier_impl;
-mod bs_option_price;
-mod constants;
 mod fused_multiply_add;
 mod lets_be_rational;
-mod rational_cubic;
-pub mod special_function;
+
+pub use crate::lets_be_rational::special_function::DefaultSpecialFn;
+pub use crate::lets_be_rational::special_function::SpecialFn;
 
 /// Calculates the implied black volatility using a transformed rational guess with limited iterations.
 ///
@@ -139,11 +135,11 @@ pub fn black_scholes_option_price(
     is_call: bool,
 ) -> f64 {
     if is_call {
-        bs_option_price::black_input_unchecked::<DefaultSpecialFn, true>(
+        lets_be_rational::bs_option_price::black_input_unchecked::<DefaultSpecialFn, true>(
             forward, strike, volatility, expiry,
         )
     } else {
-        bs_option_price::black_input_unchecked::<DefaultSpecialFn, false>(
+        lets_be_rational::bs_option_price::black_input_unchecked::<DefaultSpecialFn, false>(
             forward, strike, volatility, expiry,
         )
     }
@@ -181,19 +177,15 @@ pub fn implied_normal_volatility(
     is_call: bool,
 ) -> Option<f64> {
     if is_call {
-        bachelier_impl::implied_normal_volatility_input_unchecked::<DefaultSpecialFn, true>(
-            option_price,
-            forward,
-            strike,
-            expiry,
-        )
+        lets_be_rational::bachelier_impl::implied_normal_volatility_input_unchecked::<
+            DefaultSpecialFn,
+            true,
+        >(option_price, forward, strike, expiry)
     } else {
-        bachelier_impl::implied_normal_volatility_input_unchecked::<DefaultSpecialFn, false>(
-            option_price,
-            forward,
-            strike,
-            expiry,
-        )
+        lets_be_rational::bachelier_impl::implied_normal_volatility_input_unchecked::<
+            DefaultSpecialFn,
+            false,
+        >(option_price, forward, strike, expiry)
     }
 }
 
@@ -229,9 +221,13 @@ pub fn bachelier_option_price(
     is_call: bool,
 ) -> f64 {
     if is_call {
-        bachelier_impl::bachelier_price::<true>(forward, strike, volatility, expiry)
+        lets_be_rational::bachelier_impl::bachelier_price::<true>(
+            forward, strike, volatility, expiry,
+        )
     } else {
-        bachelier_impl::bachelier_price::<false>(forward, strike, volatility, expiry)
+        lets_be_rational::bachelier_impl::bachelier_price::<false>(
+            forward, strike, volatility, expiry,
+        )
     }
 }
 
@@ -308,14 +304,14 @@ impl PriceBlackScholes {
     #[must_use]
     pub fn calculate<SpFn: SpecialFn>(&self) -> f64 {
         if self.is_call {
-            bs_option_price::black_input_unchecked::<SpFn, true>(
+            lets_be_rational::bs_option_price::black_input_unchecked::<SpFn, true>(
                 self.forward,
                 self.strike,
                 self.volatility,
                 self.expiry,
             )
         } else {
-            bs_option_price::black_input_unchecked::<SpFn, false>(
+            lets_be_rational::bs_option_price::black_input_unchecked::<SpFn, false>(
                 self.forward,
                 self.strike,
                 self.volatility,
@@ -432,14 +428,14 @@ impl PriceBachelier {
     #[must_use]
     pub fn calculate<SpFn: SpecialFn>(&self) -> f64 {
         if self.is_call {
-            bachelier_impl::bachelier_price::<true>(
+            lets_be_rational::bachelier_impl::bachelier_price::<true>(
                 self.forward,
                 self.strike,
                 self.volatility,
                 self.expiry,
             )
         } else {
-            bachelier_impl::bachelier_price::<false>(
+            lets_be_rational::bachelier_impl::bachelier_price::<false>(
                 self.forward,
                 self.strike,
                 self.volatility,
@@ -498,14 +494,14 @@ impl ImpliedNormalVolatility {
                 && self.expiry >= 0.0_f64
         ); // never panics because this is validated in the builder
         if self.is_call {
-            bachelier_impl::implied_normal_volatility_input_unchecked::<SpFn, true>(
+            lets_be_rational::bachelier_impl::implied_normal_volatility_input_unchecked::<SpFn, true>(
                 self.option_price,
                 self.forward,
                 self.strike,
                 self.expiry,
             )
         } else {
-            bachelier_impl::implied_normal_volatility_input_unchecked::<SpFn, false>(
+            lets_be_rational::bachelier_impl::implied_normal_volatility_input_unchecked::<SpFn, false>(
                 self.option_price,
                 self.forward,
                 self.strike,
