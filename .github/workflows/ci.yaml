@@ -36,11 +36,11 @@ jobs:
         uses: dtolnay/rust-toolchain@nightly
 
       - name: Run benchmarks
-        run: RUSTFLAGS="-C target-cpu=native -C target-feature=+fma -C llvm-args=--fp-contract=fast" cargo +nightly bench --features bench
+        run: RUSTFLAGS="-C target-cpu=native -C target-feature=+fma -C llvm-args=--fp-contract=fast" cargo +nightly bench --features cxx_bench
         env:
           RUSTFLAGS: --cfg=bench
 
       - name: Run benchmarks with FMA
-        run: RUSTFLAGS="-C target-cpu=native -C target-feature=+fma -C llvm-args=--fp-contract=fast" cargo +nightly bench --features fma,bench
+        run: RUSTFLAGS="-C target-cpu=native -C target-feature=+fma -C llvm-args=--fp-contract=fast" cargo +nightly bench --features fma,cxx_bench
         env:
           RUSTFLAGS: --cfg=bench
