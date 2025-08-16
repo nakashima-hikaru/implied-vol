@@ -25,7 +25,7 @@ fn call_atm(b: &mut Bencher) {
     b.iter(|| iv_builder.calculate::<DefaultSpecialFn>().unwrap());
 }
 
-#[cfg(feature = "bench")]
+#[cfg(feature = "cxx_bench")]
 #[bench]
 fn call_atm_cpp(b: &mut Bencher) {
     let price = 0.01;
@@ -57,7 +57,7 @@ fn call_itm(b: &mut Bencher) {
     b.iter(|| iv_builder.calculate::<DefaultSpecialFn>().unwrap());
 }
 
-#[cfg(feature = "bench")]
+#[cfg(feature = "cxx_bench")]
 #[bench]
 fn call_itm_cpp(b: &mut Bencher) {
     let seed: [u8; 32] = [13; 32];
@@ -92,7 +92,7 @@ fn call_otm(b: &mut Bencher) {
     b.iter(|| iv_builder.calculate::<DefaultSpecialFn>().unwrap());
 }
 
-#[cfg(feature = "bench")]
+#[cfg(feature = "cxx_bench")]
 #[bench]
 fn call_otm_cpp(b: &mut Bencher) {
     let seed: [u8; 32] = [13; 32];
@@ -124,7 +124,7 @@ fn put_atm(b: &mut Bencher) {
     b.iter(|| iv_builder.calculate::<DefaultSpecialFn>().unwrap());
 }
 
-#[cfg(feature = "bench")]
+#[cfg(feature = "cxx_bench")]
 #[bench]
 fn put_atm_cpp(b: &mut Bencher) {
     let price = 0.01;
@@ -156,7 +156,7 @@ fn put_itm(b: &mut Bencher) {
     b.iter(|| iv_builder.calculate::<DefaultSpecialFn>().unwrap());
 }
 
-#[cfg(feature = "bench")]
+#[cfg(feature = "cxx_bench")]
 #[bench]
 fn put_itm_cpp(b: &mut Bencher) {
     let seed: [u8; 32] = [13; 32];
@@ -191,7 +191,7 @@ fn put_otm(b: &mut Bencher) {
     b.iter(|| iv_builder.calculate::<DefaultSpecialFn>().unwrap());
 }
 
-#[cfg(feature = "bench")]
+#[cfg(feature = "cxx_bench")]
 #[bench]
 fn put_otm_cpp(b: &mut Bencher) {
     let seed: [u8; 32] = [13; 32];

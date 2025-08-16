@@ -1,5 +1,5 @@
 fn main() {
-    if !cfg!(feature = "bench") {
+    if !cfg!(feature = "cxx_bench") {
         return;
     }
     println!("Running build.rs for benchmarks only...");

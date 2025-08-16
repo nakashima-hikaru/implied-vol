@@ -12,7 +12,7 @@ categories = ["finance"]
 [features]
 default = []
 fma = []
-bench = ["cxx"]
+cxx_bench = ["cxx"]
 
 [dependencies]
 bon = "3.7.0"

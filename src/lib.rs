@@ -163,7 +163,7 @@
 //! assert!(out_of_range.is_none());
 //! ```
 mod builder;
-#[cfg(feature = "bench")]
+#[cfg(feature = "cxx_bench")]
 pub mod cxx;
 mod fused_multiply_add;
 mod lets_be_rational;
