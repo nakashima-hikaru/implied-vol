@@ -8,6 +8,7 @@ fn main() {
         .file("source/normaldistribution.cpp")
         .file("source/rationalcubic.cpp")
         .file("source/erf_cody.cpp")
+        .file("source/ImpliedNormalVolatility.cpp")
         .flag("-finput-charset=UTF-8")
         .flag("-fextended-identifiers")
         .flag("-O3")
@@ -28,4 +29,5 @@ fn main() {
     println!("cargo:rerun-if-changed=source/normaldistribution.cpp");
     println!("cargo:rerun-if-changed=source/rationalcubic.h");
     println!("cargo:rerun-if-changed=source/rationalcubic.cpp");
+    println!("cargo:rerun-if-changed=source/ImpliedNormalVolatility.cpp");
 }

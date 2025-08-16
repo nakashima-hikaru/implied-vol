@@ -26,10 +26,9 @@ Both papers and related materials are available on [Peter Jäckel's website](htt
 ## Performance
 
 Benchmark results, available via our [GitHub Actions](https://github.com/nakashima-hikaru/implied-vol/actions),
-compare the execution speed against Jäckel’s original reference C++ implementation.
-With aggressive compiler optimizations applied to both implementations, this Rust crate often outperforms the C++
-version,
-likely benefiting from Rust-specific optimizations beyond pure numerical computation.
+compare the execution speed against FFI to Jäckel’s original reference C++ implementation.
+With aggressive compiler optimizations applied to both implementations, this Rust crate often outperforms the C++ FFI
+version.
 
 ## Precision
 
