@@ -8,12 +8,12 @@ use std::ops::Neg;
 const FRAC_SQRT_2_PI: f64 = f64::from_bits(0x3fd9_8845_33d4_3651);
 
 #[inline(always)]
-pub(crate) fn norm_pdf(x: f64) -> f64 {
+pub fn norm_pdf(x: f64) -> f64 {
     FRAC_SQRT_2_PI * (-0.5 * x * x).exp()
 }
 
 #[inline(always)]
-pub(crate) fn inv_norm_pdf(x: f64) -> f64 {
+pub fn inv_norm_pdf(x: f64) -> f64 {
     SQRT_2_PI * (0.5 * x * x).exp()
 }
 

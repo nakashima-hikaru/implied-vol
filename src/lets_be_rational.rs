@@ -1,5 +1,5 @@
-pub(super) mod bachelier_impl;
-pub(super) mod bs_option_price;
+pub mod bachelier_impl;
+pub mod bs_option_price;
 mod constants;
 mod rational_cubic;
 pub mod special_function;

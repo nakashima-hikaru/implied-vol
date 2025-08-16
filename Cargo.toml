@@ -28,7 +28,7 @@ optional = true
 cxx-build = "1"
 
 [lints.clippy]
-#pedantic = { level = "warn", priority = 1 }
+pedantic = { level = "warn", priority = 1 }
 #restriction = "warn"
 cargo = { level = "warn", priority = 1 }
 #nursery = "warn"
