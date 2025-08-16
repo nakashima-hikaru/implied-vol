@@ -4,7 +4,7 @@ use rand::Rng;
 
 extern crate test;
 
-use implied_vol::implied_black_volatility;
+use implied_vol::{DefaultSpecialFn, ImpliedBlackVolatility};
 use test::Bencher;
 
 #[bench]
@@ -14,7 +14,15 @@ fn call_atm(b: &mut Bencher) {
     let k = f;
     let t = 1.0;
     let q = true;
-    b.iter(|| implied_black_volatility(price, f, k, t, q));
+    let iv_builder = ImpliedBlackVolatility::builder()
+        .option_price(price)
+        .forward(f)
+        .strike(k)
+        .expiry(t)
+        .is_call(q)
+        .build()
+        .unwrap();
+    b.iter(|| iv_builder.calculate::<DefaultSpecialFn>().unwrap());
 }
 
 #[bench]
@@ -27,7 +35,15 @@ fn call_itm(b: &mut Bencher) {
     let k = 1.0 * r;
     let t = 1e5 * r3;
     let q = true;
-    b.iter(|| implied_black_volatility(price, f, k, t, q));
+    let iv_builder = ImpliedBlackVolatility::builder()
+        .option_price(price)
+        .forward(f)
+        .strike(k)
+        .expiry(t)
+        .is_call(q)
+        .build_unchecked();
+    // .unwrap();
+    b.iter(|| iv_builder.calculate::<DefaultSpecialFn>().unwrap());
 }
 
 #[bench]
@@ -40,7 +56,15 @@ fn call_otm(b: &mut Bencher) {
     let k = 1.0;
     let t = 1e5 * r3;
     let q = true;
-    b.iter(|| implied_black_volatility(price, f, k, t, q));
+    let iv_builder = ImpliedBlackVolatility::builder()
+        .option_price(price)
+        .forward(f)
+        .strike(k)
+        .expiry(t)
+        .is_call(q)
+        .build()
+        .unwrap();
+    b.iter(|| iv_builder.calculate::<DefaultSpecialFn>().unwrap());
 }
 
 #[bench]
@@ -50,7 +74,15 @@ fn put_atm(b: &mut Bencher) {
     let k = f;
     let t = 1.0;
     let q = false;
-    b.iter(|| implied_black_volatility(price, f, k, t, q));
+    let iv_builder = ImpliedBlackVolatility::builder()
+        .option_price(price)
+        .forward(f)
+        .strike(k)
+        .expiry(t)
+        .is_call(q)
+        .build()
+        .unwrap();
+    b.iter(|| iv_builder.calculate::<DefaultSpecialFn>().unwrap());
 }
 #[bench]
 fn put_itm(b: &mut Bencher) {
@@ -62,7 +94,15 @@ fn put_itm(b: &mut Bencher) {
     let k = 1.0 * r;
     let t = 1e5 * r3;
     let q = false;
-    b.iter(|| implied_black_volatility(price, f, k, t, q));
+    let iv_builder = ImpliedBlackVolatility::builder()
+        .option_price(price)
+        .forward(f)
+        .strike(k)
+        .expiry(t)
+        .is_call(q)
+        .build()
+        .unwrap();
+    b.iter(|| iv_builder.calculate::<DefaultSpecialFn>().unwrap());
 }
 
 #[bench]
@@ -75,7 +115,15 @@ fn put_otm(b: &mut Bencher) {
     let k = 1.0;
     let t = 1e5 * r3;
     let q = false;
-    b.iter(|| implied_black_volatility(price, f, k, t, q));
+    let iv_builder = ImpliedBlackVolatility::builder()
+        .option_price(price)
+        .forward(f)
+        .strike(k)
+        .expiry(t)
+        .is_call(q)
+        .build()
+        .unwrap();
+    b.iter(|| iv_builder.calculate::<DefaultSpecialFn>().unwrap());
 }
 #[cfg(feature = "bench")]
 use implied_vol::cxx::ffi::ImpliedBlackVolatility;
