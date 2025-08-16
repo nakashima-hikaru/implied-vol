@@ -414,13 +414,13 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
             break;
         }
         assert!(s > 0.0);
-        debug_assert!(theta_x < 0.0);
+        debug_assert!(theta_x < 0.0_f64);
         let b = bs_option_price::normalised_black::<SpFn>(theta_x, s);
         let bp = bs_option_price::normalised_vega(theta_x, s);
         let nu = (beta - b) / bp;
         let h = theta_x / s;
         let h2 = s.mul_add2(-0.25, h * h / s);
-        let h3 = h2.mul_add2(h2, -(3.0 * (h / s).powi(2))) - 0.25;
+        let h3 = h2.mul_add2(h2, -(3.0 * (h / s).powi(2))) - 0.25_f64;
         ds = nu * householder3_factor(nu, h2, h3);
         s += ds;
         // the upstream uses the following code, but it is not performant on my benchmark
@@ -446,24 +446,16 @@ pub fn implied_black_volatility_input_unchecked<SpFn: SpecialFn, const IS_CALL: 
     t: f64,
 ) -> Option<f64> {
     if price >= if IS_CALL { f } else { k } {
-        return if price == if IS_CALL { f } else { k } {
-            Some(f64::INFINITY)
-        } else {
-            None
-        };
+        return (price == if IS_CALL { f } else { k }).then_some(f64::INFINITY);
     }
     let intrinsic_value = if IS_CALL { f - k } else { k - f };
-    let normalized_time_value = if intrinsic_value > 0.0 {
+    let normalized_time_value = if intrinsic_value > 0.0_f64 {
         price - intrinsic_value
     } else {
         price
     } / (f.sqrt() * k.sqrt());
-    if normalized_time_value <= 0.0 {
-        return if normalized_time_value == 0.0 {
-            Some(0.0)
-        } else {
-            None
-        };
+    if normalized_time_value <= 0.0_f64 {
+        return (normalized_time_value == 0.0).then_some(0.0);
     }
     Some(if f == k {
         implied_normalised_volatility_atm::<SpFn>(normalized_time_value) / t.sqrt()
