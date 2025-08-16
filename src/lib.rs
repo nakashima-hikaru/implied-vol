@@ -6,6 +6,9 @@
 //! - undiscounted European option prices under the **Black–Scholes** model,
 //! - undiscounted European option prices under the **Bachelier** (Normal) model.
 //!
+//! Additionally, the crate provides a `SpecialFn` trait for implementing special functions such as `erf`
+//! and `normal_cdf` used by the underlying algorithms.
+//!
 //! # Getting started
 //!
 //! Add the crate to your `Cargo.toml`:
