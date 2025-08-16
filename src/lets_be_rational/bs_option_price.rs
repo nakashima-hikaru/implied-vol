@@ -33,8 +33,8 @@ fn is_region2(x: f64, s: f64) -> bool {
 
 #[inline(always)]
 pub fn scaled_normalised_black_and_ln_vega<SpFn: SpecialFn>(x: f64, s: f64) -> (f64, f64) {
-    assert!(x < 0.0);
-    assert!(s > 0.0);
+    debug_assert!(x < 0.0);
+    debug_assert!(s > 0.0);
     let ln_vega = ln_normalised_vega(x, s);
     if is_region1(x, s) {
         (
@@ -248,7 +248,7 @@ fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
         99.347,
     ];
 
-    assert!(h < ETA.abs().neg() && h < TAU + 0.5 - h + ETA);
+    debug_assert!(h < ETA.abs().neg() && h < TAU + 0.5 - h + ETA);
     let e = (t / h).powi(2);
     let r = (h + t) * (h - t);
     let q = (h / r).powi(2);
@@ -450,7 +450,7 @@ fn normalised_black_with_optimal_use_of_codys_functions<SpFn: SpecialFn>(x: f64,
 
 #[inline(always)]
 pub fn normalised_vega(x: f64, s: f64) -> f64 {
-    assert!(s > 0.0);
+    debug_assert!(s > 0.0);
     let h = x / s;
     let t = 0.5 * s;
     SQRT_2_PI.recip() * (-0.5 * h.mul_add2(h, t * t)).exp()
@@ -458,7 +458,7 @@ pub fn normalised_vega(x: f64, s: f64) -> f64 {
 
 #[inline(always)]
 pub fn inv_normalised_vega(x: f64, s: f64) -> f64 {
-    assert!(s > 0.0);
+    debug_assert!(s > 0.0);
     let h = x / s;
     let t = 0.5 * s;
     SQRT_2_PI * (0.5 * h.mul_add2(h, t * t)).exp()
@@ -484,7 +484,7 @@ pub fn black_input_unchecked<SpFn: SpecialFn, const IS_CALL: bool>(
     t: f64,
 ) -> f64 {
     let s = sigma * t.sqrt();
-    assert!(s >= 0.0);
+    debug_assert!(s >= 0.0);
     if k == f {
         f * SpFn::erf((0.5 * FRAC_1_SQRT_2) * s)
     } else {

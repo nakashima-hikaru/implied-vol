@@ -166,7 +166,7 @@ pub(super) fn erfc_cody(x: f64) -> f64 {
 #[inline(always)]
 #[allow(clippy::neg_cmp_op_on_partial_ord)] // for performance reason
 fn erfcx_cody_above_threshold(y: f64) -> f64 {
-    assert!(matches!(
+    debug_assert!(matches!(
         y.partial_cmp(&THRESHOLD),
         Some(Ordering::Greater) | None
     ));

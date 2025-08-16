@@ -255,7 +255,7 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
             let mut ds = 1.0_f64;
             let mut final_trial = false;
             while ds.abs() > f64::EPSILON * s {
-                assert!(s > 0.0);
+                debug_assert!(s > 0.0);
                 let (bx, ln_vega) =
                     bs_option_price::scaled_normalised_black_and_ln_vega::<SpFn>(theta_x, s);
                 let ln_b = bx.ln() + ln_vega;
@@ -297,7 +297,7 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
                     householder3_factor(v, h2, h3)
                 };
                 s += ds;
-                assert!(s > 0.0);
+                debug_assert!(s > 0.0);
                 if final_trial {
                     return s;
                 }
@@ -314,10 +314,10 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
             false,
         >(h, s_c - s_l, inv_v, 0.0);
         s = rational_cubic_interpolation(beta - b_l, h, (s_l, s_c), inv_v, r_im);
-        assert!(s > 0.0);
+        debug_assert!(s > 0.0);
     } else {
         let s_u = SQRT_PI_OVER_2.mul_add2(2.0 - ome, s_c);
-        assert!(s_u > 0.0);
+        debug_assert!(s_u > 0.0);
         let b_u = b_u_over_b_max(s_c) * b_max;
         if beta <= b_u {
             let inv_v = (
@@ -330,7 +330,7 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
                     false,
                 >(h, s_u - s_c, inv_v, 0.0);
             s = rational_cubic_interpolation(beta - b_c, h, (s_c, s_u), inv_v, r_u_m);
-            assert!(s > 0.0);
+            debug_assert!(s > 0.0);
         } else {
             let (f_upper_map_h, d_f_upper_map_h_d_beta, d2_f_upper_map_h_d_beta2) =
                 compute_f_upper_map_and_first_two_derivatives::<SpFn>(theta_x, s_u);
@@ -413,7 +413,7 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
         if ds.abs() <= f64::EPSILON * s {
             break;
         }
-        assert!(s > 0.0);
+        debug_assert!(s > 0.0);
         debug_assert!(theta_x < 0.0_f64);
         let b = bs_option_price::normalised_black::<SpFn>(theta_x, s);
         let bp = bs_option_price::normalised_vega(theta_x, s);
@@ -492,7 +492,7 @@ mod tests {
         (0.5 * theta_x).exp() - (-0.5 * theta_x).exp()
     }
     fn scaled_normalised_black(theta_x: f64, s: f64) -> f64 {
-        assert!(s > 0.0 && theta_x != 0.0);
+        debug_assert!(s > 0.0 && theta_x != 0.0);
         (if theta_x > 0.0 {
             normalised_intrinsic(theta_x)
                 * SQRT_2_PI
@@ -533,7 +533,7 @@ mod tests {
                 implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t)
                     .unwrap();
             let reprice = black_input_unchecked::<DefaultSpecialFn, Q>(f, k, sigma, t);
-            assert!(
+            debug_assert!(
                 (price - reprice).abs() / price < 4.0 * f64::EPSILON,
                 "{f},{k},{t},{sigma},{price},{reprice},{}",
                 (price - reprice).abs() / price / f64::EPSILON
@@ -553,7 +553,7 @@ mod tests {
             let sigma2 =
                 implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t)
                     .unwrap();
-            assert!(
+            debug_assert!(
                 (sigma - sigma2).abs() / sigma
                     <= 1.0
                         + black_accuracy_factor((f / k).ln(), sigma * t.sqrt(), 1.0).recip()

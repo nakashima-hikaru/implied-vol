@@ -14,9 +14,9 @@ fn main() {
     // - Forward must be non-negative and finite
     // - Strike must be non-negative and finite
     // - Expiry must be non-negative but may be infinite
-    assert!(implied_vol_builder.is_some());
+    debug_assert!(implied_vol_builder.is_some());
     let implied_vol = implied_vol_builder.unwrap().calculate::<DefaultSpecialFn>();
     // If None, then implied volatility does not exist under the given inputs:
-    assert!(implied_vol.is_some());
+    debug_assert!(implied_vol.is_some());
     println!("{}", implied_vol.unwrap());
 }
