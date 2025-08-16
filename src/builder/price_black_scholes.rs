@@ -1,39 +1,23 @@
 use crate::{SpecialFn, lets_be_rational};
 use bon::Builder;
 
-/// A struct representing the parameters required for calculating the price of an option
-/// using the Black-Scholes model.
+/// Builder-backed container for computing undiscounted European option prices
+/// under the Black–Scholes model.
 ///
-/// This struct is marked with the `Builder` derive macro, which provides a builder pattern
-/// for constructing instances of `PriceBlackScholes`. The builder derives `Clone` and `Debug`
-/// traits for convenient usage.
+/// Construct instances with `PriceBlackScholes::builder()`. The builder performs
+/// basic domain validation when you call `.build()`. Use `.build_unchecked()` to
+/// skip validation when you know inputs are already valid.
 ///
-/// # Fields
-/// - `forward` (f64): The forward price of the underlying asset.
-/// - `strike` (f64): The strike price of the option.
-/// - `volatility` (f64): The volatility of the underlying asset.
-/// - `expiry` (f64): The time to expiration of the option, expressed in years.
-/// - `is_call` (bool): A flag indicating whether the option is a call option (`true`)
-///   or a put option (`false`).
+/// Fields:
+/// - `forward`: forward price of the underlying (F). Must be finite.
+/// - `strike`: strike price (K). Must be finite.
+/// - `volatility`: volatility (σ). Must be finite and `σ >= 0`.
+/// - `expiry`: time to expiry (T). Must be finite and `T >= 0`.
+/// - `is_call`: `true` to price a call option, `false` to price a put option.
 ///
-/// # Builder
-/// - The `builder` provides a convenient way to create an instance of `PriceBlackScholes`.
-/// - The custom `finish_fn` is named `build_internal` and has private visibility to
-///   restrict its direct usage, ensuring encapsulation.
-///
-/// # Example
-/// ```rust
-/// use implied_vol::PriceBlackScholes;
-///
-/// let option_params = PriceBlackScholes::builder()
-///     .forward(100.0)
-///     .strike(95.0)
-///     .volatility(0.2)
-///     .expiry(1.0)
-///     .is_call(true)
-///     .build()
-///     .unwrap();
-/// ```
+/// The `calculate::<SpFn>()` method performs the numerical evaluation and uses a
+/// `SpecialFn` implementation for any special-function approximations required
+/// by the numerical routines.
 #[derive(Builder)]
 #[builder(derive(Clone, Debug))]
 #[builder(finish_fn(vis = "", name = build_internal))]
@@ -46,18 +30,29 @@ pub struct PriceBlackScholes {
 }
 
 impl<S: price_black_scholes_builder::IsComplete> PriceBlackScholesBuilder<S> {
+    /// Validate builder inputs and construct `PriceBlackScholes`.
+    ///
+    /// Validation performed:
+    /// - `forward` must be finite.
+    /// - `strike` must be finite.
+    /// - `volatility` must be non-negative (`σ >= 0`) and finite.
+    /// - `expiry` must be non-negative (`T >= 0`) and not NaN.
+    ///
+    /// Returns `Some(PriceBlackScholes)` when all checks pass; otherwise returns
+    /// `None`.
     pub fn build(self) -> Option<PriceBlackScholes> {
         let price_black_scholes = self.build_internal();
-        if !price_black_scholes.forward.is_finite() {
+        if !price_black_scholes.forward.is_finite() || price_black_scholes.forward <= 0.0 {
             return None;
         }
-        if !price_black_scholes.strike.is_finite() {
+        if !price_black_scholes.strike.is_finite() || price_black_scholes.strike <= 0.0 {
             return None;
         }
         if matches!(
             price_black_scholes.volatility.partial_cmp(&0.0),
             Some(std::cmp::Ordering::Less) | None
-        ) {
+        ) || !price_black_scholes.volatility.is_finite()
+        {
             return None;
         }
         if matches!(
@@ -68,12 +63,27 @@ impl<S: price_black_scholes_builder::IsComplete> PriceBlackScholesBuilder<S> {
         }
         Some(price_black_scholes)
     }
+
+    /// Construct `PriceBlackScholes` without performing validation checks.
+    ///
+    /// Use this when you have externally guaranteed that the inputs are valid
+    /// or when you want to avoid the runtime cost of validation.
     pub fn build_unchecked(self) -> PriceBlackScholes {
         self.build_internal()
     }
 }
 
 impl PriceBlackScholes {
+    /// Compute the undiscounted Black–Scholes option price for the stored inputs.
+    ///
+    /// # Type parameter
+    /// - `SpFn: SpecialFn` — implementation used for internal special-function
+    ///   evaluations (e.g., approximations used by the algorithm). Use the crate's
+    ///   `DefaultSpecialFn` for the default behavior or provide a custom
+    ///   implementation to change numerical characteristics.
+    ///
+    /// # Returns
+    /// The computed undiscounted option price as `f64`.
     #[must_use]
     #[inline(always)]
     pub fn calculate<SpFn: SpecialFn>(&self) -> f64 {
