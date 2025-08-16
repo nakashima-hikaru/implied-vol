@@ -16,6 +16,7 @@ fn main() {
     // - Expiry must be non-negative but may be infinite
     assert!(implied_vol_builder.is_some());
     let implied_vol = implied_vol_builder.unwrap().calculate::<DefaultSpecialFn>();
-    // Check if :
+    // If None, then implied volatility does not exist under the given inputs:
     assert!(implied_vol.is_some());
+    println!("{}", implied_vol.unwrap());
 }
