@@ -45,10 +45,6 @@ constexpr double ONE_OVER_SQRT_TWO_PI = 0.39894228040143267793994605993438186847
 # endif
 #endif
 
-EXPORT_EXTERN_C double DblEpsilon() { return DBL_EPSILON; }
-
-EXPORT_EXTERN_C double DblMin() { return DBL_MIN; }
-
 namespace {
     const double NaN = std::numeric_limits<double>::quiet_NaN();
 }
