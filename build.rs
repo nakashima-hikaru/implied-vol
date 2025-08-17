@@ -1,7 +1,5 @@
+#[cfg(feature = "cxx_bench")]
 fn main() {
-    if !cfg!(feature = "cxx_bench") {
-        return;
-    }
     println!("Running build.rs for benchmarks only...");
     cxx_build::bridge("src/cxx.rs")
         .file("source/lets_be_rational.cpp")
@@ -31,3 +29,6 @@ fn main() {
     println!("cargo:rerun-if-changed=source/rationalcubic.cpp");
     println!("cargo:rerun-if-changed=source/ImpliedNormalVolatility.cpp");
 }
+
+#[cfg(not(feature = "cxx_bench"))]
+fn main() {}

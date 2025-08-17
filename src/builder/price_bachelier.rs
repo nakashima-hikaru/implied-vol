@@ -2,8 +2,7 @@ use crate::{SpecialFn, lets_be_rational};
 use bon::Builder;
 
 #[derive(Builder)]
-#[builder(derive(Clone, Debug))]
-#[builder(finish_fn(vis = "", name = build_internal))]
+#[builder(derive(Clone, Debug), finish_fn(vis = "", name = build_internal))]
 pub struct PriceBachelier {
     forward: f64,
     strike: f64,
