@@ -18,7 +18,7 @@ use bon::Builder;
 /// This struct is consumed by `calculate::<SpFn>()` which performs the numerical
 /// inversion `BS(F, K, T, σ) = P` to find the implied volatility `σ`.
 #[derive(Builder)]
-#[builder(const, derive(Clone, Debug), finish_fn(vis = "", name = build_internal))]
+#[builder(const, derive(Clone, Debug), finish_fn(name = build_unchecked))]
 pub struct ImpliedBlackVolatility {
     forward: f64,
     strike: f64,
@@ -42,7 +42,7 @@ impl<S: implied_black_volatility_builder::IsComplete> ImpliedBlackVolatilityBuil
     /// These checks ensure the constructed object lies within the mathematical domain
     /// required by the Black–Scholes pricing function. Use `build_unchecked()` to skip validation.
     pub const fn build(self) -> Option<ImpliedBlackVolatility> {
-        let implied_black_volatility = self.build_internal();
+        let implied_black_volatility = self.build_unchecked();
 
         if !(implied_black_volatility.forward > 0.0)
             || implied_black_volatility.forward.is_infinite()
@@ -62,16 +62,6 @@ impl<S: implied_black_volatility_builder::IsComplete> ImpliedBlackVolatilityBuil
             return None;
         }
         Some(implied_black_volatility)
-    }
-
-    /// Build without performing any validation.
-    ///
-    /// This constructor constructs the `ImpliedBlackVolatility` directly from
-    /// the builder's fields and does **not** check for NaNs, infinities, or
-    /// sign constraints. Use only when you are certain the inputs are valid
-    /// or when you want to avoid the cost of runtime validation.
-    pub const fn build_unchecked(self) -> ImpliedBlackVolatility {
-        self.build_internal()
     }
 }
 

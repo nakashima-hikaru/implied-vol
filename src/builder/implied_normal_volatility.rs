@@ -2,7 +2,7 @@ use crate::{SpecialFn, lets_be_rational};
 use bon::Builder;
 
 #[derive(Builder)]
-#[builder(const, derive(Clone, Debug), finish_fn(vis = "", name = build_internal))]
+#[builder(const, derive(Clone, Debug), finish_fn(name = build_unchecked))]
 pub struct ImpliedNormalVolatility {
     forward: f64,
     strike: f64,
@@ -13,7 +13,7 @@ pub struct ImpliedNormalVolatility {
 
 impl<S: implied_normal_volatility_builder::IsComplete> ImpliedNormalVolatilityBuilder<S> {
     pub const fn build(self) -> Option<ImpliedNormalVolatility> {
-        let implied_normal_volatility = self.build_internal();
+        let implied_normal_volatility = self.build_unchecked();
         if !implied_normal_volatility.forward.is_finite() {
             return None;
         }
@@ -29,9 +29,6 @@ impl<S: implied_normal_volatility_builder::IsComplete> ImpliedNormalVolatilityBu
             return None;
         }
         Some(implied_normal_volatility)
-    }
-    pub const fn build_unchecked(self) -> ImpliedNormalVolatility {
-        self.build_internal()
     }
 }
 

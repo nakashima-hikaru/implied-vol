@@ -2,7 +2,7 @@ use crate::{SpecialFn, lets_be_rational};
 use bon::Builder;
 
 #[derive(Builder)]
-#[builder(const, derive(Clone, Debug), finish_fn(vis = "", name = build_internal))]
+#[builder(const, derive(Clone, Debug), finish_fn(name = build_unchecked))]
 pub struct PriceBachelier {
     forward: f64,
     strike: f64,
@@ -13,7 +13,7 @@ pub struct PriceBachelier {
 
 impl<S: price_bachelier_builder::IsComplete> PriceBachelierBuilder<S> {
     pub const fn build(self) -> Option<PriceBachelier> {
-        let price_bachelier = self.build_internal();
+        let price_bachelier = self.build_unchecked();
         if !price_bachelier.forward.is_finite() {
             return None;
         }
@@ -27,9 +27,6 @@ impl<S: price_bachelier_builder::IsComplete> PriceBachelierBuilder<S> {
             return None;
         }
         Some(price_bachelier)
-    }
-    pub const fn build_unchecked(self) -> PriceBachelier {
-        self.build_internal()
     }
 }
 

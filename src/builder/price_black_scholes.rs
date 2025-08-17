@@ -19,7 +19,7 @@ use bon::Builder;
 /// `SpecialFn` implementation for any special-function approximations required
 /// by the numerical routines.
 #[derive(Builder)]
-#[builder(const, derive(Clone, Debug), finish_fn(vis = "", name = build_internal))]
+#[builder(const, derive(Clone, Debug), finish_fn(name = build_unchecked))]
 pub struct PriceBlackScholes {
     forward: f64,
     strike: f64,
@@ -40,7 +40,7 @@ impl<S: price_black_scholes_builder::IsComplete> PriceBlackScholesBuilder<S> {
     /// Returns `Some(PriceBlackScholes)` when all checks pass; otherwise returns
     /// `None`.
     pub const fn build(self) -> Option<PriceBlackScholes> {
-        let price_black_scholes = self.build_internal();
+        let price_black_scholes = self.build_unchecked();
         if !price_black_scholes.forward.is_finite() || !(price_black_scholes.forward > 0.0) {
             return None;
         }
@@ -54,14 +54,6 @@ impl<S: price_black_scholes_builder::IsComplete> PriceBlackScholesBuilder<S> {
             return None;
         }
         Some(price_black_scholes)
-    }
-
-    /// Construct `PriceBlackScholes` without performing validation checks.
-    ///
-    /// Use this when you have externally guaranteed that the inputs are valid
-    /// or when you want to avoid the runtime cost of validation.
-    pub const fn build_unchecked(self) -> PriceBlackScholes {
-        self.build_internal()
     }
 }
 
