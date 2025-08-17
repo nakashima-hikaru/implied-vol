@@ -56,7 +56,8 @@ impl<S: implied_black_volatility_builder::IsComplete> ImpliedBlackVolatilityBuil
         if !(implied_black_volatility.expiry >= 0.0) {
             return None;
         }
-        if !(implied_black_volatility.option_price >= 0.0) || implied_black_volatility.option_price.is_infinite()
+        if !(implied_black_volatility.option_price >= 0.0)
+            || implied_black_volatility.option_price.is_infinite()
         {
             return None;
         }
@@ -132,8 +133,26 @@ mod tests {
     use crate::builder::implied_black_volatility::ImpliedBlackVolatility;
 
     #[test]
+    const fn normal_const() {
+        const PRICE: f64 = 10.0;
+        const F: f64 = 100.0;
+        const K: f64 = 100.0;
+        const T: f64 = 1.0;
+        const Q: bool = true;
+
+        const IV_BUILDER: Option<ImpliedBlackVolatility> = ImpliedBlackVolatility::builder()
+            .option_price(PRICE)
+            .forward(F)
+            .strike(K)
+            .expiry(T)
+            .is_call(Q)
+            .build();
+        assert!(IV_BUILDER.is_some());
+    }
+
+    #[test]
     fn strike_anomaly() {
-        for k in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        for k in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY, 0.0] {
             let price = 100.0;
             let f = 100.0;
             let t = 1.0;
@@ -152,8 +171,27 @@ mod tests {
     }
 
     #[test]
+    fn strike_boundary() {
+        let price = 100.0;
+        let f = 100.0;
+        let k = f64::MIN_POSITIVE;
+        let t = 1.0;
+        const Q: bool = true;
+        assert!(
+            ImpliedBlackVolatility::builder()
+                .option_price(price)
+                .forward(f)
+                .strike(k)
+                .expiry(t)
+                .is_call(Q)
+                .build()
+                .is_some()
+        );
+    }
+
+    #[test]
     fn forward_anomaly() {
-        for f in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        for f in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY, 0.0] {
             let price = 100.0;
             let k = 100.0;
             let t = 1.0;
@@ -192,6 +230,25 @@ mod tests {
     }
 
     #[test]
+    fn price_below_intrinsic() {
+        let price = 10.0;
+        let f = 120.0;
+        let t = 1.0;
+        let k = 100.0;
+        const Q: bool = true;
+        let iv_builder = ImpliedBlackVolatility::builder()
+            .option_price(price)
+            .forward(f)
+            .strike(k)
+            .expiry(t)
+            .is_call(Q)
+            .build();
+        assert!(iv_builder.is_some());
+        let iv = iv_builder.unwrap();
+        assert!(iv.calculate::<DefaultSpecialFn>().is_none());
+    }
+
+    #[test]
     fn time_anomaly() {
         for t in [f64::NAN, f64::NEG_INFINITY] {
             let price = 10.0;
@@ -209,6 +266,43 @@ mod tests {
                     .is_none()
             );
         }
+    }
+
+    #[test]
+    fn time_zero() {
+        // the price is below intrinsic
+        let price = 10.0;
+        let f = 120.0;
+        let k = 100.0;
+        let t = 0.0;
+        let q = true;
+
+        let vol = ImpliedBlackVolatility::builder()
+            .option_price(price)
+            .forward(f)
+            .strike(k)
+            .expiry(t)
+            .is_call(q)
+            .build()
+            .unwrap()
+            .calculate::<DefaultSpecialFn>();
+        assert!(vol.is_none());
+
+        let price = 20.0;
+        let f = 120.0;
+        let k = 100.0;
+        let t = 0.0;
+
+        let vol = ImpliedBlackVolatility::builder()
+            .option_price(price)
+            .forward(f)
+            .strike(k)
+            .expiry(t)
+            .is_call(q)
+            .build()
+            .unwrap()
+            .calculate::<DefaultSpecialFn>();
+        assert_eq!(vol.unwrap(), 0.0);
     }
 
     #[test]
