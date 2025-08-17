@@ -15,6 +15,15 @@ fn main() {
     // - Strike must be non-negative and finite
     // - Expiry must be non-negative but may be infinite
     debug_assert!(implied_vol_builder.is_some());
+    // Or you can skip the validation:
+    let _ = ImpliedBlackVolatility::builder()
+        .option_price(10.0)
+        .forward(100.0)
+        .strike(100.0)
+        .expiry(1.0)
+        .is_call(true)
+        .build_unchecked();
+
     let implied_vol = implied_vol_builder.unwrap().calculate::<DefaultSpecialFn>();
     // If None, then implied volatility does not exist under the given inputs:
     debug_assert!(implied_vol.is_some());

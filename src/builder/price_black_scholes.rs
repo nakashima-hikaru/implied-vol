@@ -19,7 +19,17 @@ use bon::Builder;
 /// `SpecialFn` implementation for any special-function approximations required
 /// by the numerical routines.
 #[derive(Builder)]
-#[builder(const, derive(Clone, Debug), finish_fn(name = build_unchecked))]
+#[builder(const, derive(Clone, Debug),
+finish_fn(name = build_unchecked,
+doc{
+/// Build without performing any validation.
+///
+/// This constructor constructs the `PriceBlackScholes` directly from
+/// the builder's fields and does **not** check for NaNs, infinities, or
+/// sign constraints. Use only when you are certain the inputs are valid
+/// or when you want to avoid the cost of runtime validation.
+})
+)]
 pub struct PriceBlackScholes {
     forward: f64,
     strike: f64,
