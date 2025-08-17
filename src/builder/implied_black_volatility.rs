@@ -76,7 +76,7 @@ impl<S: implied_black_volatility_builder::IsComplete> ImpliedBlackVolatilityBuil
     /// the builder's fields and does **not** check for NaNs, infinities, or
     /// sign constraints. Use only when you are certain the inputs are valid
     /// or when you want to avoid the cost of runtime validation.
-    pub fn build_unchecked(self) -> ImpliedBlackVolatility {
+    pub const fn build_unchecked(self) -> ImpliedBlackVolatility {
         self.build_internal()
     }
 }

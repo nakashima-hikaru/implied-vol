@@ -34,7 +34,7 @@ impl<S: price_bachelier_builder::IsComplete> PriceBachelierBuilder<S> {
         }
         Some(price_bachelier)
     }
-    pub fn build_unchecked(self) -> PriceBachelier {
+    pub const fn build_unchecked(self) -> PriceBachelier {
         self.build_internal()
     }
 }

@@ -67,7 +67,7 @@ impl<S: price_black_scholes_builder::IsComplete> PriceBlackScholesBuilder<S> {
     ///
     /// Use this when you have externally guaranteed that the inputs are valid
     /// or when you want to avoid the runtime cost of validation.
-    pub fn build_unchecked(self) -> PriceBlackScholes {
+    pub const fn build_unchecked(self) -> PriceBlackScholes {
         self.build_internal()
     }
 }

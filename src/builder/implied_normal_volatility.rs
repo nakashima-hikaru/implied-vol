@@ -35,7 +35,7 @@ impl<S: implied_normal_volatility_builder::IsComplete> ImpliedNormalVolatilityBu
         }
         Some(implied_normal_volatility)
     }
-    pub fn build_unchecked(self) -> ImpliedNormalVolatility {
+    pub const fn build_unchecked(self) -> ImpliedNormalVolatility {
         self.build_internal()
     }
 }
