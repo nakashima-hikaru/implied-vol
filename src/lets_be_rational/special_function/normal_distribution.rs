@@ -51,7 +51,7 @@ pub(super) const U_MAX: f64 = 0.341_344_746_068_542_9;
 const U_MAX2: f64 = U_MAX * U_MAX;
 #[inline(always)]
 pub(super) fn inverse_norm_cdfm_half_for_midrange_probabilities(u: f64) -> f64 {
-    assert_ne!(u.abs().partial_cmp(&U_MAX), Some(Ordering::Greater));
+    debug_assert_ne!(u.abs().partial_cmp(&U_MAX), Some(Ordering::Greater));
     let s = u.mul_add2(-u, U_MAX2);
     u * (s.mul_add2(
         s.mul_add2(
@@ -85,7 +85,7 @@ pub(super) fn inverse_norm_cdfm_half_for_midrange_probabilities(u: f64) -> f64 {
 
 #[inline(always)]
 pub(super) fn inverse_norm_cdf_for_low_probabilities(p: f64) -> f64 {
-    assert_ne!(
+    debug_assert_ne!(
         p.partial_cmp(&0.158_655_253_931_46),
         Some(Ordering::Greater)
     );
