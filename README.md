@@ -4,8 +4,6 @@
 [![Actions status](https://github.com/nakashima-hikaru/implied-vol/actions/workflows/ci.yaml/badge.svg)](https://github.com/nakashima-hikaru/implied-vol/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-More details can be found in the [crate documentation](https://docs.rs/implied-vol/2.0/implied_vol/).
-
 ## Overview
 
 `implied-vol` is a high-performance, pure Rust library for calculating implied volatility,
@@ -38,6 +36,7 @@ let iv = iv_builder.calculate::<DefaultSpecialFn>().unwrap();
 assert!(iv.is_finite());
 ```
 
+More details can be found in the [crate documentation](https://docs.rs/implied-vol/2.0/implied_vol/).
 
 ## Source References
 
