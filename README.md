@@ -11,19 +11,29 @@ implemented based on the methods described in Peter Jäckel's seminal papers.
 
 ## Usage
 
+This crate exposes builders for computing:
+
+- the implied **Black** volatility,
+- the implied **Normal** (Bachelier) volatility,
+- (undiscounted) European option prices under the **Black–Scholes** model,
+- (undiscounted) European option prices under the **Bachelier** model.
+
+Additionally, the crate provides a trait for implementing custom special functions, which can be used to customize
+the calculation of implied volatilities and option prices.
+
 Add the following to your `Cargo.toml`:
+
 ```toml
 [dependencies]
 implied-vol = "2.0"
 ```
 
-The calculations are performed via builders.
+The calculations are performed via builders that allow you to handle errors.
 
 ### Example
 
 ```rust
 use implied_vol::{DefaultSpecialFn, ImpliedBlackVolatility};
-
 let iv_builder = ImpliedBlackVolatility::builder()
     .option_price(10.0)
     .forward(100.0)
