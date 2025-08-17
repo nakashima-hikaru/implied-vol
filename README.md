@@ -11,6 +11,34 @@ More details can be found in the [crate documentation](https://docs.rs/implied-v
 `implied-vol` is a high-performance, pure Rust library for calculating implied volatility,
 implemented based on the methods described in Peter Jäckel's seminal papers.
 
+## Usage
+
+Add the following to your `Cargo.toml`:
+```toml
+[dependencies]
+implied-vol = "2.0"
+```
+
+The calculations are performed via builders.
+
+### Example
+
+```rust
+use implied_vol::{DefaultSpecialFn, ImpliedBlackVolatility};
+
+let iv_builder = ImpliedBlackVolatility::builder()
+    .option_price(10.0)
+    .forward(100.0)
+    .strike(100.0)
+    .expiry(1.0)
+    .is_call(true)
+    .build().unwrap();
+
+let iv = iv_builder.calculate::<DefaultSpecialFn>().unwrap();
+assert!(iv.is_finite());
+```
+
+
 ## Source References
 
 This crate implements algorithms from two key papers by Peter Jäckel:
