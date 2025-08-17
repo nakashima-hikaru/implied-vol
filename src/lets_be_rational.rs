@@ -334,9 +334,7 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
         } else {
             let (f_upper_map_h, d_f_upper_map_h_d_beta, d2_f_upper_map_h_d_beta2) =
                 compute_f_upper_map_and_first_two_derivatives::<SpFn>(theta_x, s_u);
-            let mut f = if d2_f_upper_map_h_d_beta2 > -SQRT_DBL_MAX
-                && d2_f_upper_map_h_d_beta2 < SQRT_DBL_MAX
-            {
+            let mut f = if (-SQRT_DBL_MAX..SQRT_DBL_MAX).contains(&d2_f_upper_map_h_d_beta2) {
                 let h = b_max - b_u;
                 let r_uu =
                     convex_rational_cubic_control_parameter_to_fit_second_derivative_at_left_side::<
