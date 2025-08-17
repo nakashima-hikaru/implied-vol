@@ -2,7 +2,7 @@ use crate::{SpecialFn, lets_be_rational};
 use bon::Builder;
 
 #[derive(Builder)]
-#[builder(derive(Clone, Debug), finish_fn(vis = "", name = build_internal))]
+#[builder(derive(Clone, Debug), finish_fn(vis = "", name = build_internal), const)]
 pub struct ImpliedNormalVolatility {
     forward: f64,
     strike: f64,

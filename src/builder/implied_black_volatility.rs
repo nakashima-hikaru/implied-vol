@@ -18,7 +18,7 @@ use bon::Builder;
 /// This struct is consumed by `calculate::<SpFn>()` which performs the numerical
 /// inversion `BS(F, K, T, σ) = P` to find the implied volatility `σ`.
 #[derive(Builder)]
-#[builder(derive(Clone, Debug), finish_fn(vis = "", name = build_internal))]
+#[builder(derive(Clone, Debug), finish_fn(vis = "", name = build_internal), const)]
 pub struct ImpliedBlackVolatility {
     forward: f64,
     strike: f64,

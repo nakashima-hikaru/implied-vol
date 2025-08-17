@@ -19,7 +19,7 @@ use bon::Builder;
 /// `SpecialFn` implementation for any special-function approximations required
 /// by the numerical routines.
 #[derive(Builder)]
-#[builder(derive(Clone, Debug), finish_fn(vis = "", name = build_internal))]
+#[builder(derive(Clone, Debug), finish_fn(vis = "", name = build_internal), const)]
 pub struct PriceBlackScholes {
     forward: f64,
     strike: f64,
