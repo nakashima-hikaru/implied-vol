@@ -41,29 +41,22 @@ impl<S: implied_black_volatility_builder::IsComplete> ImpliedBlackVolatilityBuil
     /// # Rationale
     /// These checks ensure the constructed object lies within the mathematical domain
     /// required by the Black–Scholes pricing function. Use `build_unchecked()` to skip validation.
-    pub fn build(self) -> Option<ImpliedBlackVolatility> {
+    pub const fn build(self) -> Option<ImpliedBlackVolatility> {
         let implied_black_volatility = self.build_internal();
 
-        if implied_black_volatility.forward.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater)
+        if !(implied_black_volatility.forward > 0.0)
             || implied_black_volatility.forward.is_infinite()
         {
             return None;
         }
-        if implied_black_volatility.strike.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater)
-            || implied_black_volatility.strike.is_infinite()
+        if !(implied_black_volatility.strike > 0.0) || implied_black_volatility.strike.is_infinite()
         {
             return None;
         }
-        if matches!(
-            implied_black_volatility.expiry.partial_cmp(&0.0),
-            Some(std::cmp::Ordering::Less) | None
-        ) {
+        if !(implied_black_volatility.expiry >= 0.0) {
             return None;
         }
-        if matches!(
-            implied_black_volatility.option_price.partial_cmp(&0.0),
-            Some(std::cmp::Ordering::Less) | None
-        ) || implied_black_volatility.option_price.is_infinite()
+        if !(implied_black_volatility.option_price >= 0.0) || implied_black_volatility.option_price.is_infinite()
         {
             return None;
         }

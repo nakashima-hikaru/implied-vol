@@ -34,30 +34,23 @@ impl<S: price_black_scholes_builder::IsComplete> PriceBlackScholesBuilder<S> {
     /// Validation performed:
     /// - `forward` must be finite.
     /// - `strike` must be finite.
-    /// - `volatility` must be non-negative (`σ >= 0`) and finite.
+    /// - `volatility` must be non-negative (`σ >= 0`) but can be positive infinite.
     /// - `expiry` must be non-negative (`T >= 0`) and not NaN.
     ///
     /// Returns `Some(PriceBlackScholes)` when all checks pass; otherwise returns
     /// `None`.
-    pub fn build(self) -> Option<PriceBlackScholes> {
+    pub const fn build(self) -> Option<PriceBlackScholes> {
         let price_black_scholes = self.build_internal();
-        if !price_black_scholes.forward.is_finite() || price_black_scholes.forward <= 0.0 {
+        if !price_black_scholes.forward.is_finite() || !(price_black_scholes.forward > 0.0) {
             return None;
         }
-        if !price_black_scholes.strike.is_finite() || price_black_scholes.strike <= 0.0 {
+        if !price_black_scholes.strike.is_finite() || !(price_black_scholes.strike > 0.0) {
             return None;
         }
-        if matches!(
-            price_black_scholes.volatility.partial_cmp(&0.0),
-            Some(std::cmp::Ordering::Less) | None
-        ) || !price_black_scholes.volatility.is_finite()
-        {
+        if !(price_black_scholes.volatility >= 0.0) {
             return None;
         }
-        if matches!(
-            price_black_scholes.expiry.partial_cmp(&0.0),
-            Some(std::cmp::Ordering::Less) | None
-        ) {
+        if !(price_black_scholes.expiry >= 0.0) {
             return None;
         }
         Some(price_black_scholes)

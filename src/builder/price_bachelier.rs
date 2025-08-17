@@ -12,7 +12,7 @@ pub struct PriceBachelier {
 }
 
 impl<S: price_bachelier_builder::IsComplete> PriceBachelierBuilder<S> {
-    pub fn build(self) -> Option<PriceBachelier> {
+    pub const fn build(self) -> Option<PriceBachelier> {
         let price_bachelier = self.build_internal();
         if !price_bachelier.forward.is_finite() {
             return None;
@@ -20,16 +20,10 @@ impl<S: price_bachelier_builder::IsComplete> PriceBachelierBuilder<S> {
         if !price_bachelier.strike.is_finite() {
             return None;
         }
-        if matches!(
-            price_bachelier.volatility.partial_cmp(&0.0),
-            Some(std::cmp::Ordering::Less) | None
-        ) {
+        if !(price_bachelier.volatility >= 0.0) {
             return None;
         }
-        if matches!(
-            price_bachelier.expiry.partial_cmp(&0.0),
-            Some(std::cmp::Ordering::Less) | None
-        ) {
+        if !(price_bachelier.expiry >= 0.0) {
             return None;
         }
         Some(price_bachelier)

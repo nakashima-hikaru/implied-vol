@@ -12,7 +12,7 @@ pub struct ImpliedNormalVolatility {
 }
 
 impl<S: implied_normal_volatility_builder::IsComplete> ImpliedNormalVolatilityBuilder<S> {
-    pub fn build(self) -> Option<ImpliedNormalVolatility> {
+    pub const fn build(self) -> Option<ImpliedNormalVolatility> {
         let implied_normal_volatility = self.build_internal();
         if !implied_normal_volatility.forward.is_finite() {
             return None;
@@ -20,16 +20,11 @@ impl<S: implied_normal_volatility_builder::IsComplete> ImpliedNormalVolatilityBu
         if !implied_normal_volatility.strike.is_finite() {
             return None;
         }
-        if matches!(
-            implied_normal_volatility.expiry.partial_cmp(&0.0_f64),
-            Some(std::cmp::Ordering::Less) | None
-        ) {
+        if !(implied_normal_volatility.expiry >= 0.0_f64) {
             return None;
         }
-        if matches!(
-            implied_normal_volatility.option_price.partial_cmp(&0.0_f64),
-            Some(std::cmp::Ordering::Less) | None
-        ) || implied_normal_volatility.option_price.is_infinite()
+        if !(implied_normal_volatility.option_price >= 0.0_f64)
+            || implied_normal_volatility.option_price.is_infinite()
         {
             return None;
         }

@@ -38,6 +38,7 @@ float_cmp = { level = "allow", priority = 2 }
 too_many_lines = { level = "allow", priority = 2 }
 many_single_char_names = { level = "allow", priority = 2 }
 similar_names = { level = "allow", priority = 2 }
+neg_cmp_op_on_partial_ord = { level = "allow", priority = 2 }  # for const fn
 
 [profile.bench]
 lto = true
