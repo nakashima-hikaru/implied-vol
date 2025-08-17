@@ -42,10 +42,10 @@ impl<S: price_black_scholes_builder::IsComplete> PriceBlackScholesBuilder<S> {
     /// Validate builder inputs and construct `PriceBlackScholes`.
     ///
     /// Validation performed:
-    /// - `forward` must be finite.
-    /// - `strike` must be finite.
+    /// - `forward` must be positive and finite.
+    /// - `strike` must be positive and finite.
     /// - `volatility` must be non-negative (`σ >= 0`) but can be positive infinite.
-    /// - `expiry` must be non-negative (`T >= 0`) and not NaN.
+    /// - `expiry` must be non-negative (`T >= 0`) but can be positive infinite.
     ///
     /// Returns `Some(PriceBlackScholes)` when all checks pass; otherwise returns
     /// `None`.
@@ -72,12 +72,11 @@ impl PriceBlackScholes {
     ///
     /// # Type parameter
     /// - `SpFn: SpecialFn` — implementation used for internal special-function
-    ///   evaluations (e.g., approximations used by the algorithm). Use the crate's
-    ///   `DefaultSpecialFn` for the default behavior or provide a custom
+    ///   evaluations. Use the crate's `DefaultSpecialFn` for the default behavior or provide a custom
     ///   implementation to change numerical characteristics.
     ///
     /// # Returns
-    /// The computed undiscounted option price as `f64`.
+    /// The computed undiscounted European option price.
     #[must_use]
     #[inline(always)]
     pub fn calculate<SpFn: SpecialFn>(&self) -> f64 {

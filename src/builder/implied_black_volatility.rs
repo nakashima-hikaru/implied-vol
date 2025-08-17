@@ -41,9 +41,9 @@ impl<S: implied_black_volatility_builder::IsComplete> ImpliedBlackVolatilityBuil
     /// Validate inputs and build an `ImpliedBlackVolatility`.
     ///
     /// Performs the following validation checks:
-    /// - `forward` must be a finite number and greater than 0.
-    /// - `strike` must be a finite number and greater than 0.
-    /// - `expiry` must be finite and non-negative (`T >= 0`).
+    /// - `forward` must be positive and finite.
+    /// - `strike` must be positive and finite.
+    /// - `expiry` must be non-negative (`T >= 0`) but can be positive infinite.
     /// - `option_price` must be a finite, non-negative number.
     ///
     /// Returns `Some(ImpliedBlackVolatility)` when all checks pass, otherwise `None`.
