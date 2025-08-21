@@ -229,13 +229,14 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
                 (1.0, d_f_lower_map_l_d_beta),
                 r2,
             );
-            match f.partial_cmp(&0.0) {
-                Some(std::cmp::Ordering::Greater) | None => {
-                    let t = beta / b_l;
-                    f = f_lower_map_l.mul_add2(t, b_l * (1.0 - t)) * t;
-                }
-                _ => {}
+            if matches!(
+                f.partial_cmp(&0.0),
+                Some(std::cmp::Ordering::Greater) | None
+            ) {
+                let t = beta / b_l;
+                f = f_lower_map_l.mul_add2(t, b_l * (1.0 - t)) * t;
             }
+
             let mut s = inverse_f_lower_map::<SpFn>(theta_x, f);
             debug_assert!(s > 0.0);
             let ln_beta = beta.ln();
