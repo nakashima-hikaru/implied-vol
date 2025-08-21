@@ -112,8 +112,8 @@ fn inv_phi_tilde<SpFn: SpecialFn>(phi_tilde_star: f64) -> f64 {
                 .mul_add2(-h, 1.0)
     };
     // Equation (2.7)
-    let q = (phi_tilde(x_bar) - phi_tilde_star) * inv_norm_pdf(x_bar);
     let x2 = x_bar * x_bar;
+    let q = (phi_tilde(x_bar) - phi_tilde_star) * inv_norm_pdf(x2);
     // Equation (2.6)
     x_bar
         + 3.0 * q * x2 * (q * x_bar).mul_add2(-(2.0 + x2), 2.0)

@@ -13,8 +13,8 @@ pub fn norm_pdf(x: f64) -> f64 {
 }
 
 #[inline(always)]
-pub fn inv_norm_pdf(x: f64) -> f64 {
-    SQRT_2_PI * (0.5 * x * x).exp()
+pub fn inv_norm_pdf(x2: f64) -> f64 {
+    SQRT_2_PI * (0.5 * x2).exp()
 }
 
 #[inline(always)]

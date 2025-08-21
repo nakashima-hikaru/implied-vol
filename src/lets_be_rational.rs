@@ -1,14 +1,14 @@
 pub mod bachelier_impl;
 pub mod bs_option_price;
 mod constants;
+mod householder;
 mod rational_cubic;
 pub mod special_function;
-mod householder;
 
 use crate::fused_multiply_add::MulAdd;
 
 use crate::lets_be_rational::constants::{
-    FRAC_2_PI_SQRT_27, FRAC_1_SQRT_3, FRAC_SQRT_3_CUBIC_ROOT_2_PI, SQRT_2_OVER_PI, SQRT_2_PI,
+    FRAC_1_SQRT_3, FRAC_2_PI_SQRT_27, FRAC_SQRT_3_CUBIC_ROOT_2_PI, SQRT_2_OVER_PI, SQRT_2_PI,
     SQRT_3, SQRT_DBL_MAX, SQRT_PI_OVER_2,
 };
 use crate::lets_be_rational::rational_cubic::{
@@ -149,7 +149,7 @@ fn compute_f_lower_map_and_first_two_derivatives<SpFn: SpecialFn>(
             * phi_m
             * (8.0 * SQRT_3 * s).mul_add2(
                 ax,
-                (3.0 * s2).mul_add2(s2 - 8.0, -(8.0 * x * x)) * phi_m * inv_norm_pdf(z),
+                (3.0 * s2).mul_add2(s2 - 8.0, -(8.0 * x * x)) * phi_m * inv_norm_pdf(y),
             )
             * 2.0f64.mul_add2(y, 0.25 * s2).exp(),
     )
