@@ -1,7 +1,5 @@
 use crate::fused_multiply_add::MulAdd;
-use crate::lets_be_rational::constants::{
-    HALF_OF_LN_2_PI, SIXTEENTH_ROOT_DBL_EPSILON, SQRT_2_PI, SQRT_PI_OVER_2,
-};
+use crate::lets_be_rational::constants::{FRAC_1_SQRT_2_PI, HALF_OF_LN_2_PI, SIXTEENTH_ROOT_DBL_EPSILON, SQRT_2_PI, SQRT_PI_OVER_2};
 use crate::lets_be_rational::special_function::SpecialFn;
 use std::f64::consts::FRAC_1_SQRT_2;
 use std::ops::Neg;
@@ -453,7 +451,7 @@ pub fn normalised_vega(x: f64, s: f64) -> f64 {
     debug_assert!(s > 0.0);
     let h = x / s;
     let t = 0.5 * s;
-    SQRT_2_PI.recip() * (-0.5 * h.mul_add2(h, t * t)).exp()
+    FRAC_1_SQRT_2_PI * (-0.5 * h.mul_add2(h, t * t)).exp()
 }
 
 #[inline(always)]
