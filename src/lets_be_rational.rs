@@ -3,11 +3,12 @@ pub mod bs_option_price;
 mod constants;
 mod rational_cubic;
 pub mod special_function;
+mod householder;
 
 use crate::fused_multiply_add::MulAdd;
 
 use crate::lets_be_rational::constants::{
-    FRAC_2_PI_SQRT_27, FRAC_ONE_SQRT_3, FRAC_SQRT_3_CUBIC_ROOT_2_PI, SQRT_2_OVER_PI, SQRT_2_PI,
+    FRAC_2_PI_SQRT_27, FRAC_1_SQRT_3, FRAC_SQRT_3_CUBIC_ROOT_2_PI, SQRT_2_OVER_PI, SQRT_2_PI,
     SQRT_3, SQRT_DBL_MAX, SQRT_PI_OVER_2,
 };
 use crate::lets_be_rational::rational_cubic::{
@@ -19,19 +20,6 @@ use crate::lets_be_rational::special_function::SpecialFn;
 use crate::lets_be_rational::special_function::normal_distribution::inv_norm_pdf;
 use std::f64::consts::{FRAC_1_SQRT_2, SQRT_2};
 use std::ops::{Div, Neg};
-
-#[inline(always)]
-fn householder3_factor(v: f64, h2: f64, h3: f64) -> f64 {
-    v.mul_add2(0.5 * h2, 1.0) / v.mul_add2(h3 / 6.0, h2).mul_add2(v, 1.0)
-}
-
-#[inline(always)]
-fn householder4_factor(v: f64, h2: f64, h3: f64, h4: f64) -> f64 {
-    v.mul_add2(h3 / 6.0, h2).mul_add2(v, 1.0)
-        / v.mul_add2(h4 / 24.0, h2.mul_add2(h2 / 4.0, h3 / 3.0))
-            .mul_add2(v, 1.5 * h2)
-            .mul_add2(v, 1.0)
-}
 
 #[inline(always)]
 fn b_u_over_b_max(s_c: f64) -> f64 {
@@ -148,7 +136,7 @@ fn compute_f_lower_map_and_first_two_derivatives<SpFn: SpecialFn>(
     s: f64,
 ) -> (f64, f64, f64) {
     let ax = x.abs();
-    let z = FRAC_ONE_SQRT_3 * ax / s;
+    let z = FRAC_1_SQRT_3 * ax / s;
     let y = z * z;
     let s2 = s * s;
     let phi_m = 0.5 * SpFn::erfc(FRAC_1_SQRT_2 * z);
@@ -169,7 +157,7 @@ fn compute_f_lower_map_and_first_two_derivatives<SpFn: SpecialFn>(
 
 #[inline(always)]
 fn inverse_f_lower_map<SpFn: SpecialFn>(x: f64, f: f64) -> f64 {
-    (x * FRAC_ONE_SQRT_3
+    (x * FRAC_1_SQRT_3
         / SpFn::inverse_norm_cdf(FRAC_SQRT_3_CUBIC_ROOT_2_PI * f.cbrt() / x.abs().cbrt()))
     .abs()
 }
@@ -274,7 +262,7 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
                 let mu_plus_2 = (1.0 + lambda).mul_add2(6.0 * lambda, 2.0);
                 let h3 = (bppob * 3.0).mul_add2(-ot_lambda, sq_bpob.mul_add2(mu_plus_2, b_h3));
                 ds = v * if theta_x < -190.0 {
-                    householder4_factor(
+                    householder::householder4_factor(
                         v,
                         h2,
                         h3,
@@ -294,7 +282,7 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
                             ),
                     )
                 } else {
-                    householder3_factor(v, h2, h3)
+                    householder::householder3_factor(v, h2, h3)
                 };
                 s += ds;
                 debug_assert!(s > 0.0);
@@ -381,7 +369,7 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
                     let h2 = b_h2 + gp;
                     let h3 = gp.mul_add2(2.0f64.mul_add2(gp, 3.0 * b_h2), b_h3);
                     ds = v * if theta_x < -580.0 {
-                        householder4_factor(
+                        householder::householder4_factor(
                             v,
                             h2,
                             h3,
@@ -394,7 +382,7 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
                             ),
                         )
                     } else {
-                        householder3_factor(v, h2, h3)
+                        householder::householder3_factor(v, h2, h3)
                     };
                     s += ds;
                     if final_trial {
@@ -419,7 +407,7 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
         let h = theta_x / s;
         let h2 = s.mul_add2(-0.25, h * h / s);
         let h3 = h2.mul_add2(h2, -(3.0 * (h / s).powi(2))) - 0.25_f64;
-        ds = nu * householder3_factor(nu, h2, h3);
+        ds = nu * householder::householder3_factor(nu, h2, h3);
         s += ds;
         // the upstream uses the following code, but it is not performant on my benchmark
         // assert!(s > 0.0);

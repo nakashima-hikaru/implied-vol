@@ -1,5 +1,5 @@
 use crate::fused_multiply_add::MulAdd;
-use crate::lets_be_rational::constants::{ONE_OVER_SQRT_2_PI, SQRT_2_PI};
+use crate::lets_be_rational::constants::{FRAC_1_SQRT_2_PI, SQRT_2_PI};
 use crate::lets_be_rational::special_function::SpecialFn;
 use crate::lets_be_rational::special_function::normal_distribution::inv_norm_pdf;
 use std::cmp::Ordering;
@@ -25,7 +25,7 @@ fn phi_tilde_times_x(x: f64) -> f64 {
                 .mul_add2(h, 3.373_546_191_189_62E-4)
                 .mul_add2(h, 3.026_101_684_659_232_6E-2)
                 .mul_add2(h, 1.0);
-        return x.mul_add2(g, 0.5).mul_add2(x, ONE_OVER_SQRT_2_PI);
+        return x.mul_add2(g, 0.5).mul_add2(x, FRAC_1_SQRT_2_PI);
     }
 
     if x > 0.0 {
@@ -70,7 +70,7 @@ fn phi_tilde_times_x(x: f64) -> f64 {
             .mul_add2(w, 8.384_852_209_273_714E1)
             .mul_add2(w, 1.0);
 
-    ONE_OVER_SQRT_2_PI * (-0.5 * x * x).exp() * w * g.mul_add2(-w, 1.0)
+    FRAC_1_SQRT_2_PI * (-0.5 * x * x).exp() * w * g.mul_add2(-w, 1.0)
 }
 
 #[inline(always)]
@@ -99,7 +99,7 @@ fn inv_phi_tilde<SpFn: SpecialFn>(phi_tilde_star: f64) -> f64 {
             .mul_add2(-g2, 0.663_564_693_8)
             .mul_add2(-g2, 1.0);
         // Equation (2.3)
-        g * xi_bar.mul_add2(g2, ONE_OVER_SQRT_2_PI)
+        g * xi_bar.mul_add2(g2, FRAC_1_SQRT_2_PI)
     } else {
         // Equation (2.4)
         let h = (-(-phi_tilde_star).ln()).sqrt();
