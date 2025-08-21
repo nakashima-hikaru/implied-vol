@@ -436,18 +436,18 @@ pub fn implied_black_volatility_input_unchecked<SpFn: SpecialFn, const IS_CALL: 
         return (price == if IS_CALL { f } else { k }).then_some(f64::INFINITY);
     }
     let intrinsic_value = if IS_CALL { f - k } else { k - f };
-    let normalized_time_value = if intrinsic_value > 0.0_f64 {
+    let normalised_time_value = if intrinsic_value > 0.0_f64 {
         price - intrinsic_value
     } else {
         price
     } / (f.sqrt() * k.sqrt());
-    if normalized_time_value <= 0.0_f64 {
-        return (normalized_time_value == 0.0).then_some(0.0);
+    if normalised_time_value <= 0.0_f64 {
+        return (normalised_time_value == 0.0).then_some(0.0);
     }
     Some(if f == k {
-        implied_normalised_volatility_atm::<SpFn>(normalized_time_value) / t.sqrt()
+        implied_normalised_volatility_atm::<SpFn>(normalised_time_value) / t.sqrt()
     } else {
-        lets_be_rational::<SpFn>(normalized_time_value, (f / k).ln().abs().neg())?.div(t.sqrt())
+        lets_be_rational::<SpFn>(normalised_time_value, (f / k).ln().abs().neg())?.div(t.sqrt())
     })
 }
 
