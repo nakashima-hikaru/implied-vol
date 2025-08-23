@@ -1,52 +1,59 @@
 use crate::fused_multiply_add::MulAdd;
-use crate::lets_be_rational::constants::{FRAC_1_SQRT_2_PI, HALF_OF_LN_2_PI, SIXTEENTH_ROOT_DBL_EPSILON, SQRT_2_PI, SQRT_PI_OVER_2};
+use crate::lets_be_rational::constants::{
+    FRAC_1_SQRT_2_PI, HALF_OF_LN_2_PI, SIXTEENTH_ROOT_DBL_EPSILON, SQRT_2_PI, SQRT_PI_OVER_2,
+};
 use crate::lets_be_rational::special_function::SpecialFn;
 use std::f64::consts::FRAC_1_SQRT_2;
 use std::ops::Neg;
 
 #[inline(always)]
-pub fn normalised_black<SpFn: SpecialFn>(x: f64, s: f64) -> f64 {
-    debug_assert!(s > 0.0);
-    debug_assert!(x < 0.0);
-    if is_region1(x, s) {
-        asymptotic_expansion_of_scaled_normalised_black(x / s, 0.5 * s) * normalised_vega(x, s)
-    } else if is_region2(x, s) {
-        small_t_expansion_of_scaled_normalised_black::<SpFn>(x / s, 0.5 * s) * normalised_vega(x, s)
+pub fn normalised_black<SpFn: SpecialFn>(half_theta_x: f64, h: f64, t: f64) -> f64 {
+    debug_assert!(t > 0.0);
+    debug_assert!(half_theta_x < 0.0);
+    if is_region1(h, t) {
+        asymptotic_expansion_of_scaled_normalised_black(h, t) * normalised_vega(h, t)
+    } else if is_region2(h, t) {
+        small_t_expansion_of_scaled_normalised_black::<SpFn>(h, t) * normalised_vega(h, t)
     } else {
-        normalised_black_with_optimal_use_of_codys_functions::<SpFn>(x, s)
+        normalised_black_with_optimal_use_of_codys_functions::<SpFn>(half_theta_x, h, t)
     }
 }
 
 pub const ETA: f64 = -13.0;
 
 #[inline(always)]
-fn is_region1(x: f64, s: f64) -> bool {
-    x < s * ETA && s.mul_add2(0.5f64.mul_add2(s, -(TAU + 0.5 + ETA)), x) < 0.0
+fn is_region1(h: f64, t: f64) -> bool {
+    h < ETA && t + h < TAU + 0.5 + ETA
 }
 
 #[inline(always)]
-fn is_region2(x: f64, s: f64) -> bool {
-    s.mul_add2(2.0f64.mul_add2(-TAU, s), -(x / ETA)) < 0.0
+fn is_region2(h: f64, t: f64) -> bool {
+    h.mul_add2(-0.5 / ETA, -TAU + t) < 0.0
 }
 
 #[inline(always)]
-pub fn scaled_normalised_black_and_ln_vega<SpFn: SpecialFn>(x: f64, s: f64) -> (f64, f64) {
-    debug_assert!(x < 0.0);
-    debug_assert!(s > 0.0);
-    let ln_vega = ln_normalised_vega(x, s);
-    if is_region1(x, s) {
+pub fn scaled_normalised_black_and_ln_vega<SpFn: SpecialFn>(
+    half_theta_x: f64,
+    h: f64,
+    t: f64,
+) -> (f64, f64) {
+    debug_assert!(half_theta_x < 0.0);
+    debug_assert!(t > 0.0);
+    let ln_vega = ln_normalised_vega(h, t);
+    if is_region1(h, t) {
         (
-            asymptotic_expansion_of_scaled_normalised_black(x / s, 0.5 * s),
+            asymptotic_expansion_of_scaled_normalised_black(h, t),
             ln_vega,
         )
-    } else if is_region2(x, s) {
+    } else if is_region2(h, t) {
         (
-            small_t_expansion_of_scaled_normalised_black::<SpFn>(x / s, 0.5 * s),
+            small_t_expansion_of_scaled_normalised_black::<SpFn>(h, t),
             ln_vega,
         )
     } else {
         (
-            normalised_black_with_optimal_use_of_codys_functions::<SpFn>(x, s) * (-ln_vega).exp(),
+            normalised_black_with_optimal_use_of_codys_functions::<SpFn>(half_theta_x, h, t)
+                * (-ln_vega).exp(),
             ln_vega,
         )
     }
@@ -419,19 +426,21 @@ fn y_prime_tail_expansion_rational_function_part(w: f64) -> f64 {
 const TAU: f64 = 2.0 * SIXTEENTH_ROOT_DBL_EPSILON;
 
 #[inline(always)]
-fn normalised_black_with_optimal_use_of_codys_functions<SpFn: SpecialFn>(x: f64, s: f64) -> f64 {
+fn normalised_black_with_optimal_use_of_codys_functions<SpFn: SpecialFn>(
+    half_theta_x: f64,
+    h: f64,
+    t: f64,
+) -> f64 {
     const CODYS_THRESHOLD: f64 = 0.46875;
-    let h = x / s;
-    let t = 0.5 * s;
     let q1 = -FRAC_1_SQRT_2 * (h + t);
     let q2 = -FRAC_1_SQRT_2 * (h - t);
     let two_b = if q1 < CODYS_THRESHOLD {
         if q2 < CODYS_THRESHOLD {
-            (0.5 * x)
+            half_theta_x
                 .exp()
-                .mul_add2(SpFn::erfc(q1), -((-0.5 * x).exp() * SpFn::erfc(q2)))
+                .mul_add2(SpFn::erfc(q1), -((-half_theta_x).exp() * SpFn::erfc(q2)))
         } else {
-            (0.5 * x).exp().mul_add2(
+            half_theta_x.exp().mul_add2(
                 SpFn::erfc(q1),
                 -((-0.5 * h.mul_add2(h, t * t)).exp() * SpFn::erfcx(q2)),
             )
@@ -439,7 +448,7 @@ fn normalised_black_with_optimal_use_of_codys_functions<SpFn: SpecialFn>(x: f64,
     } else if q2 < CODYS_THRESHOLD {
         (-0.5 * h.mul_add2(h, t * t))
             .exp()
-            .mul_add2(SpFn::erfcx(q1), -((-0.5 * x).exp() * SpFn::erfc(q2)))
+            .mul_add2(SpFn::erfcx(q1), -((-half_theta_x).exp() * SpFn::erfc(q2)))
     } else {
         (-0.5 * h.mul_add2(h, t * t)).exp() * (SpFn::erfcx(q1) - SpFn::erfcx(q2))
     };
@@ -447,31 +456,20 @@ fn normalised_black_with_optimal_use_of_codys_functions<SpFn: SpecialFn>(x: f64,
 }
 
 #[inline(always)]
-pub fn normalised_vega(x: f64, s: f64) -> f64 {
-    debug_assert!(s > 0.0);
-    let h = x / s;
-    let t = 0.5 * s;
+pub fn normalised_vega(h: f64, t: f64) -> f64 {
+    debug_assert!(t > 0.0);
     FRAC_1_SQRT_2_PI * (-0.5 * h.mul_add2(h, t * t)).exp()
 }
 
 #[inline(always)]
-pub fn inv_normalised_vega(x: f64, s: f64) -> f64 {
-    debug_assert!(s > 0.0);
-    let h = x / s;
-    let t = 0.5 * s;
+pub fn inv_normalised_vega(h: f64, t: f64) -> f64 {
+    debug_assert!(t > 0.0);
     SQRT_2_PI * (0.5 * h.mul_add2(h, t * t)).exp()
 }
-
 #[inline(always)]
-fn ln_normalised_vega(x: f64, s: f64) -> f64 {
-    let ax = x.abs();
-    if ax <= 0.0 {
-        (0.125 * s).mul_add2(-s, -HALF_OF_LN_2_PI)
-    } else if s <= 0.0 {
-        f64::MIN
-    } else {
-        0.5f64.mul_add2(-(0.25 * s).mul_add2(s, (x / s).powi(2)), -HALF_OF_LN_2_PI)
-    }
+fn ln_normalised_vega(h: f64, t: f64) -> f64 {
+    debug_assert!(h.abs() > 0.0);
+    0.5f64.mul_add2(-h.mul_add2(h, t * t), -HALF_OF_LN_2_PI)
 }
 
 #[inline(always)]
@@ -493,7 +491,7 @@ pub fn black_input_unchecked<SpFn: SpecialFn, const IS_CALL: bool>(
                 debug_assert!(s > 0.0);
                 let theta_x = (f / k).ln().abs().neg();
                 debug_assert!(theta_x < 0.0);
-                f.sqrt() * k.sqrt() * normalised_black::<SpFn>(theta_x, s)
+                f.sqrt() * k.sqrt() * normalised_black::<SpFn>(0.5 * theta_x, theta_x / s, 0.5 * s)
             })
     }
 }
