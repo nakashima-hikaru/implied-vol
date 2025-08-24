@@ -356,9 +356,8 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
             s = inverse_f_upper_map::<SpFn>(f);
             if beta > 0.5 * b_max {
                 let beta_bar = b_max - beta;
-                let mut ds = f64::MIN;
                 let mut final_trial = false;
-                while ds.abs() > f64::EPSILON * s {
+                loop {
                     let h = theta_x / s;
                     let t = 0.5 * s;
                     let gp = SQRT_2_OVER_PI
@@ -374,7 +373,7 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
                     let v = -g / gp;
                     let h2 = b_h2 + gp;
                     let h3 = gp.mul_add2(2.0f64.mul_add2(gp, 3.0 * b_h2), b_h3);
-                    ds = v * if theta_x < -580.0 {
+                    let ds = v * if theta_x < -580.0 {
                         householder::householder_4factor(
                             v,
                             h2,
@@ -391,7 +390,7 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
                         householder::householder_3factor(v, h2, h3)
                     };
                     s += ds;
-                    if final_trial {
+                    if final_trial || ds.abs() <= f64::EPSILON * s {
                         break;
                     }
                     final_trial = true;
