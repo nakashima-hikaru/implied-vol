@@ -20,8 +20,8 @@ jobs:
       - run: cargo fmt --all --check
       - run: cargo check --all-features --workspace
       - run: cargo clippy --all-features -- -D warnings
-      - run: RUSTFLAGS="-C target-cpu=native -C target-feature=+fma -C llvm-args=--fp-contract=fast" cargo test --all-features --doc -- --show-output
-      - run: RUSTFLAGS="-C target-cpu=native -C target-feature=+fma -C llvm-args=--fp-contract=fast" cargo nextest run --all-features
+      - run: cargo test --all-features --doc -- --show-output
+      - run: cargo nextest run --all-features
 
   benchmarks:
     name: Run benchmarks
@@ -36,11 +36,11 @@ jobs:
         uses: dtolnay/rust-toolchain@nightly
 
       - name: Run benchmarks
-        run: RUSTFLAGS="-C target-cpu=native -C target-feature=+fma -C llvm-args=--fp-contract=fast" cargo +nightly bench --features cxx_bench
+        run: cargo +nightly bench --features cxx_bench
         env:
           RUSTFLAGS: --cfg=bench
 
       - name: Run benchmarks with FMA
-        run: RUSTFLAGS="-C target-cpu=native -C target-feature=+fma -C llvm-args=--fp-contract=fast" cargo +nightly bench --features fma,cxx_bench
+        run: cargo +nightly bench --features fma,cxx_bench
         env:
           RUSTFLAGS: --cfg=bench
