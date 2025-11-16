@@ -1,13 +1,9 @@
 [target.x86_64-unknown-linux-gnu]
 rustflags = [
-    "-Ctarget-cpu=native",
-    "-Ctarget-feature=+fma",
     "-Cllvm-args=-fp-contract=fast",
 ]
 [target.aarch64-unknown-linux-gnu]
 rustflags = [
-    "-Ctarget-cpu=native",
-    "-Ctarget-feature=+fma",
     "-Cllvm-args=-fp-contract=fast",
 ]
 [target.aarch64-apple-darwin]
