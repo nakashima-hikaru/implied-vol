@@ -132,24 +132,24 @@ fn b_l_over_b_max(s_c: f64) -> f64 {
 
 #[inline(always)]
 fn compute_f_lower_map_and_first_two_derivatives<SpFn: SpecialFn>(
-    x: f64,
+    theta_x: f64,
     s: f64,
 ) -> (f64, f64, f64) {
-    let ax = x.abs();
-    let z = FRAC_1_SQRT_3 * ax / s;
+    debug_assert!(theta_x < 0.0);
+    let z = -FRAC_1_SQRT_3 * theta_x / s;
     let y = z * z;
     let s2 = s * s;
     let phi_m = 0.5 * SpFn::erfc(FRAC_1_SQRT_2 * z);
 
     let phi2 = phi_m * phi_m;
     (
-        FRAC_2_PI_SQRT_27 * ax * (phi2 * phi_m),
+        -FRAC_2_PI_SQRT_27 * theta_x * (phi2 * phi_m),
         std::f64::consts::TAU * y * phi2 * s2.mul_add2(0.125, y).exp(),
         std::f64::consts::FRAC_PI_6 * y / (s2 * s)
             * phi_m
-            * (8.0 * SQRT_3 * s).mul_add2(
-                ax,
-                (3.0 * s2).mul_add2(s2 - 8.0, -(8.0 * x * x)) * phi_m * inv_norm_pdf(y),
+            * (-8.0 * SQRT_3 * s).mul_add2(
+            theta_x,
+            (3.0 * s2).mul_add2(s2 - 8.0, -(8.0 * theta_x * theta_x)) * phi_m * inv_norm_pdf(y),
             )
             * 2.0f64.mul_add2(y, 0.25 * s2).exp(),
     )
@@ -255,7 +255,7 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
                 let ln_b = bx.ln() + ln_vega;
                 let bpob = bx.recip();
                 let x2_over_s3 = h * h / s;
-                let b_h2 = s.mul_add2(-0.25, x2_over_s3);
+                let b_h2 = t.mul_add2(-0.5, x2_over_s3);
                 let v = (ln_beta - ln_b) * ln_b / ln_beta * bx;
                 let lambda = ln_b.recip();
                 let ot_lambda = lambda.mul_add2(2.0, 1.0);
@@ -367,7 +367,7 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
                     let b_bar = bs_option_price::normalised_vega(h, t) / gp;
                     let g = (beta_bar / b_bar).ln();
                     let x2_over_s3 = h * h / s;
-                    let b_h2 = s.mul_add2(-0.25, x2_over_s3);
+                    let b_h2 = t.mul_add2(-0.5, x2_over_s3);
                     let c = 3.0 * (x2_over_s3 / s);
                     let b_h3 = b_h2.mul_add2(b_h2, -c - 0.25);
                     let v = -g / gp;
@@ -411,7 +411,7 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
         let b = bs_option_price::normalised_black::<SpFn>(0.5 * theta_x, h, t);
         let bp = bs_option_price::normalised_vega(h, t);
         let nu = (beta - b) / bp;
-        let h2 = s.mul_add2(-0.25, h * h / s);
+        let h2 = t.mul_add2(-0.5, h * h / s);
         let h3 = h2.mul_add2(h2, -(3.0 * (h / s).powi(2))) - 0.25_f64;
         ds = nu * householder::householder_3factor(nu, h2, h3);
         s += ds;
@@ -454,7 +454,7 @@ mod tests {
     use crate::lets_be_rational::special_function::DefaultSpecialFn;
     use rand::Rng;
 
-    pub(crate) const FOURTH_ROOT_DBL_EPSILON: f64 = f64::from_bits(0x3f20000000000000);
+    pub(crate) const FOURTH_ROOT_DBL_EPSILON: f64 = f64::from_bits(0x3f20_0000_0000_0000);
 
     fn normalised_intrinsic(theta_x: f64) -> f64 {
         // if theta_x <= 0.0 {
@@ -477,9 +477,7 @@ mod tests {
         let h = theta_x / s;
         let t = 0.5 * s;
         (if theta_x > 0.0 {
-            normalised_intrinsic(theta_x)
-                * SQRT_2_PI
-                * (0.5 * ((theta_x / s).powi(2) + 0.25 * s * s)).exp()
+            normalised_intrinsic(theta_x) * SQRT_2_PI * (0.5 * h.mul_add2(h, t * t)).exp()
         } else {
             0.0
         }) + scaled_normalised_black_and_ln_vega::<DefaultSpecialFn>(0.5 * -theta_x.abs(), h, t).0

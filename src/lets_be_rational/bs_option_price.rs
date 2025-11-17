@@ -255,7 +255,10 @@ fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
 
     debug_assert!(h < ETA.abs().neg() && h < TAU + 0.5 - h + ETA);
     let e = (t / h).powi(2);
-    let r = (h + t) * (h - t);
+    #[cfg(feature = "fma")]
+    let r = h.mul_add2(h, -t * t);
+    #[cfg(not(feature = "fma"))]
+    let r = (h - t) * (h + t);
     let q = (h / r).powi(2);
 
     let idx = THRESHOLDS
