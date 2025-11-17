@@ -25,9 +25,9 @@ fn ab(z: f64) -> f64 {
         .mul_add2(z, A[2])
         .mul_add2(z, A[3])
         / z.mul_add2(1.0, B[0])
-            .mul_add2(z, B[1])
-            .mul_add2(z, B[2])
-            .mul_add2(z, B[3])
+        .mul_add2(z, B[1])
+        .mul_add2(z, B[2])
+        .mul_add2(z, B[3])
 }
 
 #[inline(always)]
@@ -62,13 +62,13 @@ fn cd(y: f64) -> f64 {
         .mul_add2(y, C[6])
         .mul_add2(y, C[7])
         / (y + D[0])
-            .mul_add2(y, D[1])
-            .mul_add2(y, D[2])
-            .mul_add2(y, D[3])
-            .mul_add2(y, D[4])
-            .mul_add2(y, D[5])
-            .mul_add2(y, D[6])
-            .mul_add2(y, D[7])
+        .mul_add2(y, D[1])
+        .mul_add2(y, D[2])
+        .mul_add2(y, D[3])
+        .mul_add2(y, D[4])
+        .mul_add2(y, D[5])
+        .mul_add2(y, D[6])
+        .mul_add2(y, D[7])
 }
 
 #[inline(always)]
@@ -95,22 +95,38 @@ fn pq(z: f64) -> f64 {
         .mul_add2(z, P[3])
         .mul_add2(z, P[4]))
         / ((z + Q[0])
-            .mul_add2(z, Q[1])
-            .mul_add2(z, Q[2])
-            .mul_add2(z, Q[3])
-            .mul_add2(z, Q[4]))
+        .mul_add2(z, Q[1])
+        .mul_add2(z, Q[2])
+        .mul_add2(z, Q[3])
+        .mul_add2(z, Q[4]))
 }
 
+#[cfg(not(feature = "fma"))]
 #[inline(always)]
 fn smoothened_exponential_of_negative_square(y: f64) -> f64 {
     let y_tilde = (y * 16.0).trunc() / 16.0;
     (y_tilde * y_tilde).neg().exp() * (-(y - y_tilde) * (y + y_tilde)).exp()
 }
 
+#[cfg(feature = "fma")]
+#[inline(always)]
+fn smoothened_exponential_of_negative_square(y: f64) -> f64 {
+    let neg_square_y_tilde = ((y * 16.0).trunc() / 16.0).powi(2).neg();
+    neg_square_y_tilde.exp() * y.mul_add2(y, neg_square_y_tilde).neg().exp()
+}
+
+#[cfg(not(feature = "fma"))]
 #[inline(always)]
 fn smoothened_exponential_of_positive_square(x: f64) -> f64 {
     let x_tilde = (x * 16.0).trunc() / 16.0;
     (x_tilde * x_tilde).exp() * ((x - x_tilde) * (x + x_tilde)).exp()
+}
+
+#[cfg(feature = "fma")]
+#[inline(always)]
+fn smoothened_exponential_of_positive_square(x: f64) -> f64 {
+    let square_x_tilde = ((x * 16.0).trunc() / 16.0).powi(2);
+    square_x_tilde.exp() * x.mul_add2(x, -square_x_tilde).exp()
 }
 
 const THRESHOLD: f64 = 0.46875;
@@ -205,11 +221,11 @@ pub(super) fn one_minus_erfcx<SpFn: SpecialFn + ?Sized>(x: f64) -> f64 {
             .mul_add2(x, 1.151_496_718_178_475_6)
             .mul_add2(x, 1.000_000_000_000_000_2)
             / x.mul_add2(1.246_332_072_834_634_7E-2, 1.358_008_134_514_386E-1)
-                .mul_add2(x, 6.248_608_165_864_026E-1)
-                .mul_add2(x, 1.508_990_859_374_272_3)
-                .mul_add2(x, 1.903_749_496_242_156_3)
-                .mul_add2(x, 1.0))
-        .mul_add2(-x, std::f64::consts::FRAC_2_SQRT_PI)
+            .mul_add2(x, 6.248_608_165_864_026E-1)
+            .mul_add2(x, 1.508_990_859_374_272_3)
+            .mul_add2(x, 1.903_749_496_242_156_3)
+            .mul_add2(x, 1.0))
+            .mul_add2(-x, std::f64::consts::FRAC_2_SQRT_PI)
     } else {
         1.0 - SpFn::erfcx(x)
     }
