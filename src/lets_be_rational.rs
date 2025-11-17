@@ -148,8 +148,8 @@ fn compute_f_lower_map_and_first_two_derivatives<SpFn: SpecialFn>(
         std::f64::consts::FRAC_PI_6 * y / (s2 * s)
             * phi_m
             * (-8.0 * SQRT_3 * s).mul_add2(
-            theta_x,
-            (3.0 * s2).mul_add2(s2 - 8.0, -(8.0 * theta_x * theta_x)) * phi_m * inv_norm_pdf(y),
+                theta_x,
+                (3.0 * s2).mul_add2(s2 - 8.0, -(8.0 * theta_x * theta_x)) * phi_m * inv_norm_pdf(y),
             )
             * 2.0f64.mul_add2(y, 0.25 * s2).exp(),
     )
@@ -441,7 +441,8 @@ pub fn implied_black_volatility_input_unchecked<SpFn: SpecialFn, const IS_CALL: 
     Some(if f == k {
         implied_normalised_volatility_atm::<SpFn>(normalised_time_value) / t.sqrt()
     } else {
-        lets_be_rational::<SpFn>(normalised_time_value, (f / k).ln().abs().neg())?.div(t.sqrt())
+        lets_be_rational::<SpFn>(normalised_time_value, (f.ln() - k.ln()).abs().neg())?
+            .div(t.sqrt())
     })
 }
 
@@ -646,7 +647,7 @@ mod tests {
             //     println!("{:?}", (price, f, k, t, q, sigma));
             //     println!("{:?}", (price - reprice).abs() / f64::EPSILON);
             // }
-            assert!((price - reprice).abs() <= 1.75 * f64::EPSILON);
+            assert!((price - reprice).abs() <= 1.5 * f64::EPSILON);
         }
     }
 
@@ -730,11 +731,7 @@ mod tests {
                 implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t)
                     .unwrap();
             let reprice = black_input_unchecked::<DefaultSpecialFn, Q>(f, k, sigma, t);
-            assert!(
-                ((price - reprice) / price).abs() <= 2.0 * f64::EPSILON,
-                "{}",
-                ((price - reprice) / price).abs() / f64::EPSILON
-            );
+            assert_eq!(price, reprice);
         }
         {
             let price = 33.55;

@@ -492,7 +492,7 @@ pub fn black_input_unchecked<SpFn: SpecialFn, const IS_CALL: bool>(
                 0.0
             } else {
                 debug_assert!(s > 0.0);
-                let theta_x = (f / k).ln().abs().neg();
+                let theta_x = (f.ln() - k.ln()).abs().neg();
                 debug_assert!(theta_x < 0.0);
                 f.sqrt() * k.sqrt() * normalised_black::<SpFn>(0.5 * theta_x, theta_x / s, 0.5 * s)
             })
