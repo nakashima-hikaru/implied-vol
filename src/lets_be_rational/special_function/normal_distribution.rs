@@ -22,8 +22,8 @@ pub(super) fn norm_cdf<SpFn: SpecialFn + ?Sized>(z: f64) -> f64 {
     const NORM_CDF_ASYMPTOTIC_EXPANSION_FIRST_THRESHOLD: f64 = -10.0;
     const NORM_CDF_ASYMPTOTIC_EXPANSION_SECOND_THRESHOLD: f64 = -67_108_864.0;
     if z <= NORM_CDF_ASYMPTOTIC_EXPANSION_FIRST_THRESHOLD {
-        let mut sum = 1.0;
         if z >= NORM_CDF_ASYMPTOTIC_EXPANSION_SECOND_THRESHOLD {
+            let mut sum = 1.0;
             let zsqr = z * z;
             let mut i = 4.0_f64;
             let mut g = 1.0;
@@ -42,7 +42,7 @@ pub(super) fn norm_cdf<SpFn: SpecialFn + ?Sized>(z: f64) -> f64 {
                 }
             }
         }
-        return -norm_pdf(z * z) * sum / z;
+        return -norm_pdf(z * z) / z;
     }
     0.5 * SpFn::erfc(-z * FRAC_1_SQRT_2)
 }
