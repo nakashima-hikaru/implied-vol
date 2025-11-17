@@ -8,8 +8,8 @@ use std::ops::Neg;
 const FRAC_SQRT_2_PI: f64 = f64::from_bits(0x3fd9_8845_33d4_3651);
 
 #[inline(always)]
-pub fn norm_pdf(x: f64) -> f64 {
-    FRAC_SQRT_2_PI * (-0.5 * x * x).exp()
+pub fn norm_pdf(x2: f64) -> f64 {
+    FRAC_SQRT_2_PI * (-0.5 * x2).exp()
 }
 
 #[inline(always)]
@@ -38,11 +38,11 @@ pub(super) fn norm_cdf<SpFn: SpecialFn + ?Sized>(z: f64) -> f64 {
                 i += 4.0;
                 a = a.abs();
                 if !(lasta > a && a >= (sum * f64::EPSILON).abs()) {
-                    break;
+                    return -norm_pdf(zsqr) * sum / z;
                 }
             }
         }
-        return -norm_pdf(z) * sum / z;
+        return -norm_pdf(z * z) * sum / z;
     }
     0.5 * SpFn::erfc(-z * FRAC_1_SQRT_2)
 }

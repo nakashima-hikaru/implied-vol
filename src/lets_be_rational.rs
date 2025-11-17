@@ -365,7 +365,7 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
                             + SpFn::erfcx((t - h) * FRAC_1_SQRT_2));
                     debug_assert!(s > 0.0);
                     let b_bar = bs_option_price::normalised_vega(h, t) / gp;
-                    let g = (beta_bar / b_bar).ln();
+                    let g = ((beta_bar - b_bar) / b_bar).ln_1p();
                     let x2_over_s3 = h * h / s;
                     let b_h2 = t.mul_add2(-0.5, x2_over_s3);
                     let c = 3.0 * (x2_over_s3 / s);
