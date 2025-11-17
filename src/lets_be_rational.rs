@@ -538,11 +538,11 @@ mod tests {
             debug_assert!(
                 (sigma - sigma2).abs() / sigma
                     <= 1.0
-                        + black_accuracy_factor((f / k).ln(), sigma * t.sqrt(), 1.0).recip()
+                        + black_accuracy_factor(f.ln() - k.ln(), sigma * t.sqrt(), 1.0).recip()
                             * f64::EPSILON,
                 "f: {f}, k: {k}, t: {t}, sigma: {sigma}, sigma2; {sigma2}, price: {price}, {}, {}",
                 (sigma - sigma2).abs() / sigma / f64::EPSILON,
-                1.0 + black_accuracy_factor((f / k).ln(), sigma * t.sqrt(), 1.0).recip()
+                1.0 + black_accuracy_factor(f.ln() - k.ln(), sigma * t.sqrt(), 1.0).recip()
             );
         }
     }
