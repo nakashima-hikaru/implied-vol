@@ -104,28 +104,28 @@ fn pq(z: f64) -> f64 {
 #[cfg(not(feature = "fma"))]
 #[inline(always)]
 fn smoothened_exponential_of_negative_square(y: f64) -> f64 {
-    let y_tilde = (y * 16.0).trunc() / 16.0;
+    let y_tilde = (y * 16.0).trunc() * 0.0625;
     (y_tilde * y_tilde).neg().exp() * (-(y - y_tilde) * (y + y_tilde)).exp()
 }
 
 #[cfg(feature = "fma")]
 #[inline(always)]
 fn smoothened_exponential_of_negative_square(y: f64) -> f64 {
-    let neg_square_y_tilde = ((y * 16.0).trunc() / 16.0).powi(2).neg();
+    let neg_square_y_tilde = ((y * 16.0).trunc() * 0.0625).powi(2).neg();
     neg_square_y_tilde.exp() * y.mul_add2(y, neg_square_y_tilde).neg().exp()
 }
 
 #[cfg(not(feature = "fma"))]
 #[inline(always)]
 fn smoothened_exponential_of_positive_square(x: f64) -> f64 {
-    let x_tilde = (x * 16.0).trunc() / 16.0;
+    let x_tilde = (x * 16.0).trunc() * 0.0625;
     (x_tilde * x_tilde).exp() * ((x - x_tilde) * (x + x_tilde)).exp()
 }
 
 #[cfg(feature = "fma")]
 #[inline(always)]
 fn smoothened_exponential_of_positive_square(x: f64) -> f64 {
-    let square_x_tilde = ((x * 16.0).trunc() / 16.0).powi(2);
+    let square_x_tilde = ((x * 16.0).trunc() * 0.0625).powi(2);
     square_x_tilde.exp() * x.mul_add2(x, -square_x_tilde).exp()
 }
 
