@@ -263,9 +263,9 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
                 let c = 3.0 * (x2_over_s3 / s);
                 let b_h3 = b_h2.mul_add2(b_h2, -c) - 0.25;
                 let sq_bpob = bpob * bpob;
-                let bppob = b_h2 * bpob;
+                let bppob_triple = 3.0 * b_h2 * bpob;
                 let mu_plus_2 = (1.0 + lambda).mul_add2(6.0 * lambda, 2.0);
-                let h3 = (bppob * 3.0).mul_add2(-ot_lambda, sq_bpob.mul_add2(mu_plus_2, b_h3));
+                let h3 = bppob_triple.mul_add2(-ot_lambda, sq_bpob.mul_add2(mu_plus_2, b_h3));
                 ds = v * if theta_x < -190.0 {
                     householder::householder_4factor(
                         v,
@@ -280,9 +280,9 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
                                             .mul_add2(24.0, 36.0)
                                             .mul_add2(lambda, 22.0)
                                             .mul_add2(lambda, 6.0),
-                                        -(6.0 * bppob * mu_plus_2),
+                                        -(2.0 * bppob_triple * mu_plus_2),
                                     ),
-                                    -(bppob * 3.0 * ot_lambda),
+                                    -(bppob_triple * ot_lambda),
                                 ),
                             ),
                     )

@@ -20,10 +20,12 @@ pub fn rational_cubic_interpolation(
         let omt = 1.0 - t;
         let t2 = t * t;
         let omt2 = omt * omt;
-        return y.0.mul_add2(r, h * d.0).mul_add2(t, y.0 * omt).mul_add2(
-            omt2,
-            t2 * y.1.mul_add2(r, -h * d.1).mul_add2(omt, y.1 * t),
-        ) / (r - 3.0).mul_add2(t * omt, 1.0);
+        return y
+            .0
+            .mul_add2(r, h * d.0)
+            .mul_add2(t, y.0 * omt)
+            .mul_add2(omt2, t2 * y.1.mul_add2(r, -h * d.1).mul_add2(omt, y.1 * t))
+            / (r - 3.0).mul_add2(t * omt, 1.0);
     }
     (1.0 - t).mul_add2(y.0, y.1 * t)
 }

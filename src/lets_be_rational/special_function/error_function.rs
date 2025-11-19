@@ -25,9 +25,9 @@ fn ab(z: f64) -> f64 {
         .mul_add2(z, A[2])
         .mul_add2(z, A[3])
         / z.mul_add2(1.0, B[0])
-        .mul_add2(z, B[1])
-        .mul_add2(z, B[2])
-        .mul_add2(z, B[3])
+            .mul_add2(z, B[1])
+            .mul_add2(z, B[2])
+            .mul_add2(z, B[3])
 }
 
 #[inline(always)]
@@ -62,13 +62,13 @@ fn cd(y: f64) -> f64 {
         .mul_add2(y, C[6])
         .mul_add2(y, C[7])
         / (y + D[0])
-        .mul_add2(y, D[1])
-        .mul_add2(y, D[2])
-        .mul_add2(y, D[3])
-        .mul_add2(y, D[4])
-        .mul_add2(y, D[5])
-        .mul_add2(y, D[6])
-        .mul_add2(y, D[7])
+            .mul_add2(y, D[1])
+            .mul_add2(y, D[2])
+            .mul_add2(y, D[3])
+            .mul_add2(y, D[4])
+            .mul_add2(y, D[5])
+            .mul_add2(y, D[6])
+            .mul_add2(y, D[7])
 }
 
 #[inline(always)]
@@ -95,10 +95,10 @@ fn pq(z: f64) -> f64 {
         .mul_add2(z, P[3])
         .mul_add2(z, P[4]))
         / ((z + Q[0])
-        .mul_add2(z, Q[1])
-        .mul_add2(z, Q[2])
-        .mul_add2(z, Q[3])
-        .mul_add2(z, Q[4]))
+            .mul_add2(z, Q[1])
+            .mul_add2(z, Q[2])
+            .mul_add2(z, Q[3])
+            .mul_add2(z, Q[4]))
 }
 
 #[cfg(not(feature = "fma"))]
@@ -221,11 +221,11 @@ pub(super) fn one_minus_erfcx<SpFn: SpecialFn + ?Sized>(x: f64) -> f64 {
             .mul_add2(x, 1.151_496_718_178_475_6)
             .mul_add2(x, 1.000_000_000_000_000_2)
             / x.mul_add2(1.246_332_072_834_634_7E-2, 1.358_008_134_514_386E-1)
-            .mul_add2(x, 6.248_608_165_864_026E-1)
-            .mul_add2(x, 1.508_990_859_374_272_3)
-            .mul_add2(x, 1.903_749_496_242_156_3)
-            .mul_add2(x, 1.0))
-            .mul_add2(-x, std::f64::consts::FRAC_2_SQRT_PI)
+                .mul_add2(x, 6.248_608_165_864_026E-1)
+                .mul_add2(x, 1.508_990_859_374_272_3)
+                .mul_add2(x, 1.903_749_496_242_156_3)
+                .mul_add2(x, 1.0))
+        .mul_add2(-x, std::f64::consts::FRAC_2_SQRT_PI)
     } else {
         1.0 - SpFn::erfcx(x)
     }
