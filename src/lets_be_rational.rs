@@ -207,7 +207,7 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
     let b_c = 0.5 * b_max * ome;
     if beta < b_c {
         debug_assert!(theta_x < 0.0);
-        let s_l = SQRT_PI_OVER_2.mul_add2(-ome, s_c);
+        let s_l = (-SQRT_PI_OVER_2).mul_add2(ome, s_c);
         debug_assert!(s_l > 0.0);
         let b_l = b_l_over_b_max(s_c) * b_max;
         // no return
@@ -241,9 +241,8 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
             debug_assert!(s > 0.0);
             let ln_beta = beta.ln();
 
-            let mut ds = 1.0_f64;
             let mut final_trial = false;
-            while ds.abs() > f64::EPSILON * s {
+            loop {
                 debug_assert!(s > 0.0);
                 let h = theta_x / s;
                 let t = 0.5 * s;
@@ -258,7 +257,10 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
                 let b_h2 = t.mul_add2(-0.5, x2_over_s3);
                 let v = (ln_beta - ln_b) * ln_b / ln_beta * bx;
                 let lambda = ln_b.recip();
+                #[cfg(feature = "fma")]
                 let ot_lambda = lambda.mul_add2(2.0, 1.0);
+                #[cfg(not(feature = "fma"))]
+                let ot_lambda = lambda + lambda + 1.0;
                 let h2 = ot_lambda.mul_add2(-bpob, b_h2);
                 let c = 3.0 * (x2_over_s3 / s);
                 let b_h3 = b_h2.mul_add2(b_h2, -c) - 0.25;
@@ -266,7 +268,7 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
                 let bppob_triple = 3.0 * b_h2 * bpob;
                 let mu_plus_2 = (1.0 + lambda).mul_add2(6.0 * lambda, 2.0);
                 let h3 = bppob_triple.mul_add2(-ot_lambda, sq_bpob.mul_add2(mu_plus_2, b_h3));
-                ds = v * if theta_x < -190.0 {
+                let ds = v * if theta_x < -190.0 {
                     householder::householder_4factor(
                         v,
                         h2,
@@ -291,12 +293,11 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
                 };
                 s += ds;
                 debug_assert!(s > 0.0);
-                if final_trial {
+                if final_trial || ds.abs() <= f64::EPSILON * s {
                     return s;
                 }
                 final_trial = true;
             }
-            return s;
         }
         let inv_v = (
             SQRT_2_PI / b_max,
@@ -364,11 +365,10 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
                         / (SpFn::erfcx((t + h) * FRAC_1_SQRT_2)
                             + SpFn::erfcx((t - h) * FRAC_1_SQRT_2));
                     debug_assert!(s > 0.0);
-                    let b_bar = bs_option_price::normalised_vega(h, t) / gp;
-                    let g = ((beta_bar - b_bar) / b_bar).ln_1p();
+                    let g = (beta_bar * gp).ln() + bs_option_price::ln_inv_normalised_vega(h, t);
                     let x2_over_s3 = h * h / s;
                     let b_h2 = t.mul_add2(-0.5, x2_over_s3);
-                    let c = 3.0 * (x2_over_s3 / s);
+                    let c = 3.0 * x2_over_s3 / s;
                     let b_h3 = b_h2.mul_add2(b_h2, -c - 0.25);
                     let v = -g / gp;
                     let h2 = b_h2 + gp;
@@ -399,11 +399,8 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
             }
         }
     }
-    let mut ds = f64::MIN;
-    for _ in 0..2 {
-        if ds.abs() <= f64::EPSILON * s {
-            break;
-        }
+    let mut final_trial = false;
+    loop {
         debug_assert!(s > 0.0);
         debug_assert!(theta_x < 0.0_f64);
         let h = theta_x / s;
@@ -413,8 +410,12 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
         let nu = (beta - b) / bp;
         let h2 = t.mul_add2(-0.5, h * h / s);
         let h3 = h2.mul_add2(h2, -(3.0 * (h / s).powi(2))) - 0.25_f64;
-        ds = nu * householder::householder_3factor(nu, h2, h3);
+        let ds = nu * householder::householder_3factor(nu, h2, h3);
         s += ds;
+        if final_trial || ds.abs() <= f64::EPSILON * s {
+            break;
+        }
+        final_trial = true;
     }
     s
 }
@@ -478,7 +479,7 @@ mod tests {
         let h = theta_x / s;
         let t = 0.5 * s;
         (if theta_x > 0.0 {
-            normalised_intrinsic(theta_x) * SQRT_2_PI * (0.5 * h.mul_add2(h, t * t)).exp()
+            normalised_intrinsic(theta_x) * SQRT_2_PI * (0.5 * t.mul_add2(t, h * h)).exp()
         } else {
             0.0
         }) + scaled_normalised_black_and_ln_vega::<DefaultSpecialFn>(0.5 * -theta_x.abs(), h, t).0

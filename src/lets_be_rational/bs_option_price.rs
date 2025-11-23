@@ -256,7 +256,7 @@ fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
     debug_assert!(h < ETA.abs().neg() && h < TAU + 0.5 - h + ETA);
     let e = (t / h).powi(2);
     #[cfg(feature = "fma")]
-    let r = h.mul_add2(h, -t * t);
+    let r = t.mul_add2(-t, h * h);
     #[cfg(not(feature = "fma"))]
     let r = (h - t) * (h + t);
     let q = (h / r).powi(2);
@@ -445,15 +445,15 @@ fn normalised_black_with_optimal_use_of_codys_functions<SpFn: SpecialFn>(
         } else {
             half_theta_x.exp().mul_add2(
                 SpFn::erfc(q1),
-                -((-0.5 * h.mul_add2(h, t * t)).exp() * SpFn::erfcx(q2)),
+                -((-0.5 * t.mul_add2(t, h * h)).exp() * SpFn::erfcx(q2)),
             )
         }
     } else if q2 < CODYS_THRESHOLD {
-        (-0.5 * h.mul_add2(h, t * t))
+        (-0.5 * t.mul_add2(t, h * h))
             .exp()
             .mul_add2(SpFn::erfcx(q1), -((-half_theta_x).exp() * SpFn::erfc(q2)))
     } else {
-        (-0.5 * h.mul_add2(h, t * t)).exp() * (SpFn::erfcx(q1) - SpFn::erfcx(q2))
+        (-0.5 * t.mul_add2(t, h * h)).exp() * (SpFn::erfcx(q1) - SpFn::erfcx(q2))
     };
     (0.5 * two_b).max(0.0)
 }
@@ -461,18 +461,24 @@ fn normalised_black_with_optimal_use_of_codys_functions<SpFn: SpecialFn>(
 #[inline(always)]
 pub fn normalised_vega(h: f64, t: f64) -> f64 {
     debug_assert!(t > 0.0);
-    FRAC_1_SQRT_2_PI * (-0.5 * h.mul_add2(h, t * t)).exp()
+    FRAC_1_SQRT_2_PI * (-0.5 * t.mul_add2(t, h * h)).exp()
 }
 
 #[inline(always)]
 pub fn inv_normalised_vega(h: f64, t: f64) -> f64 {
     debug_assert!(t > 0.0);
-    SQRT_2_PI * (0.5 * h.mul_add2(h, t * t)).exp()
+    SQRT_2_PI * (0.5 * t.mul_add2(t, h * h)).exp()
 }
 #[inline(always)]
 fn ln_normalised_vega(h: f64, t: f64) -> f64 {
     debug_assert!(h.abs() > 0.0);
-    0.5f64.mul_add2(-h.mul_add2(h, t * t), -HALF_OF_LN_2_PI)
+    0.5f64.mul_add2(-t.mul_add2(t, h * h), -HALF_OF_LN_2_PI)
+}
+
+#[inline(always)]
+pub fn ln_inv_normalised_vega(h: f64, t: f64) -> f64 {
+    debug_assert!(h.abs() > 0.0);
+    0.5f64.mul_add2(t.mul_add2(t, h * h), HALF_OF_LN_2_PI)
 }
 
 #[inline(always)]

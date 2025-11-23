@@ -142,17 +142,20 @@ pub(super) fn erf_cody(x: f64) -> f64 {
         return x * ab(y * y);
     }
     // Compute erfc(|x|)
-    let erfc_abs_x = if y >= XBIG {
+    let erfc_abs_x_over_exponential_of_negative_square = if y >= XBIG {
         0.0 // when |x| ≥ 26.543
     } else if y <= 4.0 {
         cd(y) // when 0.46875 < |x| <= 4.0
     } else {
         (ONE_OVER_SQRT_PI - pq((y * y).recip())) / y // when 4.0 < |x| < 26.543
-    } * smoothened_exponential_of_negative_square(y);
+    };
+    let exponential_of_negative_square = smoothened_exponential_of_negative_square(y);
     if x < 0.0 {
-        erfc_abs_x - 1.0
+        erfc_abs_x_over_exponential_of_negative_square
+            .mul_add2(exponential_of_negative_square, -1.0)
     } else {
-        1.0 - erfc_abs_x
+        erfc_abs_x_over_exponential_of_negative_square
+            .mul_add2(-exponential_of_negative_square, 1.0)
     }
 }
 
@@ -204,9 +207,17 @@ pub(super) fn erfcx_cody(x: f64) -> f64 {
         return f64::MAX;
     }
     let result = erfcx_cody_above_threshold(y);
+    #[cfg(feature = "fma")]
     if x < 0.0 {
         let expx2 = smoothened_exponential_of_positive_square(x);
-        (expx2 + expx2) - result
+        expx2.mul_add2(2.0, -result)
+    } else {
+        result
+    }
+    #[cfg(not(feature = "fma"))]
+    if x < 0.0 {
+        let expx2 = smoothened_exponential_of_positive_square(x);
+        expx2 + expx2 - result
     } else {
         result
     }
