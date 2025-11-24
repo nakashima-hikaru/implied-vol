@@ -388,7 +388,7 @@ fn y_prime<SpFn: SpecialFn>(h: f64) -> f64 {
         // Nonlinear-Remez optimized minimax rational function of order (5,6) for g(w) := (Y'(h)/h²-1)/h² with w:=1/h².
         // The relative accuracy of Y'(h) ≈ w·(1+w·g(w)) is better than 9.8E-17 (in perfect arithmetic) on h in [-∞,-4] (i.e., on w in [0,1/16]).
         let w = (h * h).recip();
-        w * (1.0 + y_prime_tail_expansion_rational_function_part(w))
+        w * y_prime_tail_expansion_rational_function_part_plus_1(w)
     } else if h <= -0.46875 {
         // Remez-optimized minimax rational function of order (7,7) of relative accuracy better than 1.6E-16 (in perfect arithmetic) on h in [-4,-0.46875].
         h.mul_add2(8.459_243_640_658_06E-10, 4.276_659_783_590_871_4E-8)
@@ -411,19 +411,18 @@ fn y_prime<SpFn: SpecialFn>(h: f64) -> f64 {
 }
 
 #[inline(always)]
-fn y_prime_tail_expansion_rational_function_part(w: f64) -> f64 {
-    w.mul_add2(-6.681_824_903_261_685E4, -8.383_602_146_074_198E4)
+fn y_prime_tail_expansion_rational_function_part_plus_1(w: f64) -> f64 {
+    (w.mul_add2(-6.681_824_903_261_685E4, -8.383_602_146_074_198E4)
         .mul_add2(w, -2.780_574_569_386_430_8E4)
         .mul_add2(w, -3.473_503_544_549_563_2E3)
         .mul_add2(w, -1.755_626_332_354_220_6E2)
         .mul_add2(w, -2.999_999_999_999_466)
-        * w
         / w.mul_add2(6.928_651_867_980_375E4, 1.256_997_038_092_390_9E5)
             .mul_add2(w, 6.688_679_416_565_168E4)
             .mul_add2(w, 1.456_254_563_850_703_4E4)
             .mul_add2(w, 1.440_438_903_760_433_7E3)
             .mul_add2(w, 6.352_087_774_483_173_6E1)
-            .mul_add2(w, 1.0)
+            .mul_add2(w, 1.0)).mul_add2(w, 1.0)
 }
 
 const TAU: f64 = 2.0 * SIXTEENTH_ROOT_DBL_EPSILON;

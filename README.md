@@ -35,12 +35,12 @@ The calculations are performed via builders that allow you to handle errors.
 ```rust
 use implied_vol::{DefaultSpecialFn, ImpliedBlackVolatility};
 let iv_builder = ImpliedBlackVolatility::builder()
-    .option_price(10.0)
-    .forward(100.0)
-    .strike(100.0)
-    .expiry(1.0)
-    .is_call(true)
-    .build().unwrap();
+.option_price(10.0)
+.forward(100.0)
+.strike(100.0)
+.expiry(1.0)
+.is_call(true)
+.build().unwrap();
 
 let iv = iv_builder.calculate::<DefaultSpecialFn>().unwrap();
 assert!(iv.is_finite());
@@ -60,6 +60,15 @@ This crate implements algorithms from two key papers by Peter Jäckel:
 
 Both papers and related materials are available on [Peter Jäckel's website](http://www.jaeckel.org/).
 
+## Key differences from the original Authors' Implementation
+
+- Enables the use of custom special functions for calculating implied volatilities and option prices.
+- Modified to return results earlier for ATM cases.
+- Utilizes explicit FMA instructions when available.
+    - Results are undefined when inputs contain NaNs. (This is because this crate provides builders that handle errors.)
+    - Some implementations of asymptotic expansions differ from the original authors' implementation for FMA
+      utilization.
+
 ## Performance
 
 Benchmark results, available via our [GitHub Actions](https://github.com/nakashima-hikaru/implied-vol/actions),
@@ -70,14 +79,10 @@ version.
 ## Precision
 
 The prices reconstructed using implied volatilities (both Black and normal) calculated from given prices exhibit
-relative errors less than four times the machine epsilon (f64::epsilon) compared to the original prices, as confirmed by
+absolute errors less than 1.5 times the machine epsilon compared to the original prices, as confirmed by
 random tests.
 
 ## Cargo Feature Flags
 
 * `fma`: Enables Fused Multiply-Add (FMA) instructions when supported by the target CPU, providing a slight performance
   boost over the default implementation.
-
-## License
-
-This project is licensed under the [MIT License](https://github.com/nakashima-hikaru/implied-vol/blob/main/LICENSE).
