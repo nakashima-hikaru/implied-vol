@@ -422,7 +422,8 @@ fn y_prime_tail_expansion_rational_function_part_plus_1(w: f64) -> f64 {
             .mul_add2(w, 1.456_254_563_850_703_4E4)
             .mul_add2(w, 1.440_438_903_760_433_7E3)
             .mul_add2(w, 6.352_087_774_483_173_6E1)
-            .mul_add2(w, 1.0)).mul_add2(w, 1.0)
+            .mul_add2(w, 1.0))
+    .mul_add2(w, 1.0)
 }
 
 const TAU: f64 = 2.0 * SIXTEENTH_ROOT_DBL_EPSILON;

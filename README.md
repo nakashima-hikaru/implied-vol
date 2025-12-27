@@ -11,7 +11,7 @@ implemented based on the methods described in Peter Jäckel's seminal papers.
 
 ## Usage
 
-This crate exposes builders for computing:
+This crate exposes free functions (and optional builders) for computing:
 
 - the implied **Black** volatility,
 - the implied **Normal** (Bachelier) volatility,
@@ -28,19 +28,60 @@ Add the following to your `Cargo.toml`:
 implied-vol = "2.0"
 ```
 
-The calculations are performed via builders that allow you to handle errors.
+By default the `builders` feature is enabled. Disable it for a minimal surface
+that exposes only free functions.
 
-### Example
+The calculations are performed via free functions or builders that validate inputs
+before executing the numerical routines.
+
+### Free-function example
+
+```rust
+use implied_vol::{DefaultSpecialFn, implied_black_volatility};
+
+let sigma = implied_black_volatility::<DefaultSpecialFn>(
+    10.0,   // option price
+    100.0,  // forward
+    100.0,  // strike
+    1.0,    // expiry
+    true,   // is_call
+).unwrap();
+assert!(sigma.is_finite());
+```
+
+### Normalised input example
+
+```rust
+use implied_vol::{DefaultSpecialFn, implied_black_volatility_normalised};
+
+let forward = 120.0;
+let strike = 100.0;
+let option_price = 10.0;
+let intrinsic = (forward - strike).max(0.0);
+let normalised_time_value =
+    if intrinsic > 0.0 { option_price - intrinsic } else { option_price }
+        / (forward.sqrt() * strike.sqrt());
+let log_moneyness = forward.ln() - strike.ln();
+
+let sigma = implied_black_volatility_normalised::<DefaultSpecialFn>(
+    normalised_time_value,
+    log_moneyness,
+    1.0,
+).unwrap();
+assert!(sigma.is_finite());
+```
+
+### Builder example (requires `builders` feature)
 
 ```rust
 use implied_vol::{DefaultSpecialFn, ImpliedBlackVolatility};
 let iv_builder = ImpliedBlackVolatility::builder()
-.option_price(10.0)
-.forward(100.0)
-.strike(100.0)
-.expiry(1.0)
-.is_call(true)
-.build().unwrap();
+    .option_price(10.0)
+    .forward(100.0)
+    .strike(100.0)
+    .expiry(1.0)
+    .is_call(true)
+    .build().unwrap();
 
 let iv = iv_builder.calculate::<DefaultSpecialFn>().unwrap();
 assert!(iv.is_finite());
@@ -84,5 +125,7 @@ random tests.
 
 ## Cargo Feature Flags
 
+* `builders` (default): exposes builder types. Disable for a lighter API that only
+  provides free functions.
 * `fma`: Enables Fused Multiply-Add (FMA) instructions when supported by the target CPU, providing a slight performance
   boost over the default implementation.

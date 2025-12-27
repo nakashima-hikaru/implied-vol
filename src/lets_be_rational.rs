@@ -447,6 +447,42 @@ pub fn implied_black_volatility_input_unchecked<SpFn: SpecialFn, const IS_CALL: 
     })
 }
 
+/// Compute implied Black volatility from normalised inputs.
+///
+/// * `normalised_time_value` — time value scaled by `sqrt(F·K)`, i.e.
+///   `(price - intrinsic_value) / sqrt(F·K)`, must be finite and non-negative.
+/// * `log_moneyness` — `ln(F) - ln(K)`, must be finite.
+/// * `t` — expiry, must be non-negative.
+///
+/// Returns `Some(σ)` when the input represents an attainable price, otherwise `None`.
+pub fn implied_black_volatility_normalised_input<SpFn: SpecialFn>(
+    normalised_time_value: f64,
+    log_moneyness: f64,
+    t: f64,
+) -> Option<f64> {
+    if !(normalised_time_value >= 0.0) || normalised_time_value.is_infinite() {
+        return None;
+    }
+    if !log_moneyness.is_finite() {
+        return None;
+    }
+    if !(t >= 0.0) {
+        return None;
+    }
+    if t.is_infinite() {
+        return Some(0.0);
+    }
+    if normalised_time_value == 0.0 {
+        return Some(0.0);
+    }
+    let sqrt_t = t.sqrt();
+    if log_moneyness == 0.0 {
+        return Some(implied_normalised_volatility_atm::<SpFn>(normalised_time_value) / sqrt_t);
+    }
+    let theta_x = -log_moneyness.abs();
+    Some(lets_be_rational::<SpFn>(normalised_time_value, theta_x)? / sqrt_t)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
