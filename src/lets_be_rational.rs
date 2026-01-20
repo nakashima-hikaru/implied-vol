@@ -771,4 +771,64 @@ mod tests {
             .unwrap();
         assert_eq!(sigma, 0.0);
     }
+
+    #[test]
+    #[ignore]
+    fn check_relative_error_of_implied_vol() {
+        let mut rng = rand::rng();
+        let mut max_relative_error = 0.0;
+        let mut count_exceed_epsilon = 0;
+        let mut count_panic = 0;
+        let n = 1_000_000;
+
+        for _ in 0..n {
+            // theta_x < 0
+            let theta_x = -rng.random_range(1e-4..5.0);
+            // s > 0
+            let s = rng.random_range(1e-3..5.0);
+
+            // Calculate beta (normalised option price)
+            let h = theta_x / s;
+            let t = 0.5 * s;
+            let beta = bs_option_price::normalised_black::<DefaultSpecialFn>(0.5 * theta_x, h, t);
+
+            if beta <= 0.0 {
+                continue;
+            }
+
+            // Recalculate s
+            let result = std::panic::catch_unwind(|| {
+                lets_be_rational::<DefaultSpecialFn>(beta, theta_x)
+            });
+
+            match result {
+                Ok(Some(s_recalc)) => {
+                    let relative_error = (s - s_recalc).abs() / s;
+                    if relative_error > max_relative_error {
+                        max_relative_error = relative_error;
+                    }
+                    if relative_error > f64::EPSILON {
+                        count_exceed_epsilon += 1;
+                    }
+                }
+                Ok(None) => {}
+                Err(_) => {
+                    count_panic += 1;
+                }
+            }
+        }
+        println!("Checked {} samples.", n);
+        println!("Max relative error (excluding panics): {:e}", max_relative_error);
+        println!(
+            "Count exceeding EPSILON: {} ({}%)",
+            count_exceed_epsilon,
+            100.0 * count_exceed_epsilon as f64 / n as f64
+        );
+        println!(
+            "Count panic: {} ({}%)",
+            count_panic,
+            100.0 * count_panic as f64 / n as f64
+        );
+        println!("Machine EPSILON: {:e}", f64::EPSILON);
+    }
 }
