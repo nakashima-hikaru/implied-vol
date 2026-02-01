@@ -268,7 +268,7 @@ fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
     let mut tail = 0.0;
     if idx < THRESHOLDS.len() {
         let mut omega_over_q = 0.0;
-        if idx <= 0 {
+        if idx == 0 {
             omega_over_q = omega_over_q.mul_add2(q, a16(e));
         }
         if idx <= 1 {
@@ -458,8 +458,7 @@ fn normalised_black_with_optimal_use_of_codys_functions<SpFn: SpecialFn>(
     } else {
         (-0.5 * t.mul_add2(t, h * h)).exp() * (SpFn::erfcx(q1) - SpFn::erfcx(q2))
     };
-    if two_b <= 0.0 {}
-    (0.5 * two_b).max(f64::MIN_POSITIVE)
+    (0.5 * two_b).max(0.0)
 }
 
 #[inline(always)]

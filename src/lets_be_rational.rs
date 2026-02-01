@@ -194,12 +194,12 @@ fn lets_be_rational<SpFn: SpecialFn>(beta: f64, theta_x: f64) -> Option<f64> {
         // time value exceeds the supremum of the model
         None
     } else {
-        lets_be_rational_unchecked::<SpFn>(beta, theta_x, b_max)
+        Some(lets_be_rational_unchecked::<SpFn>(beta, theta_x, b_max))
     }
 }
 
 #[inline(always)]
-fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f64) -> Option<f64> {
+fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f64) -> f64 {
     let mut s;
     let sqrt_ax = theta_x.neg().sqrt();
     let s_c = SQRT_2 * sqrt_ax;
@@ -259,7 +259,7 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
                     if direction_reversal_count == 3 || !(s > s_left && s < s_right) {
                         s = 0.5 * (s_left + s_right);
                         if (s_right - s_left) <= f64::EPSILON * s {
-                            return Some(s);
+                            return s;
                         }
                         direction_reversal_count = 0;
                         ds_previous = 0.0;
@@ -268,7 +268,7 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
                     }
                 }
                 debug_assert!(s > 0.0);
-                debug_assert!(s.is_finite(), "s is not finite: s={}", s);
+                debug_assert!(s.is_finite(), "s is not finite: s={s}");
 
                 let h = theta_x / s;
                 let t = 0.5 * s;
@@ -291,9 +291,7 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
                 }
 
                 // Check for numerical underflow/issues leading to valid b, bp
-                if !(b > 0.0 && bp > 0.0) {
-                    ds = 0.5 * (s_left + s_right) - s;
-                } else {
+                if b > 0.0 && bp > 0.0 {
                     let x2_over_s3 = h * h / s;
                     let b_h2 = t.mul_add2(-0.5, x2_over_s3);
                     let v = (ln_beta - ln_b) * ln_b / ln_beta * bx;
@@ -335,15 +333,17 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
                     } else {
                         householder::householder_3factor(v, h2, h3)
                     };
+                } else {
+                    ds = 0.5 * (s_left + s_right) - s;
                 }
 
                 if ds.abs() <= f64::EPSILON * s {
-                    return Some(s);
+                    return s;
                 }
 
                 s += ds;
             }
-            return Some(s);
+            return s;
         }
 
         // Lower middle: s_l <= s < s_c
@@ -442,20 +442,19 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
                     };
 
                     if ds.abs() <= f64::EPSILON * s {
-                        return Some(s);
+                        return s;
                     }
 
                     s += ds;
                     debug_assert!(s > 0.0);
                 }
-                return Some(s);
+                return s;
             }
         }
     }
 
     // MIDDLE BRANCHES (ITERATION)
-    const MAX_ITERATIONS: usize = 2;
-    for _ in 0..MAX_ITERATIONS {
+    for _ in 0..2 {
         debug_assert!(s > 0.0);
         debug_assert!(theta_x < 0.0_f64);
         let h = theta_x / s;
@@ -468,13 +467,13 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
         let ds = nu * householder::householder_3factor(nu, h2, h3);
 
         if ds.abs() <= f64::EPSILON * s {
-            return Some(s);
+            return s;
         }
 
         s += ds;
         debug_assert!(s > 0.0);
     }
-    Some(s)
+    s
 }
 
 #[inline(always)]
@@ -877,14 +876,6 @@ mod tests {
                     let implied_s =
                         lets_be_rational_unchecked::<DefaultSpecialFn>(beta, theta_x, b_max);
 
-                    // lets_be_rational_unchecked returns Option<f64>
-                    let implied_s = match implied_s {
-                        Some(val) => val,
-                        None => {
-                            // This should technically not happen for valid beta < b_max
-                            continue;
-                        }
-                    };
                     // Calculate relative error
                     let relative_error = (implied_s - s).abs() / s;
 
