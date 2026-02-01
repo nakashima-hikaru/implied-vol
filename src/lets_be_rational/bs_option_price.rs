@@ -265,48 +265,51 @@ fn asymptotic_expansion_of_scaled_normalised_black(h: f64, t: f64) -> f64 {
         .iter()
         .position(|&threshold| -h - t + TAU + 0.5 < threshold)
         .unwrap_or(THRESHOLDS.len());
-    let omega = if idx == THRESHOLDS.len() {
-        q.mul_add2(a4(e), a3(e))
-            .mul_add2(q, a2(e))
-            .mul_add2(q, a1(e))
-            .mul_add2(q, a0())
-    } else {
-        let mut omega_over_q = a16(e);
-        if idx != 0 {
-            omega_over_q = omega_over_q.mul_add2(q, a15(e));
-            if idx != 1 {
-                omega_over_q = omega_over_q.mul_add2(q, a14(e));
-                if idx != 2 {
-                    omega_over_q = omega_over_q.mul_add2(q, a13(e));
-                    if idx != 3 {
-                        omega_over_q = omega_over_q.mul_add2(q, a12(e));
-                        if idx != 4 {
-                            omega_over_q = omega_over_q.mul_add2(q, a11(e));
-                            if idx != 5 {
-                                omega_over_q = omega_over_q.mul_add2(q, a10(e));
-                                if idx != 6 {
-                                    omega_over_q = omega_over_q.mul_add2(q, a9(e));
-                                    if idx != 7 {
-                                        omega_over_q = omega_over_q.mul_add2(q, a8(e));
-                                        if idx != 8 {
-                                            omega_over_q = omega_over_q.mul_add2(q, a7(e));
-                                            if idx != 9 {
-                                                omega_over_q = omega_over_q.mul_add2(q, a6(e));
-                                                if idx != 10 {
-                                                    omega_over_q = omega_over_q.mul_add2(q, a5(e));
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+    let mut tail = 0.0;
+    if idx < THRESHOLDS.len() {
+        let mut omega_over_q = 0.0;
+        if idx <= 0 {
+            omega_over_q = omega_over_q.mul_add2(q, a16(e));
         }
-        q * omega_over_q
-    };
+        if idx <= 1 {
+            omega_over_q = omega_over_q.mul_add2(q, a15(e));
+        }
+        if idx <= 2 {
+            omega_over_q = omega_over_q.mul_add2(q, a14(e));
+        }
+        if idx <= 3 {
+            omega_over_q = omega_over_q.mul_add2(q, a13(e));
+        }
+        if idx <= 4 {
+            omega_over_q = omega_over_q.mul_add2(q, a12(e));
+        }
+        if idx <= 5 {
+            omega_over_q = omega_over_q.mul_add2(q, a11(e));
+        }
+        if idx <= 6 {
+            omega_over_q = omega_over_q.mul_add2(q, a10(e));
+        }
+        if idx <= 7 {
+            omega_over_q = omega_over_q.mul_add2(q, a9(e));
+        }
+        if idx <= 8 {
+            omega_over_q = omega_over_q.mul_add2(q, a8(e));
+        }
+        if idx <= 9 {
+            omega_over_q = omega_over_q.mul_add2(q, a7(e));
+        }
+        if idx <= 10 {
+            omega_over_q = omega_over_q.mul_add2(q, a6(e));
+        }
+        omega_over_q = omega_over_q.mul_add2(q, a5(e));
+        tail = q * omega_over_q;
+    }
+
+    let omega = q
+        .mul_add2(a4(e) + tail, a3(e))
+        .mul_add2(q, a2(e))
+        .mul_add2(q, a1(e))
+        .mul_add2(q, a0());
     (t / r) * omega
 }
 
@@ -422,7 +425,8 @@ fn y_prime_tail_expansion_rational_function_part_plus_1(w: f64) -> f64 {
             .mul_add2(w, 1.456_254_563_850_703_4E4)
             .mul_add2(w, 1.440_438_903_760_433_7E3)
             .mul_add2(w, 6.352_087_774_483_173_6E1)
-            .mul_add2(w, 1.0)).mul_add2(w, 1.0)
+            .mul_add2(w, 1.0))
+    .mul_add2(w, 1.0)
 }
 
 const TAU: f64 = 2.0 * SIXTEENTH_ROOT_DBL_EPSILON;
@@ -454,7 +458,8 @@ fn normalised_black_with_optimal_use_of_codys_functions<SpFn: SpecialFn>(
     } else {
         (-0.5 * t.mul_add2(t, h * h)).exp() * (SpFn::erfcx(q1) - SpFn::erfcx(q2))
     };
-    (0.5 * two_b).max(0.0)
+    if two_b <= 0.0 {}
+    (0.5 * two_b).max(f64::MIN_POSITIVE)
 }
 
 #[inline(always)]

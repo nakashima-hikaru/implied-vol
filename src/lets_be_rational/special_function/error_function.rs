@@ -133,9 +133,10 @@ const THRESHOLD: f64 = 0.46875;
 const XNEG: f64 = -26.628;
 const XBIG: f64 = 26.543;
 
+const ONE_OVER_SQRT_PI: f64 = 0.564_189_583_547_756_3;
+
 #[inline(always)]
 pub(super) fn erf_cody(x: f64) -> f64 {
-    const ONE_OVER_SQRT_PI: f64 = 0.564_189_583_547_756_3;
     let y = x.abs();
     if y <= THRESHOLD {
         //       |x| <= 0.46875
@@ -171,7 +172,7 @@ pub(super) fn erfc_cody(x: f64) -> f64 {
         (if y <= 4.0 {
             cd(y)
         } else {
-            (FRAC_1_SQRT_2 - pq((y * y).recip())) / y
+            (ONE_OVER_SQRT_PI - pq((y * y).recip())) / y
         }) * smoothened_exponential_of_negative_square(y)
     };
 
@@ -192,7 +193,7 @@ fn erfcx_cody_above_threshold(y: f64) -> f64 {
     if y <= 4.0 {
         cd(y)
     } else {
-        (FRAC_1_SQRT_2 - pq((y * y).recip())) / y
+        (ONE_OVER_SQRT_PI - pq((y * y).recip())) / y
     }
 }
 
@@ -323,9 +324,9 @@ mod tests {
         assert_eq!(x, 17_772_220.904_016_286);
 
         let x = erfcx_cody(XBIG + f64::EPSILON);
-        assert_eq!(x, 0.026_624_994_527_838_793);
+        assert_eq!(x, 0.021_240_629_624_143_23);
         let x = erfcx_cody(XBIG - f64::EPSILON);
-        assert_eq!(x, 0.026_624_994_527_838_793);
+        assert_eq!(x, 0.021_240_629_624_143_23);
         let x = erfcx_cody(-XBIG - f64::EPSILON);
         assert_eq!(x, 1.883_172_254_751_470_6e306);
         let x = erfcx_cody(-XBIG + f64::EPSILON);

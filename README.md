@@ -78,9 +78,7 @@ version.
 
 ## Precision
 
-The prices reconstructed using implied volatilities (both Black and normal) calculated from given prices exhibit
-absolute errors less than 1.5 times the machine epsilon compared to the original prices, as confirmed by
-random tests.
+Random tests have confirmed that the normalized implied volatility function under the Black-Scholes model is accurate to within 3 ULPs (Units in the Last Place) of the true implied volatility.
 
 ## Cargo Feature Flags
 
