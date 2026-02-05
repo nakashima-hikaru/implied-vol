@@ -10,8 +10,9 @@ keywords = ["finance"]
 categories = ["finance"]
 
 [features]
-default = []
+default = ["builders"]
 fma = []
+builders = []
 cxx_bench = ["cxx", "cxx-build"]
 
 [dependencies]

@@ -177,6 +177,44 @@ pub fn implied_normal_volatility_input_unchecked<SpFn: SpecialFn, const IS_CALL:
     }
 }
 
+/// Compute implied normal volatility from normalised inputs.
+///
+/// * `price` — total option price (intrinsic + time value).
+/// * `intrinsic_price` — intrinsic value (non-negative).
+/// * `absolute_moneyness` — `|forward - strike|`, must be finite and non-negative.
+/// * `t` — expiry, must be non-negative.
+pub fn implied_normal_volatility_normalised_input<SpFn: SpecialFn>(
+    price: f64,
+    intrinsic_price: f64,
+    absolute_moneyness: f64,
+    t: f64,
+) -> Option<f64> {
+    if !(price.is_finite() && intrinsic_price.is_finite() && absolute_moneyness.is_finite()) {
+        return None;
+    }
+    if !(absolute_moneyness >= 0.0) {
+        return None;
+    }
+    if !(t >= 0.0) {
+        return None;
+    }
+    if price < intrinsic_price {
+        return None;
+    }
+    if t == 0.0 {
+        return (price == intrinsic_price).then_some(0.0);
+    }
+    if absolute_moneyness == 0.0 {
+        return Some(price * SQRT_2_PI / t.sqrt());
+    }
+    if price == intrinsic_price {
+        return Some(0.0);
+    }
+    let phi_tilde_star = (intrinsic_price - price) / absolute_moneyness;
+    let x_star = inv_phi_tilde::<SpFn>(phi_tilde_star);
+    Some(absolute_moneyness / (x_star * t.sqrt()).abs())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
