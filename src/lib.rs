@@ -15,7 +15,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! implied-vol = "2.0.0"
+//! implied-vol = "2.1.0"
 //! ```
 //!
 //! To enable aggressive fused-multiply-add optimizations (when available), enable the
@@ -23,7 +23,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! implied-vol = { version = "2.0.0", features = ["fma"] }
+//! implied-vol = { version = "2.1.0", features = ["fma"] }
 //! ```
 //!
 //! # Models and notation

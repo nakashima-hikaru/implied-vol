@@ -1,6 +1,6 @@
 [package]
 name = "implied-vol"
-version = "2.0.0"
+version = "2.1.0"
 authors = ["Hikaru Nakashima <nakashima.alg57@gmail.com>"]
 description = "A pure rust implementation of Peter Jäckel's implied volatility calculation"
 edition = "2024"
