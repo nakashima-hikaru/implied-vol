@@ -184,7 +184,7 @@ fn inverse_f_upper_map<SpFn: SpecialFn>(f: f64) -> f64 {
 }
 
 #[inline]
-fn implied_normalised_volatility_atm<SpFn: SpecialFn>(beta: f64) -> f64 {
+pub(crate) fn implied_normalised_volatility_atm<SpFn: SpecialFn>(beta: f64) -> f64 {
     2.0 * SQRT_2 * SpFn::erfinv(beta)
 }
 
@@ -281,7 +281,7 @@ fn polish_implied_vol_local_residual<SpFn: SpecialFn>(beta: f64, theta_x: f64, s
 }
 
 #[inline]
-fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f64) -> f64 {
+pub(crate) fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f64) -> f64 {
     let mut s;
     let sqrt_ax = theta_x.neg().sqrt();
     let s_c = SQRT_2 * sqrt_ax;

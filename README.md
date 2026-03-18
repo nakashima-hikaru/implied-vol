@@ -16,7 +16,8 @@ This crate exposes builders for computing:
 - the implied **Black** volatility,
 - the implied **Normal** (Bachelier) volatility,
 - (undiscounted) European option prices under the **Black–Scholes** model,
-- (undiscounted) European option prices under the **Bachelier** model.
+- (undiscounted) European option prices under the **Bachelier** model,
+- **normalised** Black–Scholes prices and implied volatility (using log-moneyness).
 
 Additionally, the crate provides a trait for implementing custom special functions, which can be used to customize
 the calculation of implied volatilities and option prices.

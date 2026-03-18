@@ -165,7 +165,42 @@
 //!     .calculate::<DefaultSpecialFn>();
 //! assert!(out_of_range.is_none());
 //! ```
+//!
+//! ## Normalised API
+//!
+//! For advanced use cases or when working directly with log-moneyness and total volatility,
+//! the crate provides "normalised" versions of the builders:
+//!
+//! - `PriceBlackScholesNormalised`: takes $x = \ln(F/K)$ and $v = \sigma \sqrt{T}$.
+//! - `ImpliedBlackVolatilityNormalised`: takes $x$ and the normalised price $b = \frac{Price - Intrinsic}{\sqrt{FK}}$.
+//!
+//! ```rust
+//! use implied_vol::{DefaultSpecialFn, PriceBlackScholesNormalised, ImpliedBlackVolatilityNormalised};
+//!
+//! let x = 0.0; // ATM
+//! let v = 0.2; // 20% total vol
+//!
+//! // Calculate normalised price b
+//! let b = PriceBlackScholesNormalised::builder()
+//!     .log_moneyness(x)
+//!     .total_volatility(v)
+//!     .build()
+//!     .unwrap()
+//!     .calculate::<DefaultSpecialFn>();
+//!
+//! // Round-trip: calculate total volatility v from b
+//! let v2 = ImpliedBlackVolatilityNormalised::builder()
+//!     .log_moneyness(x)
+//!     .normalised_price(b)
+//!     .build()
+//!     .unwrap()
+//!     .calculate::<DefaultSpecialFn>()
+//!     .unwrap();
+//!
+//! assert!((v - v2).abs() < 1e-12);
+//! ```
 mod builder;
+
 #[cfg(feature = "cxx_bench")]
 pub mod cxx;
 mod fused_multiply_add;
