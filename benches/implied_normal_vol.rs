@@ -1,6 +1,6 @@
 #![feature(test)]
 
-use rand::Rng;
+use rand::RngExt;
 
 extern crate test;
 
@@ -14,15 +14,21 @@ fn call_atm(b: &mut Bencher) {
     let k = f;
     let t = 1.0;
     let q = true;
-    let iv_builder = ImpliedNormalVolatility::builder()
-        .option_price(price)
-        .forward(f)
-        .strike(k)
-        .expiry(t)
-        .is_call(q)
-        .build()
-        .unwrap();
-    b.iter(|| iv_builder.calculate::<DefaultSpecialFn>().unwrap());
+    b.iter(|| {
+        let price = test::black_box(price);
+        let f = test::black_box(f);
+        let k = test::black_box(k);
+        let t = test::black_box(t);
+        let q = test::black_box(q);
+        let iv_builder = ImpliedNormalVolatility::builder()
+            .option_price(price)
+            .forward(f)
+            .strike(k)
+            .expiry(t)
+            .is_call(q)
+            .build_unchecked();
+        test::black_box(iv_builder.calculate::<DefaultSpecialFn>().unwrap())
+    });
 }
 
 #[cfg(feature = "cxx_bench")]
@@ -33,7 +39,15 @@ fn call_atm_cpp(b: &mut Bencher) {
     let k = f;
     let t = 1.0;
     let q = 1.0;
-    b.iter(|| implied_vol::cxx::ffi::ImpliedNormalVolatility(f, k, t, q, price));
+    b.iter(|| {
+        test::black_box(implied_vol::cxx::ffi::ImpliedNormalVolatility(
+            test::black_box(price),
+            test::black_box(f),
+            test::black_box(k),
+            test::black_box(t),
+            test::black_box(q),
+        ))
+    });
 }
 
 #[bench]
@@ -46,15 +60,21 @@ fn call_itm(b: &mut Bencher) {
     let k = 1.0 * r;
     let t = 1e5 * r3;
     let q = true;
-    let iv_builder = ImpliedNormalVolatility::builder()
-        .option_price(price)
-        .forward(f)
-        .strike(k)
-        .expiry(t)
-        .is_call(q)
-        .build()
-        .unwrap();
-    b.iter(|| iv_builder.calculate::<DefaultSpecialFn>().unwrap());
+    b.iter(|| {
+        let price = test::black_box(price);
+        let f = test::black_box(f);
+        let k = test::black_box(k);
+        let t = test::black_box(t);
+        let q = test::black_box(q);
+        let iv_builder = ImpliedNormalVolatility::builder()
+            .option_price(price)
+            .forward(f)
+            .strike(k)
+            .expiry(t)
+            .is_call(q)
+            .build_unchecked();
+        test::black_box(iv_builder.calculate::<DefaultSpecialFn>().unwrap())
+    });
 }
 
 #[cfg(feature = "cxx_bench")]
@@ -68,7 +88,15 @@ fn call_itm_cpp(b: &mut Bencher) {
     let k = 1.0 * r;
     let t = 1e5 * r3;
     let q = 1.0;
-    b.iter(|| implied_vol::cxx::ffi::ImpliedNormalVolatility(f, k, t, q, price));
+    b.iter(|| {
+        test::black_box(implied_vol::cxx::ffi::ImpliedNormalVolatility(
+            test::black_box(price),
+            test::black_box(f),
+            test::black_box(k),
+            test::black_box(t),
+            test::black_box(q),
+        ))
+    });
 }
 
 #[bench]
@@ -81,15 +109,21 @@ fn call_otm(b: &mut Bencher) {
     let k = 1.0;
     let t = 1e5 * r3;
     let q = true;
-    let iv_builder = ImpliedNormalVolatility::builder()
-        .option_price(price)
-        .forward(f)
-        .strike(k)
-        .expiry(t)
-        .is_call(q)
-        .build()
-        .unwrap();
-    b.iter(|| iv_builder.calculate::<DefaultSpecialFn>().unwrap());
+    b.iter(|| {
+        let price = test::black_box(price);
+        let f = test::black_box(f);
+        let k = test::black_box(k);
+        let t = test::black_box(t);
+        let q = test::black_box(q);
+        let iv_builder = ImpliedNormalVolatility::builder()
+            .option_price(price)
+            .forward(f)
+            .strike(k)
+            .expiry(t)
+            .is_call(q)
+            .build_unchecked();
+        test::black_box(iv_builder.calculate::<DefaultSpecialFn>().unwrap())
+    });
 }
 
 #[cfg(feature = "cxx_bench")]
@@ -103,7 +137,15 @@ fn call_otm_cpp(b: &mut Bencher) {
     let k = 1.0;
     let t = 1e5 * r3;
     let q = 1.0;
-    b.iter(|| implied_vol::cxx::ffi::ImpliedNormalVolatility(f, k, t, q, price));
+    b.iter(|| {
+        test::black_box(implied_vol::cxx::ffi::ImpliedNormalVolatility(
+            test::black_box(price),
+            test::black_box(f),
+            test::black_box(k),
+            test::black_box(t),
+            test::black_box(q),
+        ))
+    });
 }
 
 #[bench]
@@ -113,15 +155,21 @@ fn put_atm(b: &mut Bencher) {
     let k = f;
     let t = 1.0;
     let q = false;
-    let iv_builder = ImpliedNormalVolatility::builder()
-        .option_price(price)
-        .forward(f)
-        .strike(k)
-        .expiry(t)
-        .is_call(q)
-        .build()
-        .unwrap();
-    b.iter(|| iv_builder.calculate::<DefaultSpecialFn>().unwrap());
+    b.iter(|| {
+        let price = test::black_box(price);
+        let f = test::black_box(f);
+        let k = test::black_box(k);
+        let t = test::black_box(t);
+        let q = test::black_box(q);
+        let iv_builder = ImpliedNormalVolatility::builder()
+            .option_price(price)
+            .forward(f)
+            .strike(k)
+            .expiry(t)
+            .is_call(q)
+            .build_unchecked();
+        test::black_box(iv_builder.calculate::<DefaultSpecialFn>().unwrap())
+    });
 }
 
 #[cfg(feature = "cxx_bench")]
@@ -132,7 +180,15 @@ fn put_atm_cpp(b: &mut Bencher) {
     let k = f;
     let t = 1.0;
     let q = -1.0;
-    b.iter(|| implied_vol::cxx::ffi::ImpliedNormalVolatility(f, k, t, q, price));
+    b.iter(|| {
+        test::black_box(implied_vol::cxx::ffi::ImpliedNormalVolatility(
+            test::black_box(price),
+            test::black_box(f),
+            test::black_box(k),
+            test::black_box(t),
+            test::black_box(q),
+        ))
+    });
 }
 
 #[bench]
@@ -145,15 +201,21 @@ fn put_itm(b: &mut Bencher) {
     let k = 1.0 * r;
     let t = 1e5 * r3;
     let q = false;
-    let iv_builder = ImpliedNormalVolatility::builder()
-        .option_price(price)
-        .forward(f)
-        .strike(k)
-        .expiry(t)
-        .is_call(q)
-        .build()
-        .unwrap();
-    b.iter(|| iv_builder.calculate::<DefaultSpecialFn>().unwrap());
+    b.iter(|| {
+        let price = test::black_box(price);
+        let f = test::black_box(f);
+        let k = test::black_box(k);
+        let t = test::black_box(t);
+        let q = test::black_box(q);
+        let iv_builder = ImpliedNormalVolatility::builder()
+            .option_price(price)
+            .forward(f)
+            .strike(k)
+            .expiry(t)
+            .is_call(q)
+            .build_unchecked();
+        test::black_box(iv_builder.calculate::<DefaultSpecialFn>().unwrap())
+    });
 }
 
 #[cfg(feature = "cxx_bench")]
@@ -167,7 +229,15 @@ fn put_itm_cpp(b: &mut Bencher) {
     let k = 1.0 * r;
     let t = 1e5 * r3;
     let q = -1.0;
-    b.iter(|| implied_vol::cxx::ffi::ImpliedNormalVolatility(f, k, t, q, price));
+    b.iter(|| {
+        test::black_box(implied_vol::cxx::ffi::ImpliedNormalVolatility(
+            test::black_box(price),
+            test::black_box(f),
+            test::black_box(k),
+            test::black_box(t),
+            test::black_box(q),
+        ))
+    });
 }
 
 #[bench]
@@ -180,15 +250,21 @@ fn put_otm(b: &mut Bencher) {
     let k = 1.0;
     let t = 1e5 * r3;
     let q = false;
-    let iv_builder = ImpliedNormalVolatility::builder()
-        .option_price(price)
-        .forward(f)
-        .strike(k)
-        .expiry(t)
-        .is_call(q)
-        .build()
-        .unwrap();
-    b.iter(|| iv_builder.calculate::<DefaultSpecialFn>().unwrap());
+    b.iter(|| {
+        let price = test::black_box(price);
+        let f = test::black_box(f);
+        let k = test::black_box(k);
+        let t = test::black_box(t);
+        let q = test::black_box(q);
+        let iv_builder = ImpliedNormalVolatility::builder()
+            .option_price(price)
+            .forward(f)
+            .strike(k)
+            .expiry(t)
+            .is_call(q)
+            .build_unchecked();
+        test::black_box(iv_builder.calculate::<DefaultSpecialFn>().unwrap())
+    });
 }
 
 #[cfg(feature = "cxx_bench")]
@@ -202,5 +278,13 @@ fn put_otm_cpp(b: &mut Bencher) {
     let k = 1.0;
     let t = 1e5 * r3;
     let q = -1.0;
-    b.iter(|| implied_vol::cxx::ffi::ImpliedNormalVolatility(f, k, t, q, price));
+    b.iter(|| {
+        test::black_box(implied_vol::cxx::ffi::ImpliedNormalVolatility(
+            test::black_box(price),
+            test::black_box(f),
+            test::black_box(k),
+            test::black_box(t),
+            test::black_box(q),
+        ))
+    });
 }

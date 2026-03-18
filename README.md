@@ -6,7 +6,7 @@
 
 ## Overview
 
-`implied-vol` is a high-performance, pure Rust library for calculating implied volatility,
+`implied-vol` is a high-performance, pure Rust, zero-dependency-by-default library for calculating implied volatility,
 implemented based on the methods described in Peter Jäckel's seminal papers.
 
 ## Usage
@@ -28,7 +28,7 @@ Add the following to your `Cargo.toml`:
 implied-vol = "2.0"
 ```
 
-The calculations are performed via builders that allow you to handle errors.
+The calculations are performed via type-safe builders that allow you to handle errors without external builder macros.
 
 ### Example
 
@@ -62,6 +62,7 @@ Both papers and related materials are available on [Peter Jäckel's website](htt
 
 ## Key differences from the original Authors' Implementation
 
+- Zero required dependencies in the default configuration.
 - Enables the use of custom special functions for calculating implied volatilities and option prices.
 - Modified to return results earlier for ATM cases.
 - Utilizes explicit FMA instructions when available.
@@ -72,13 +73,15 @@ Both papers and related materials are available on [Peter Jäckel's website](htt
 ## Performance
 
 Benchmark results, available via our [GitHub Actions](https://github.com/nakashima-hikaru/implied-vol/actions),
-compare the execution speed against FFI to Jäckel’s original reference C++ implementation.
-With aggressive compiler optimizations applied to both implementations, this Rust crate often outperforms the C++ FFI
-version.
+compare this crate against FFI calls into Jäckel’s original reference C++ implementation.
+With aggressive compiler optimizations applied to both implementations, the Rust implementation is in the same performance
+range as the original C++ code for implied-volatility calculations.
 
 ## Precision
 
-Random tests have confirmed that the normalized implied volatility function under the Black-Scholes model is accurate to within 3 ULPs (Units in the Last Place) of the true implied volatility.
+Randomized tests in this repository confirm that the normalized Black implied-volatility solver reaches
+maximum attainable precision under a strict attainable-accuracy check.
+This crate therefore targets and verifies a stronger precision goal than the original reference implementation's published validation.
 
 ## Cargo Feature Flags
 

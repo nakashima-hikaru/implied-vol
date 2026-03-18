@@ -4,7 +4,7 @@ use crate::lets_be_rational::special_function::SpecialFn;
 use crate::lets_be_rational::special_function::normal_distribution::inv_norm_pdf;
 use std::cmp::Ordering;
 
-#[inline(always)]
+#[inline]
 fn intrinsic_value<const IS_CALL: bool>(forward: f64, strike: f64) -> f64 {
     if IS_CALL {
         forward - strike
@@ -14,7 +14,7 @@ fn intrinsic_value<const IS_CALL: bool>(forward: f64, strike: f64) -> f64 {
     .max(0.0)
 }
 
-#[inline(always)]
+#[inline]
 fn phi_tilde_times_x(x: f64) -> f64 {
     if x.abs() <= 0.612_003_180_962_480_7 {
         let h = x.mul_add2(x, -1.872_739_467_540_974_8E-1) * 5.339_771_053_755_08;
@@ -73,12 +73,12 @@ fn phi_tilde_times_x(x: f64) -> f64 {
     FRAC_1_SQRT_2_PI * (-0.5 * x * x).exp() * w * g.mul_add2(-w, 1.0)
 }
 
-#[inline(always)]
+#[inline]
 fn phi_tilde(x: f64) -> f64 {
     phi_tilde_times_x(x) / x
 }
 
-#[inline(always)]
+#[inline]
 fn inv_phi_tilde<SpFn: SpecialFn>(phi_tilde_star: f64) -> f64 {
     if phi_tilde_star > 1.0 {
         return -inv_phi_tilde::<SpFn>(1.0 - phi_tilde_star);
@@ -139,6 +139,7 @@ fn inv_phi_tilde<SpFn: SpecialFn>(phi_tilde_star: f64) -> f64 {
 /// # Returns
 ///
 /// The price of the option.
+#[inline(always)]
 pub fn bachelier_price<const IS_CALL: bool>(forward: f64, strike: f64, sigma: f64, t: f64) -> f64 {
     assert!(!forward.is_nan() && !strike.is_nan() && sigma >= 0.0 && t >= 0.0);
     let s = sigma * t.sqrt();
@@ -181,12 +182,12 @@ pub fn implied_normal_volatility_input_unchecked<SpFn: SpecialFn, const IS_CALL:
 mod tests {
     use super::*;
     use crate::lets_be_rational::special_function::DefaultSpecialFn;
-    use rand::Rng;
+    use rand::RngExt;
 
     #[test]
     fn reconstruction_call_atm() {
         for i in 1..100 {
-            let price = 0.01 * i as f64;
+            let price = 0.01 * f64::from(i);
             let f = 100.0;
             let k = f;
             let t = 1.0;
@@ -201,7 +202,7 @@ mod tests {
     #[test]
     fn reconstruction_put_atm() {
         for i in 1..100 {
-            let price = 0.01 * i as f64;
+            let price = 0.01 * f64::from(i);
             let f = 100.0;
             let k = f;
             let t = 1.0;
@@ -222,7 +223,7 @@ mod tests {
         for _ in 0..n {
             let (r, r2, r3): (f64, f64, f64) = rng.random();
             let price = 1e5 * r2;
-            let f = r + 1e5 * r2;
+            let f = 1e5f64.mul_add2(r2, r);
             let k = f - price;
             let t = 1e5 * r3;
             let sigma =
@@ -240,7 +241,7 @@ mod tests {
         let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
         for _ in 0..n {
             let (r, r2, r3): (f64, f64, f64) = rng.random();
-            let price = 1.0 * (1.0 - r) + 1.0 * r * r2;
+            let price = 1.0f64.mul_add2(1.0 - r, 1.0 * r * r2);
             let f = 1.0;
             let k = 1.0 * r;
             let t = 1e5 * r3;
@@ -298,7 +299,7 @@ mod tests {
         let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
         for _ in 0..n {
             let (r, r2, r3): (f64, f64, f64) = rng.random();
-            let price = 1.0 * (1.0 - r) + 1.0 * r * r2;
+            let price = 1.0f64.mul_add2(1.0 - r, 1.0 * r * r2);
             let f = 1.0 * r;
             let k = 1.0;
             let t = 1e5 * r3;

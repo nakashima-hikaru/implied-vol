@@ -1,3 +1,5 @@
+// Removed unused core_math_erfc module
+
 mod error_function;
 pub mod normal_distribution;
 
@@ -40,37 +42,37 @@ use error_function::erfinv;
 /// Computes the Cumulative Distribution Function (CDF) of the standard normal distribution at a
 /// given `x`.
 pub trait SpecialFn {
-    #[inline(always)]
+    #[inline]
     #[must_use]
     fn erf(x: f64) -> f64 {
         DefaultSpecialFn::erf(x)
     }
-    #[inline(always)]
+    #[inline]
     #[must_use]
     fn erfc(x: f64) -> f64 {
         DefaultSpecialFn::erfc(x)
     }
-    #[inline(always)]
+    #[inline]
     #[must_use]
     fn erfcx(x: f64) -> f64 {
         DefaultSpecialFn::erfcx(x)
     }
-    #[inline(always)]
+    #[inline]
     #[must_use]
     fn erfinv(x: f64) -> f64 {
         DefaultSpecialFn::erfinv(x)
     }
-    #[inline(always)]
+    #[inline]
     #[must_use]
     fn inverse_norm_cdf(x: f64) -> f64 {
         DefaultSpecialFn::inverse_norm_cdf(x)
     }
-    #[inline(always)]
+    #[inline]
     #[must_use]
     fn norm_cdf(x: f64) -> f64 {
         DefaultSpecialFn::norm_cdf(x)
     }
-    #[inline(always)]
+    #[inline]
     #[must_use]
     fn one_minus_erfcx(x: f64) -> f64 {
         DefaultSpecialFn::one_minus_erfcx(x)
@@ -88,23 +90,23 @@ impl SpecialFn for DefaultSpecialFn {
     fn erfc(x: f64) -> f64 {
         erfc_cody(x)
     }
-    #[inline(always)]
+    #[inline(always)] // important for performance
     fn erfcx(x: f64) -> f64 {
         erfcx_cody(x)
     }
-    #[inline(always)]
+    #[inline]
     fn erfinv(x: f64) -> f64 {
         erfinv(x)
     }
-    #[inline(always)]
+    #[inline]
     fn inverse_norm_cdf(x: f64) -> f64 {
         inverse_norm_cdf(x)
     }
-    #[inline(always)]
+    #[inline]
     fn norm_cdf(x: f64) -> f64 {
         normal_distribution::norm_cdf::<Self>(x)
     }
-    #[inline(always)]
+    #[inline]
     fn one_minus_erfcx(x: f64) -> f64 {
         error_function::one_minus_erfcx::<Self>(x)
     }

@@ -1,10 +1,11 @@
+use super::{Set, Unset};
 use crate::{SpecialFn, lets_be_rational};
-use bon::Builder;
+use std::marker::PhantomData;
 
 /// Builder-backed container that represents the inputs required to compute
 /// the **implied Black volatility** for an undiscounted European option.
 ///
-/// Use the generated `ImpliedBlackVolatility::builder()` to construct this
+/// Use `ImpliedBlackVolatility::builder()` to construct this
 /// type. The builder performs input validation when you call `.build()`.
 /// Or use `.build_unchecked()` to skip validation.
 ///
@@ -16,19 +17,7 @@ use bon::Builder;
 /// - `option_price`: observed undiscounted option price (P). Must be finite and `>= 0`.
 ///
 /// This struct is consumed by `calculate::<SpFn>()` which performs the numerical
-/// inversion `BS(F, K, T, σ) = P` to find the implied volatility `σ`.
-#[derive(Builder)]
-#[builder(const, derive(Clone, Debug),
-finish_fn(name = build_unchecked,
-doc{
-/// Build without performing any validation.
-///
-/// This constructor constructs the `ImpliedBlackVolatility` directly from
-/// the builder's fields and does **not** check for NaNs, infinities, or
-/// sign constraints. Use only when you are certain the inputs are valid
-/// or when you want to avoid the cost of runtime validation.
-})
-)]
+/// inversion `BS(F, K, T, sigma) = P` to find the implied volatility `sigma`.
 pub struct ImpliedBlackVolatility {
     forward: f64,
     strike: f64,
@@ -37,49 +26,33 @@ pub struct ImpliedBlackVolatility {
     option_price: f64,
 }
 
-impl<S: implied_black_volatility_builder::IsComplete> ImpliedBlackVolatilityBuilder<S> {
-    /// Validate inputs and build an `ImpliedBlackVolatility`.
-    ///
-    /// Performs the following validation checks:
-    /// - `forward` must be positive and finite.
-    /// - `strike` must be positive and finite.
-    /// - `expiry` must be non-negative (`T >= 0`) but can be positive infinite.
-    /// - `option_price` must be a finite, non-negative number.
-    ///
-    /// Returns `Some(ImpliedBlackVolatility)` when all checks pass, otherwise `None`.
-    ///
-    /// # Rationale
-    /// These checks ensure the constructed object lies within the mathematical domain
-    /// required by the Black–Scholes pricing function. Use `build_unchecked()` to skip validation.
-    pub const fn build(self) -> Option<ImpliedBlackVolatility> {
-        let implied_black_volatility = self.build_unchecked();
-
-        if !(implied_black_volatility.forward > 0.0)
-            || implied_black_volatility.forward.is_infinite()
-        {
-            return None;
-        }
-        if !(implied_black_volatility.strike > 0.0) || implied_black_volatility.strike.is_infinite()
-        {
-            return None;
-        }
-        if !(implied_black_volatility.expiry >= 0.0) {
-            return None;
-        }
-        if !(implied_black_volatility.option_price >= 0.0)
-            || implied_black_volatility.option_price.is_infinite()
-        {
-            return None;
-        }
-        Some(implied_black_volatility)
-    }
+#[derive(Clone, Debug)]
+pub struct ImpliedBlackVolatilityBuilder<
+    Forward = Unset,
+    Strike = Unset,
+    Expiry = Unset,
+    IsCall = Unset,
+    OptionPrice = Unset,
+> {
+    forward: f64,
+    strike: f64,
+    expiry: f64,
+    is_call: bool,
+    option_price: f64,
+    _marker: PhantomData<(Forward, Strike, Expiry, IsCall, OptionPrice)>,
 }
 
 impl ImpliedBlackVolatility {
-    /// Compute the implied Black volatility `σ` for the stored inputs.
+    #[must_use]
+    #[inline(always)]
+    pub const fn builder() -> ImpliedBlackVolatilityBuilder {
+        ImpliedBlackVolatilityBuilder::new()
+    }
+
+    /// Compute the implied Black volatility `sigma` for the stored inputs.
     ///
     /// Returns:
-    /// - `Some(σ)` if an implied volatility consistent with `BS(F, K, T, σ) = P`
+    /// - `Some(sigma)` if an implied volatility consistent with `BS(F, K, T, sigma) = P`
     ///   exists, and the numerical routine converges to a finite value.
     /// - `None` if the given `option_price` is outside the attainable range for
     ///   the supplied model parameters.
@@ -127,6 +100,164 @@ impl ImpliedBlackVolatility {
     }
 }
 
+impl ImpliedBlackVolatilityBuilder {
+    #[must_use]
+    #[inline(always)]
+    pub const fn new() -> Self {
+        Self {
+            forward: 0.0,
+            strike: 0.0,
+            expiry: 0.0,
+            is_call: false,
+            option_price: 0.0,
+            _marker: PhantomData,
+        }
+    }
+}
+
+impl<Forward, Strike, Expiry, IsCall, OptionPrice>
+    ImpliedBlackVolatilityBuilder<Forward, Strike, Expiry, IsCall, OptionPrice>
+{
+    #[must_use]
+    #[inline(always)]
+    pub const fn forward(
+        self,
+        forward: f64,
+    ) -> ImpliedBlackVolatilityBuilder<Set, Strike, Expiry, IsCall, OptionPrice> {
+        ImpliedBlackVolatilityBuilder {
+            forward,
+            strike: self.strike,
+            expiry: self.expiry,
+            is_call: self.is_call,
+            option_price: self.option_price,
+            _marker: PhantomData,
+        }
+    }
+
+    #[must_use]
+    #[inline(always)]
+    pub const fn strike(
+        self,
+        strike: f64,
+    ) -> ImpliedBlackVolatilityBuilder<Forward, Set, Expiry, IsCall, OptionPrice> {
+        ImpliedBlackVolatilityBuilder {
+            forward: self.forward,
+            strike,
+            expiry: self.expiry,
+            is_call: self.is_call,
+            option_price: self.option_price,
+            _marker: PhantomData,
+        }
+    }
+
+    #[must_use]
+    #[inline(always)]
+    pub const fn expiry(
+        self,
+        expiry: f64,
+    ) -> ImpliedBlackVolatilityBuilder<Forward, Strike, Set, IsCall, OptionPrice> {
+        ImpliedBlackVolatilityBuilder {
+            forward: self.forward,
+            strike: self.strike,
+            expiry,
+            is_call: self.is_call,
+            option_price: self.option_price,
+            _marker: PhantomData,
+        }
+    }
+
+    #[must_use]
+    #[inline(always)]
+    #[allow(clippy::wrong_self_convention)]
+    pub const fn is_call(
+        self,
+        is_call: bool,
+    ) -> ImpliedBlackVolatilityBuilder<Forward, Strike, Expiry, Set, OptionPrice> {
+        ImpliedBlackVolatilityBuilder {
+            forward: self.forward,
+            strike: self.strike,
+            expiry: self.expiry,
+            is_call,
+            option_price: self.option_price,
+            _marker: PhantomData,
+        }
+    }
+
+    #[must_use]
+    #[inline(always)]
+    pub const fn option_price(
+        self,
+        option_price: f64,
+    ) -> ImpliedBlackVolatilityBuilder<Forward, Strike, Expiry, IsCall, Set> {
+        ImpliedBlackVolatilityBuilder {
+            forward: self.forward,
+            strike: self.strike,
+            expiry: self.expiry,
+            is_call: self.is_call,
+            option_price,
+            _marker: PhantomData,
+        }
+    }
+}
+
+impl ImpliedBlackVolatilityBuilder<Set, Set, Set, Set, Set> {
+    /// Build without performing any validation.
+    ///
+    /// This constructor constructs the `ImpliedBlackVolatility` directly from
+    /// the builder's fields and does **not** check for NaNs, infinities, or
+    /// sign constraints. Use only when you are certain the inputs are valid
+    /// or when you want to avoid the cost of runtime validation.
+    #[must_use]
+    #[inline(always)]
+    pub const fn build_unchecked(self) -> ImpliedBlackVolatility {
+        ImpliedBlackVolatility {
+            forward: self.forward,
+            strike: self.strike,
+            expiry: self.expiry,
+            is_call: self.is_call,
+            option_price: self.option_price,
+        }
+    }
+
+    /// Validate inputs and build an `ImpliedBlackVolatility`.
+    ///
+    /// Performs the following validation checks:
+    /// - `forward` must be positive and finite.
+    /// - `strike` must be positive and finite.
+    /// - `expiry` must be non-negative (`T >= 0`) but can be positive infinite.
+    /// - `option_price` must be a finite, non-negative number.
+    ///
+    /// Returns `Some(ImpliedBlackVolatility)` when all checks pass, otherwise `None`.
+    ///
+    /// # Rationale
+    /// These checks ensure the constructed object lies within the mathematical domain
+    /// required by the Black–Scholes pricing function. Use `build_unchecked()` to skip validation.
+    #[must_use]
+    #[inline(always)]
+    pub const fn build(self) -> Option<ImpliedBlackVolatility> {
+        let implied_black_volatility = self.build_unchecked();
+
+        if !(implied_black_volatility.forward > 0.0)
+            || implied_black_volatility.forward.is_infinite()
+        {
+            return None;
+        }
+        if !(implied_black_volatility.strike > 0.0) || implied_black_volatility.strike.is_infinite()
+        {
+            return None;
+        }
+        if !(implied_black_volatility.expiry >= 0.0) {
+            return None;
+        }
+        if !(implied_black_volatility.option_price >= 0.0)
+            || implied_black_volatility.option_price.is_infinite()
+        {
+            return None;
+        }
+        Some(implied_black_volatility)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::DefaultSpecialFn;
@@ -152,11 +283,11 @@ mod tests {
 
     #[test]
     fn strike_anomaly() {
+        const Q: bool = true;
         for k in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY, 0.0] {
             let price = 100.0;
             let f = 100.0;
             let t = 1.0;
-            const Q: bool = true;
             assert!(
                 ImpliedBlackVolatility::builder()
                     .option_price(price)
@@ -172,11 +303,11 @@ mod tests {
 
     #[test]
     fn strike_boundary() {
+        const Q: bool = true;
         let price = 100.0;
         let f = 100.0;
         let k = f64::MIN_POSITIVE;
         let t = 1.0;
-        const Q: bool = true;
         assert!(
             ImpliedBlackVolatility::builder()
                 .option_price(price)
@@ -191,11 +322,11 @@ mod tests {
 
     #[test]
     fn forward_anomaly() {
+        const Q: bool = true;
         for f in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY, 0.0] {
             let price = 100.0;
             let k = 100.0;
             let t = 1.0;
-            const Q: bool = true;
             assert!(
                 ImpliedBlackVolatility::builder()
                     .option_price(price)
@@ -211,11 +342,11 @@ mod tests {
 
     #[test]
     fn price_anomaly() {
+        const Q: bool = true;
         for price in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
             let f = 100.0;
             let t = 1.0;
             let k = 100.0;
-            const Q: bool = true;
             assert!(
                 ImpliedBlackVolatility::builder()
                     .option_price(price)
@@ -231,11 +362,11 @@ mod tests {
 
     #[test]
     fn price_below_intrinsic() {
+        const Q: bool = true;
         let price = 10.0;
         let f = 120.0;
         let t = 1.0;
         let k = 100.0;
-        const Q: bool = true;
         let iv_builder = ImpliedBlackVolatility::builder()
             .option_price(price)
             .forward(f)
@@ -250,11 +381,11 @@ mod tests {
 
     #[test]
     fn time_anomaly() {
+        const Q: bool = true;
         for t in [f64::NAN, f64::NEG_INFINITY] {
             let price = 10.0;
             let f = 100.0;
             let k = 100.0;
-            const Q: bool = true;
             assert!(
                 ImpliedBlackVolatility::builder()
                     .option_price(price)
@@ -307,11 +438,11 @@ mod tests {
 
     #[test]
     fn time_inf() {
+        const Q: bool = true;
         let price = 10.0;
         let f = 100.0;
         let k = 100.0;
         let t = f64::INFINITY;
-        const Q: bool = true;
 
         let vol = ImpliedBlackVolatility::builder()
             .option_price(price)

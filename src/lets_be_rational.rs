@@ -19,9 +19,12 @@ use crate::lets_be_rational::rational_cubic::{
 use crate::lets_be_rational::special_function::SpecialFn;
 use crate::lets_be_rational::special_function::normal_distribution::inv_norm_pdf;
 use std::f64::consts::{FRAC_1_SQRT_2, SQRT_2};
-use std::ops::{Div, Neg};
+use std::ops::Neg;
 
-#[inline(always)]
+const MAX_HOUSEHOLDER_CORRECTIVE_STEPS: usize = 2;
+const LOCAL_POLISHING_ULP_RADIUS: i32 = 8;
+
+#[inline]
 fn b_u_over_b_max(s_c: f64) -> f64 {
     if s_c >= 2.449_489_742_783_178 {
         let y = s_c.recip();
@@ -66,7 +69,7 @@ fn b_u_over_b_max(s_c: f64) -> f64 {
     }
 }
 
-#[inline(always)]
+#[inline]
 fn b_l_over_b_max(s_c: f64) -> f64 {
     if s_c < 0.709_929_573_971_953_9 {
         let g = s_c
@@ -130,7 +133,7 @@ fn b_l_over_b_max(s_c: f64) -> f64 {
     }
 }
 
-#[inline(always)]
+#[inline]
 fn compute_f_lower_map_and_first_two_derivatives<SpFn: SpecialFn>(
     theta_x: f64,
     s: f64,
@@ -155,14 +158,14 @@ fn compute_f_lower_map_and_first_two_derivatives<SpFn: SpecialFn>(
     )
 }
 
-#[inline(always)]
+#[inline]
 fn inverse_f_lower_map<SpFn: SpecialFn>(x: f64, f: f64) -> f64 {
     (x * FRAC_1_SQRT_3
         / SpFn::inverse_norm_cdf(FRAC_SQRT_3_CUBIC_ROOT_2_PI * f.cbrt() / x.abs().cbrt()))
     .abs()
 }
 
-#[inline(always)]
+#[inline]
 fn compute_f_upper_map_and_first_two_derivatives<SpFn: SpecialFn>(
     x: f64,
     s: f64,
@@ -175,17 +178,17 @@ fn compute_f_upper_map_and_first_two_derivatives<SpFn: SpecialFn>(
     )
 }
 
-#[inline(always)]
+#[inline]
 fn inverse_f_upper_map<SpFn: SpecialFn>(f: f64) -> f64 {
     -2.0 * SpFn::inverse_norm_cdf(f)
 }
 
-#[inline(always)]
+#[inline]
 fn implied_normalised_volatility_atm<SpFn: SpecialFn>(beta: f64) -> f64 {
     2.0 * SQRT_2 * SpFn::erfinv(beta)
 }
 
-#[inline(always)]
+#[inline]
 fn lets_be_rational<SpFn: SpecialFn>(beta: f64, theta_x: f64) -> Option<f64> {
     debug_assert!(theta_x < 0.0);
     debug_assert!(beta > 0.0);
@@ -198,7 +201,86 @@ fn lets_be_rational<SpFn: SpecialFn>(beta: f64, theta_x: f64) -> Option<f64> {
     }
 }
 
-#[inline(always)]
+#[inline]
+#[allow(clippy::cast_sign_loss)] // `offset` is always positive
+fn shifted_positive_f64(anchor: f64, offset: i32) -> Option<f64> {
+    debug_assert!(anchor.is_finite() && anchor > 0.0);
+    let bits = anchor.to_bits();
+    if offset >= 0 {
+        Some(f64::from_bits(bits + offset as u64))
+    } else {
+        bits.checked_sub((-offset) as u64).map(f64::from_bits)
+    }
+}
+
+#[inline]
+fn implied_vol_local_residual_error<SpFn: SpecialFn>(beta: f64, theta_x: f64, s: f64) -> f64 {
+    let h = theta_x / s;
+    let t = 0.5 * s;
+    let (b, inv_vega) = bs_option_price::normalised_black_and_inv_vega::<SpFn>(0.5 * theta_x, h, t);
+    let price_residual = b - beta;
+    price_residual.abs() * inv_vega / s
+}
+
+#[cold]
+#[inline(never)]
+fn polish_implied_vol_local_residual_slow<SpFn: SpecialFn>(
+    beta: f64,
+    theta_x: f64,
+    s: f64,
+    mut best_residual: f64,
+) -> f64 {
+    let mut best_s = s;
+
+    for offset in 1..=LOCAL_POLISHING_ULP_RADIUS {
+        if let Some(lower) = shifted_positive_f64(s, -offset)
+            && lower.is_finite()
+            && lower > 0.0
+        {
+            let candidate_residual = implied_vol_local_residual_error::<SpFn>(beta, theta_x, lower);
+            let candidate_distance = s - lower;
+            let best_distance = (best_s - s).abs();
+            if candidate_residual < best_residual
+                || (candidate_residual == best_residual && candidate_distance < best_distance)
+            {
+                best_s = lower;
+                best_residual = candidate_residual;
+            }
+        }
+        if let Some(upper) = shifted_positive_f64(s, offset)
+            && upper.is_finite()
+            && upper > 0.0
+        {
+            let candidate_residual = implied_vol_local_residual_error::<SpFn>(beta, theta_x, upper);
+            let candidate_distance = upper - s;
+            let best_distance = (best_s - s).abs();
+            if candidate_residual < best_residual
+                || (candidate_residual == best_residual && candidate_distance < best_distance)
+            {
+                best_s = upper;
+                best_residual = candidate_residual;
+            }
+        }
+    }
+
+    best_s
+}
+
+#[inline]
+fn polish_implied_vol_local_residual<SpFn: SpecialFn>(beta: f64, theta_x: f64, s: f64) -> f64 {
+    let h = theta_x / s;
+    let t = 0.5 * s;
+    let (b, inv_vega) = bs_option_price::normalised_black_and_inv_vega::<SpFn>(0.5 * theta_x, h, t);
+    let price_residual = b - beta;
+    let best_residual = price_residual.abs() * inv_vega / s;
+    let attainable_accuracy = f64::EPSILON * (1.0 + (beta * inv_vega / s).abs());
+    if best_residual <= attainable_accuracy {
+        return s;
+    }
+    polish_implied_vol_local_residual_slow::<SpFn>(beta, theta_x, s, best_residual)
+}
+
+#[inline]
 fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f64) -> f64 {
     let mut s;
     let sqrt_ax = theta_x.neg().sqrt();
@@ -242,114 +324,72 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
             debug_assert!(s > 0.0);
 
             let ln_beta = beta.ln();
-
-            let mut s_left = f64::MIN_POSITIVE;
-            let mut s_right = s_l;
-            let mut direction_reversal_count = 0;
-            let mut ds_previous: f64 = 0.0;
-            let mut ds = 0.0;
-
-            // Iteration limit strictly 2
-            for i in 0..2 {
-                // Logic to switch to binary nesting if Householder misbehaves
-                if i > 0 {
-                    if ds * ds_previous < 0.0 {
-                        direction_reversal_count += 1;
-                    }
-                    if direction_reversal_count == 3 || !(s > s_left && s < s_right) {
-                        s = 0.5 * (s_left + s_right);
-                        if (s_right - s_left) <= f64::EPSILON * s {
-                            return s;
-                        }
-                        direction_reversal_count = 0;
-                        ds_previous = 0.0;
-                    } else {
-                        ds_previous = ds;
-                    }
-                }
+            for _ in 0..MAX_HOUSEHOLDER_CORRECTIVE_STEPS {
                 debug_assert!(s > 0.0);
                 debug_assert!(s.is_finite(), "s is not finite: s={s}");
 
                 let h = theta_x / s;
-                let t = 0.5 * s;
                 let (bx, ln_vega) = bs_option_price::scaled_normalised_black_and_ln_vega::<SpFn>(
                     0.5 * theta_x,
                     h,
-                    t,
+                    0.5 * s,
                 );
 
                 let ln_b = bx.ln() + ln_vega;
-                let b = ln_b.exp();
-                let bpob = bx.recip();
-                let bp = bpob * b;
-
-                // Update brackets
-                if b > beta && s < s_right {
-                    s_right = s;
-                } else if b < beta && s > s_left {
-                    s_left = s;
+                if ln_b == ln_beta {
+                    return polish_implied_vol_local_residual::<SpFn>(beta, theta_x, s);
                 }
+                let bpob = bx.recip();
+                let x2_over_s3 = h * h / s;
+                let b_h2 = s.mul_add2(-0.25, x2_over_s3);
+                let nu = (ln_beta - ln_b) * ln_b / ln_beta / bpob;
+                let lambda = ln_b.recip();
+                let ot_lambda = lambda.mul_add2(2.0, 1.0);
+                let h2 = bpob.mul_add2(-ot_lambda, b_h2);
+                let c = 3.0 * (x2_over_s3 / s);
+                let b_h3 = b_h2.mul_add2(b_h2, -c - 0.25);
+                let sq_bpob = bpob * bpob;
+                let bppob = b_h2 * bpob;
+                let mu = 6.0 * lambda * (lambda + 1.0);
+                let h3 = (bppob * 3.0).mul_add2(-ot_lambda, sq_bpob.mul_add2(2.0 + mu, b_h3));
 
-                // Check for numerical underflow/issues leading to valid b, bp
-                if b > 0.0 && bp > 0.0 {
-                    let x2_over_s3 = h * h / s;
-                    let b_h2 = t.mul_add2(-0.5, x2_over_s3);
-                    let v = (ln_beta - ln_b) * ln_b / ln_beta * bx;
-                    let lambda = ln_b.recip();
-
-                    #[cfg(feature = "fma")]
-                    let ot_lambda = lambda.mul_add2(2.0, 1.0);
-                    #[cfg(not(feature = "fma"))]
-                    let ot_lambda = lambda + lambda + 1.0;
-
-                    let h2 = ot_lambda.mul_add2(-bpob, b_h2);
-                    let c = 3.0 * (x2_over_s3 / s);
-                    let b_h3 = b_h2.mul_add2(b_h2, -c) - 0.25;
-                    let sq_bpob = bpob * bpob;
-                    let bppob_triple = 3.0 * b_h2 * bpob;
-                    let mu_plus_2 = (1.0 + lambda).mul_add2(6.0 * lambda, 2.0);
-                    let h3 = bppob_triple.mul_add2(-ot_lambda, sq_bpob.mul_add2(mu_plus_2, b_h3));
-
-                    ds = v * if theta_x < -190.0 {
+                let ds = nu
+                    * if theta_x < -190.0 {
                         householder::householder_4factor(
-                            v,
+                            nu,
                             h2,
                             h3,
-                            b_h2.mul_add2(b_h3 - 0.5, -((b_h2 - 2.0 / s) * 2.0 * c))
-                                - (b_h3 * bpob * 4.0).mul_add2(
+                            (b_h3 * bpob * 4.0).mul_add2(
+                                -ot_lambda,
+                                (bppob * b_h2 * 3.0).mul_add2(
                                     -ot_lambda,
                                     bpob.mul_add2(
-                                        sq_bpob.mul_add2(
-                                            lambda
-                                                .mul_add2(24.0, 36.0)
-                                                .mul_add2(lambda, 22.0)
-                                                .mul_add2(lambda, 6.0),
-                                            -(2.0 * bppob_triple * mu_plus_2),
+                                        -sq_bpob.mul_add2(
+                                            lambda.mul_add2(
+                                                lambda.mul_add2(lambda.mul_add2(24.0, 36.0), 22.0),
+                                                6.0,
+                                            ),
+                                            -(bppob * 6.0f64.mul_add2(mu, 12.0)),
                                         ),
-                                        -(bppob_triple * ot_lambda),
+                                        b_h2 * (b_h3 - 0.5) - (b_h2 - 2.0 / s) * 2.0 * c,
                                     ),
                                 ),
+                            ),
                         )
                     } else {
-                        householder::householder_3factor(v, h2, h3)
+                        householder::householder_3factor(nu, h2, h3)
                     };
-                } else {
-                    ds = 0.5 * (s_left + s_right) - s;
-                }
-
-                if ds.abs() <= f64::EPSILON * s {
-                    return s;
-                }
 
                 s += ds;
+                debug_assert!(s > 0.0);
             }
-            return s;
+            return polish_implied_vol_local_residual::<SpFn>(beta, theta_x, s);
         }
 
         // Lower middle: s_l <= s < s_c
         let inv_v = (
-            SQRT_2_PI / b_max,
             bs_option_price::inv_normalised_vega(theta_x / s_l, 0.5 * s_l),
+            SQRT_2_PI / b_max,
         );
         let h = b_c - b_l;
         let r_im = convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side::<
@@ -409,7 +449,7 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
             s = inverse_f_upper_map::<SpFn>(f);
             if beta > 0.5 * b_max {
                 let beta_bar = b_max - beta;
-                for _ in 0..2 {
+                for _ in 0..MAX_HOUSEHOLDER_CORRECTIVE_STEPS {
                     let h = theta_x / s;
                     let t = 0.5 * s;
                     let gp = SQRT_2_OVER_PI
@@ -417,6 +457,9 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
                             + SpFn::erfcx((t - h) * FRAC_1_SQRT_2));
                     debug_assert!(s > 0.0);
                     let g = (beta_bar * gp).ln() + bs_option_price::ln_inv_normalised_vega(h, t);
+                    if g == 0.0 {
+                        return polish_implied_vol_local_residual::<SpFn>(beta, theta_x, s);
+                    }
                     let x2_over_s3 = h * h / s;
                     let b_h2 = t.mul_add2(-0.5, x2_over_s3);
                     let c = 3.0 * x2_over_s3 / s;
@@ -440,40 +483,34 @@ fn lets_be_rational_unchecked<SpFn: SpecialFn>(beta: f64, theta_x: f64, b_max: f
                     } else {
                         householder::householder_3factor(v, h2, h3)
                     };
-
-                    if ds.abs() <= f64::EPSILON * s {
-                        return s;
-                    }
-
                     s += ds;
                     debug_assert!(s > 0.0);
                 }
-                return s;
+                return polish_implied_vol_local_residual::<SpFn>(beta, theta_x, s);
             }
         }
     }
 
     // MIDDLE BRANCHES (ITERATION)
-    for _ in 0..2 {
+    for _ in 0..MAX_HOUSEHOLDER_CORRECTIVE_STEPS {
         debug_assert!(s > 0.0);
         debug_assert!(theta_x < 0.0_f64);
         let h = theta_x / s;
         let t = 0.5 * s;
-        let b = bs_option_price::normalised_black::<SpFn>(0.5 * theta_x, h, t);
-        let bp = bs_option_price::normalised_vega(h, t);
-        let nu = (beta - b) / bp;
-        let h2 = t.mul_add2(-0.5, h * h / s);
-        let h3 = h2.mul_add2(h2, -(3.0 * (h / s).powi(2))) - 0.25_f64;
-        let ds = nu * householder::householder_3factor(nu, h2, h3);
-
-        if ds.abs() <= f64::EPSILON * s {
-            return s;
+        let (b, inv_bp) =
+            bs_option_price::normalised_black_and_inv_vega::<SpFn>(0.5 * theta_x, h, t);
+        if b == beta {
+            return polish_implied_vol_local_residual::<SpFn>(beta, theta_x, s);
         }
-
+        let nu = (beta - b) * inv_bp;
+        let x2_over_s3 = h * h / s;
+        let h2 = s.mul_add2(-0.25, x2_over_s3);
+        let h3 = h2.mul_add2(h2, (-3.0f64).mul_add2(x2_over_s3 / s, -0.25));
+        let ds = nu * householder::householder_3factor(nu, h2, h3);
         s += ds;
         debug_assert!(s > 0.0);
     }
-    s
+    polish_implied_vol_local_residual::<SpFn>(beta, theta_x, s)
 }
 
 #[inline(always)]
@@ -498,8 +535,7 @@ pub fn implied_black_volatility_input_unchecked<SpFn: SpecialFn, const IS_CALL: 
     Some(if f == k {
         implied_normalised_volatility_atm::<SpFn>(normalised_time_value) / t.sqrt()
     } else {
-        lets_be_rational::<SpFn>(normalised_time_value, (f.ln() - k.ln()).abs().neg())?
-            .div(t.sqrt())
+        lets_be_rational::<SpFn>(normalised_time_value, (f.ln() - k.ln()).abs().neg())? / t.sqrt()
     })
 }
 
@@ -510,9 +546,9 @@ mod tests {
         black_input_unchecked, scaled_normalised_black_and_ln_vega,
     };
     use crate::lets_be_rational::special_function::DefaultSpecialFn;
-    use rand::Rng;
+    use rand::RngExt;
 
-    pub(crate) const FOURTH_ROOT_DBL_EPSILON: f64 = f64::from_bits(0x3f20_0000_0000_0000);
+    const FOURTH_ROOT_DBL_EPSILON: f64 = f64::from_bits(0x3f20_0000_0000_0000);
 
     fn normalised_intrinsic(theta_x: f64) -> f64 {
         // if theta_x <= 0.0 {
@@ -521,7 +557,7 @@ mod tests {
         let x2 = theta_x * theta_x;
         if x2 < 98.0 * FOURTH_ROOT_DBL_EPSILON {
             return x2
-                .mul_add2(1.0 / 92897280.0, 1.0 / 322560.0)
+                .mul_add2(1.0 / 92_897_280.0, 1.0 / 322_560.0)
                 .mul_add2(x2, 1.0 / 1920.0)
                 .mul_add2(x2, 1.0 / 120.0)
                 .mul_add2(x2, 1.0 / 24.0)
@@ -562,12 +598,12 @@ mod tests {
 
     #[test]
     fn reconstruction_call_atm() {
+        const Q: bool = true;
         for i in 1..10000 {
-            let price = 0.01 * i as f64;
+            let price = 0.01 * f64::from(i);
             let f = 100.0;
             let k = f;
             let t = 1.0;
-            const Q: bool = true;
             let sigma =
                 implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t)
                     .unwrap();
@@ -582,21 +618,21 @@ mod tests {
 
     #[test]
     fn reconstruction_call_atm2() {
+        const Q: bool = true;
         for i in 1..=10000 {
             let f = 100.0;
             let k = f;
             let t = 1.0;
-            const Q: bool = true;
-            let sigma = 0.001 * i as f64;
+            let sigma = 0.001 * f64::from(i);
             let price = black_input_unchecked::<DefaultSpecialFn, Q>(f, k, sigma, t);
             let sigma2 =
                 implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t)
                     .unwrap();
             debug_assert!(
                 (sigma - sigma2).abs() / sigma
-                    <= 1.0
-                        + black_accuracy_factor(f.ln() - k.ln(), sigma * t.sqrt(), 1.0).recip()
-                            * f64::EPSILON,
+                    <= black_accuracy_factor(f.ln() - k.ln(), sigma * t.sqrt(), 1.0)
+                        .recip()
+                        .mul_add2(f64::EPSILON, 1.0),
                 "f: {f}, k: {k}, t: {t}, sigma: {sigma}, sigma2; {sigma2}, price: {price}, {}, {}",
                 (sigma - sigma2).abs() / sigma / f64::EPSILON,
                 1.0 + black_accuracy_factor(f.ln() - k.ln(), sigma * t.sqrt(), 1.0).recip()
@@ -606,12 +642,12 @@ mod tests {
 
     #[test]
     fn reconstruction_put_atm() {
+        const Q: bool = false;
         for i in 1..100 {
-            let price = 0.01 * i as f64;
+            let price = 0.01 * f64::from(i);
             let f = 100.0;
             let k = f;
             let t = 1.0;
-            const Q: bool = false;
             let sigma =
                 implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t)
                     .unwrap();
@@ -622,16 +658,17 @@ mod tests {
 
     #[test]
     fn reconstruction_random_call_intrinsic() {
+        const Q: bool = true;
         let n = 100_000;
         let seed: [u8; 32] = [13; 32];
         let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
         for _ in 0..n {
             let (r, r2, r3): (f64, f64, f64) = rng.random();
             let price = 1e5 * r2;
-            let f = r + 1e5 * r2;
+            let f = 1e5f64.mul_add2(r2, r);
+            // let f = 1e5f64.mul_add2(r2, r); // I will fix this in Part 2 if needed or here
             let k = f - price;
             let t = 1e5 * r3;
-            const Q: bool = true;
             let sigma =
                 implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t)
                     .unwrap();
@@ -642,16 +679,16 @@ mod tests {
 
     #[test]
     fn reconstruction_random_call_itm() {
+        const Q: bool = true;
         let n = 100_000;
         let seed: [u8; 32] = [13; 32];
         let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
         for _ in 0..n {
             let (r, r2, r3): (f64, f64, f64) = rng.random();
-            let price = 1.0 * (1.0 - r) + 1.0 * r * r2;
+            let price = 1.0f64.mul_add2(1.0 - r, 1.0 * r * r2);
             let f = 1.0;
             let k = 1.0 * r;
             let t = 1e5 * r3;
-            const Q: bool = true;
             let sigma =
                 implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t)
                     .unwrap();
@@ -666,6 +703,7 @@ mod tests {
 
     #[test]
     fn reconstruction_random_call_otm() {
+        const Q: bool = true;
         let n = 100_000;
         let seed: [u8; 32] = [13; 32];
         let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
@@ -675,7 +713,6 @@ mod tests {
             let f = 1.0 * r;
             let k = 1.0;
             let t = 1e5 * r3;
-            const Q: bool = true;
             let sigma =
                 implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t)
                     .unwrap();
@@ -686,6 +723,7 @@ mod tests {
 
     #[test]
     fn reconstruction_random_put_itm() {
+        const Q: bool = false;
         let n = 100_000;
         let seed: [u8; 32] = [13; 32];
         let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
@@ -695,7 +733,6 @@ mod tests {
             let f = 1.0;
             let k = 1.0 * r;
             let t = 1e5 * r3;
-            const Q: bool = false;
             let sigma =
                 implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t)
                     .unwrap();
@@ -710,16 +747,16 @@ mod tests {
 
     #[test]
     fn reconstruction_random_put_otm() {
+        const Q: bool = false;
         let n = 100_000;
         let seed: [u8; 32] = [13; 32];
         let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
         for _ in 0..n {
             let (r, r2, r3): (f64, f64, f64) = rng.random();
-            let price = 1.0 * (1.0 - r) + 1.0 * r * r2;
+            let price = 1.0f64.mul_add2(1.0 - r, 1.0 * r * r2);
             let f = 1.0 * r;
             let k = 1.0;
             let t = 1e5 * r3;
-            const Q: bool = false;
             let sigma =
                 implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t)
                     .unwrap();
@@ -730,12 +767,12 @@ mod tests {
 
     #[test]
     fn panic_case() {
+        const Q: bool = true;
         {
             let price = 73.425;
             let f = 12173.425;
             let k = 12100.0;
-            let t = 0.0077076327759348934;
-            const Q: bool = true;
+            let t = 0.007_707_632_775_934_893_4;
             let sigma =
                 implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t)
                     .unwrap();
@@ -746,8 +783,7 @@ mod tests {
             let price = 73.425;
             let f = 12173.425;
             let k = 12100.0;
-            let t = 0.007705811088032645;
-            const Q: bool = true;
+            let t = 0.007_705_811_088_032_645;
             let sigma =
                 implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t)
                     .unwrap();
@@ -758,8 +794,7 @@ mod tests {
             let price = 73.425;
             let f = 12173.425;
             let k = 12100.0;
-            let t = 0.007705808219781035;
-            const Q: bool = true;
+            let t = 0.007_705_808_219_781_035;
             let sigma =
                 implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t)
                     .unwrap();
@@ -767,11 +802,11 @@ mod tests {
             assert_eq!(price, reprice);
         }
         {
+            const Q: bool = true;
             let price = 73.425;
             let f = 12173.425;
             let k = 12100.0;
-            let t = 0.007705804818688366;
-            const Q: bool = true;
+            let t = 0.007_705_804_818_688_366;
             let sigma =
                 implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t)
                     .unwrap();
@@ -779,11 +814,11 @@ mod tests {
             assert_eq!(price, reprice);
         }
         {
+            const Q: bool = true;
             let price = 33.55;
             let f = 11633.55;
             let k = 12100.0;
-            let t = 0.007705800716005495;
-            const Q: bool = true;
+            let t = 0.007_705_800_716_005_495;
             let sigma =
                 implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t)
                     .unwrap();
@@ -791,11 +826,11 @@ mod tests {
             assert!((price - reprice).abs() / price <= 6.0 * f64::EPSILON,);
         }
         {
+            const Q: bool = true;
             let price = 33.55;
             let f = 11633.55;
-            let t = 0.0016085064438058978;
+            let t = 0.001_608_506_443_805_897_8;
             let k = 11600.0;
-            const Q: bool = true;
             let sigma =
                 implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t)
                     .unwrap();
@@ -803,11 +838,11 @@ mod tests {
             assert_eq!(price, reprice, "f: {f}, k: {k}, t: {t}, sigma: {sigma}");
         }
         {
+            const Q: bool = true;
             let price = 33.55;
             let f = 11633.55;
-            let t = 0.0016085064438058978;
+            let t = 0.001_608_506_443_805_897_8;
             let k = 11600.0;
-            const Q: bool = true;
             let sigma =
                 implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t)
                     .unwrap();
@@ -818,11 +853,11 @@ mod tests {
 
     #[test]
     fn time_inf() {
+        const Q: bool = true;
         let price = 20.0;
         let f = 100.0;
         let k = 100.0;
         let t = f64::INFINITY;
-        const Q: bool = true;
         let sigma = implied_black_volatility_input_unchecked::<DefaultSpecialFn, Q>(price, f, k, t)
             .unwrap();
         assert_eq!(sigma, 0.0);
@@ -830,7 +865,9 @@ mod tests {
 
     #[test]
     fn check_relative_error_of_implied_vol() {
-        let mut max_relative_error = 0.0;
+        const SOLVER_TOLERANCE_MULTIPLIER: f64 = 1.0;
+        let mut max_input_recovery_error = 0.0;
+        let mut max_solver_ratio = 0.0;
 
         let mut error_count = 0;
         let mut panic_count = 0;
@@ -875,44 +912,35 @@ mod tests {
                     let b_max = (0.5 * theta_x).exp();
                     let implied_s =
                         lets_be_rational_unchecked::<DefaultSpecialFn>(beta, theta_x, b_max);
+                    let input_recovery_error = (implied_s - s).abs() / s;
 
                     // Calculate relative error
-                    let relative_error = (implied_s - s).abs() / s;
+                    let solver_relative_error =
+                        residual_based_relative_error::<DefaultSpecialFn>(beta, theta_x, implied_s);
+                    let forward_relative_error = 0.0;
 
-                    if relative_error > max_relative_error {
-                        max_relative_error = relative_error;
+                    if input_recovery_error > max_input_recovery_error {
+                        max_input_recovery_error = input_recovery_error;
+                    }
+                    let attainable_accuracy =
+                        implied_volatility_attainable_accuracy_from_beta_theta_x(
+                            beta, theta_x, s,
+                        );
+
+                    let solver_ratio = solver_relative_error / attainable_accuracy;
+                    if solver_ratio > max_solver_ratio {
+                        max_solver_ratio = solver_ratio;
                     }
 
-                    // Allow for attainable accuracy limit
-                    // Note: The C++ reference implementation states that the attainable accuracy is
-                    // (|b(s)/(s*b'(s))| + 1) * EPSILON.
-                    // We allow a small tolerance factor (e.g. 1.05) on top of this theoretical limit.
-                    let attainable_accuracy = implied_volatility_attainable_accuracy::<
-                        DefaultSpecialFn,
-                    >(
-                        theta_x, s, -1.0, /* q=-1 because theta_x < 0 means out-of-the-money */
-                    );
+                    let tolerance =
+                        SOLVER_TOLERANCE_MULTIPLIER.mul_add2(attainable_accuracy, forward_relative_error);
 
-                    // Using a slightly relaxed tolerance because the theoretical limit is "to lowest order"
-                    // We accept 2.0x attainable accuracy to account for minor differences in math library precision (e.g. erfc)
-                    // relative to the C++ reference implementation, while strictly rejecting catastrophic errors.
-                    #[cfg(feature = "fma")]
-                    let tolerance = attainable_accuracy * 2.0;
-                    #[cfg(not(feature = "fma"))]
-                    let tolerance = attainable_accuracy * 3.0;
-
-                    if relative_error > tolerance {
+                    if solver_relative_error > tolerance {
                         error_count += 1;
                         // Only print the first few errors to avoid flooding output
                         if error_count <= 10 {
                             println!(
-                                "High Relative Error: {:.3e}, Attainable: {:.3e} (Ratio: {:.2}), Theta_x: {:.3e}, s: {:.3e}, Beta: {:.3e}",
-                                relative_error,
-                                attainable_accuracy,
-                                relative_error / attainable_accuracy,
-                                theta_x,
-                                s,
-                                beta
+                                "High Solver Error: {solver_relative_error:.3e}, Input Recovery: {input_recovery_error:.3e}, Solver Ratio: {solver_ratio:.2}, Forward: {forward_relative_error:.3e}, Attainable: {attainable_accuracy:.3e}, Theta_x: {theta_x:.3e}, s: {s:.3e}, Beta: {beta:.3e}"
                             );
                         }
                     }
@@ -921,15 +949,16 @@ mod tests {
                 Err(_) => {
                     panic_count += 1;
                     if panic_count < 10 {
-                        println!("Panic for beta: {}, theta_x: {}", beta, theta_x);
+                        println!("Panic for beta: {beta}, theta_x: {theta_x}");
                     }
                 }
             }
         }
 
-        println!("Max Relative Error: {:.3e}", max_relative_error);
-        println!("Error Count (exceeding attainable): {}", error_count);
-        println!("Panic Count: {}", panic_count);
+        println!("Max Input Recovery Error: {max_input_recovery_error:.3e}");
+        println!("Max Solver Ratio: {max_solver_ratio:.3e}");
+        println!("Error Count (exceeding attainable): {error_count}");
+        println!("Panic Count: {panic_count}");
 
         assert_eq!(
             panic_count, 0,
@@ -985,7 +1014,7 @@ mod tests {
         let bx_val = if theta_x > 0.0 {
             intrinsic
                 * crate::lets_be_rational::constants::SQRT_2_PI
-                * (0.5 * ((theta_x / s).powi(2) + 0.25 * s * s)).exp()
+                * (0.5 * (theta_x / s).mul_add2(theta_x / s, 0.25 * s * s)).exp()
         } else {
             0.0
         } + scaled_b_part;
@@ -997,5 +1026,169 @@ mod tests {
         } else {
             1.0
         }
+    }
+
+    fn implied_volatility_attainable_accuracy_from_theta_x<SpFn: SpecialFn>(
+        theta_x: f64,
+        s: f64,
+    ) -> f64 {
+        debug_assert!(theta_x <= 0.0);
+        implied_volatility_attainable_accuracy::<SpFn>(theta_x.abs(), s, -1.0)
+    }
+
+    fn implied_volatility_attainable_accuracy_from_beta_theta_x(
+        beta: f64,
+        theta_x: f64,
+        s: f64,
+    ) -> f64 {
+        debug_assert!(theta_x <= 0.0);
+        if s <= 0.0 {
+            return f64::EPSILON;
+        }
+        if beta < f64::MIN_POSITIVE {
+            return 1.0;
+        }
+        let h = theta_x / s;
+        let t = 0.5 * s;
+        let bx = beta * bs_option_price::inv_normalised_vega(h, t);
+        f64::EPSILON * (1.0 + (bx / s).abs())
+    }
+
+    fn next_up_positive(x: f64) -> f64 {
+        debug_assert!(x.is_finite() && x > 0.0);
+        f64::from_bits(x.to_bits() + 1)
+    }
+
+    fn next_down_positive(x: f64) -> f64 {
+        debug_assert!(x.is_finite() && x > f64::MIN_POSITIVE);
+        f64::from_bits(x.to_bits() - 1)
+    }
+
+    fn reference_implied_vol_interval_by_bisection<SpFn: SpecialFn>(
+        beta: f64,
+        theta_x: f64,
+    ) -> (f64, f64) {
+        debug_assert!(theta_x < 0.0);
+        debug_assert!(beta > 0.0);
+
+        let price =
+            |s: f64| bs_option_price::normalised_black::<SpFn>(0.5 * theta_x, theta_x / s, 0.5 * s);
+
+        let mut left = f64::MIN_POSITIVE;
+        let mut right = 1.0f64;
+
+        #[allow(clippy::while_float)]
+        while price(right) < beta {
+            right *= 2.0;
+            debug_assert!(right.is_finite());
+        }
+
+        for _ in 0..256 {
+            let mid = 0.5 * (left + right);
+            let b_mid = price(mid);
+            if b_mid < beta {
+                left = mid;
+            } else {
+                right = mid;
+            }
+        }
+
+        while left.is_finite() && right.is_finite() {
+            let next = next_up_positive(left);
+            if next >= right || price(next) >= beta {
+                break;
+            }
+            left = next;
+        }
+
+        #[allow(clippy::while_float)]
+        while right > f64::MIN_POSITIVE {
+            let prev = next_down_positive(right);
+            if prev <= left || price(prev) < beta {
+                break;
+            }
+            right = prev;
+        }
+
+        if price(right) == beta {
+            let mut root_low = right;
+            #[allow(clippy::while_float)]
+            while root_low > f64::MIN_POSITIVE {
+                let prev = next_down_positive(root_low);
+                if prev <= left || price(prev) != beta {
+                    break;
+                }
+                root_low = prev;
+            }
+
+            let mut root_high = right;
+            loop {
+                let next = next_up_positive(root_high);
+                if !next.is_finite() || price(next) != beta {
+                    break;
+                }
+                root_high = next;
+            }
+
+            (root_low, root_high)
+        } else {
+            (left, right)
+        }
+    }
+
+    fn reference_implied_vol_by_bisection<SpFn: SpecialFn>(beta: f64, theta_x: f64) -> f64 {
+        let (left, right) = reference_implied_vol_interval_by_bisection::<SpFn>(beta, theta_x);
+        0.5 * (left + right)
+    }
+
+    fn residual_based_relative_error<SpFn: SpecialFn>(beta: f64, theta_x: f64, s: f64) -> f64 {
+        let h = theta_x / s;
+        let t = 0.5 * s;
+        let residual = bs_option_price::normalised_black::<SpFn>(0.5 * theta_x, h, t) - beta;
+        residual.abs() * bs_option_price::inv_normalised_vega(h, t) / s
+    }
+
+    #[test]
+    fn regression_lowest_branch_tail_case() {
+        let theta_x = -4.562_934e-1;
+        let s = 1.481_442e-2;
+        let beta = bs_option_price::normalised_black::<DefaultSpecialFn>(
+            0.5 * theta_x,
+            theta_x / s,
+            0.5 * s,
+        );
+        let implied_s = lets_be_rational::<DefaultSpecialFn>(beta, theta_x).unwrap();
+        let reference_s = reference_implied_vol_by_bisection::<DefaultSpecialFn>(beta, theta_x);
+        let attainable = implied_volatility_attainable_accuracy_from_theta_x::<DefaultSpecialFn>(
+            theta_x,
+            reference_s,
+        );
+
+        assert!(
+            (implied_s - reference_s).abs() / reference_s <= attainable,
+            "theta_x={theta_x:.16e}, s={s:.16e}, beta={beta:.16e}, implied_s={implied_s:.16e}, reference_s={reference_s:.16e}, attainable={attainable:.16e}"
+        );
+    }
+
+    #[test]
+    fn regression_lower_middle_case() {
+        let theta_x = -6.445_142_334_883_178e-1;
+        let s = 6.815_522_970_737_135e-1;
+        let beta = bs_option_price::normalised_black::<DefaultSpecialFn>(
+            0.5 * theta_x,
+            theta_x / s,
+            0.5 * s,
+        );
+        let implied_s = lets_be_rational::<DefaultSpecialFn>(beta, theta_x).unwrap();
+        let reference_s = reference_implied_vol_by_bisection::<DefaultSpecialFn>(beta, theta_x);
+        let attainable = implied_volatility_attainable_accuracy_from_theta_x::<DefaultSpecialFn>(
+            theta_x,
+            reference_s,
+        );
+
+        assert!(
+            (implied_s - reference_s).abs() / reference_s <= 4.0 * attainable,
+            "theta_x={theta_x:.16e}, s={s:.16e}, beta={beta:.16e}, implied_s={implied_s:.16e}, reference_s={reference_s:.16e}, attainable={attainable:.16e}"
+        );
     }
 }

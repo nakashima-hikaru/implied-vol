@@ -4,7 +4,7 @@ const MINIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE: f64 =
     -(1f64 - 0.000_000_014_901_161_193_847_656);
 const MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE: f64 = 2f64 / (f64::EPSILON * f64::EPSILON);
 
-#[inline(always)]
+#[inline]
 pub fn rational_cubic_interpolation(
     x_minus_x_l: f64,
     h: f64,
@@ -27,7 +27,7 @@ pub fn rational_cubic_interpolation(
     (1.0 - t).mul_add2(y.0, y.1 * t)
 }
 
-#[inline(always)]
+#[inline]
 fn rational_cubic_control_parameter_to_fit_second_derivative_at_left_side(
     h: f64,
     y_diff: f64,
@@ -50,7 +50,7 @@ fn rational_cubic_control_parameter_to_fit_second_derivative_at_left_side(
     }
 }
 
-#[inline(always)]
+#[inline]
 fn rational_cubic_control_parameter_to_fit_second_derivative_at_right_side(
     h: f64,
     y_diff: f64,
@@ -73,46 +73,53 @@ fn rational_cubic_control_parameter_to_fit_second_derivative_at_right_side(
     numerator / denominator
 }
 
-#[inline(always)]
-const fn minimum_rational_cubic_control_parameter<
+#[inline]
+fn is_zero(x: f64) -> bool {
+    x.abs() < f64::MIN_POSITIVE
+}
+
+#[inline]
+fn minimum_rational_cubic_control_parameter<
     const PREFER_SHAPE_PRESERVATION_OVER_SMOOTHNESS: bool,
 >(
     d: (f64, f64),
     s: f64,
 ) -> f64 {
     let monotonic = d.0 * s >= 0.0 && d.1 * s >= 0.0;
-    let convex_or_concave = (d.0 <= s && s <= d.1) || (d.0 >= s && s >= d.1);
-    if !monotonic && !convex_or_concave {
+    let convex = d.0 <= s && s <= d.1;
+    let concave = d.0 >= s && s >= d.1;
+    if !monotonic && !convex && !concave {
         return MINIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE;
     }
-    let r1 = if monotonic && s != 0.0 {
-        (d.1 + d.0) / s
-    } else if monotonic && PREFER_SHAPE_PRESERVATION_OVER_SMOOTHNESS {
-        MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE
-    } else {
-        f64::MIN
-    };
-    let r2 = if convex_or_concave {
-        let s_m_d_l = s - d.0;
-        let d_r_m_s = d.1 - s;
-        let d_r_m_d_l = d.1 - d.0;
-        if s_m_d_l != 0.0 || d_r_m_s == 0.0 {
-            (d_r_m_d_l / d_r_m_s.min(s_m_d_l)).abs()
+    let d_r_m_d_l = d.1 - d.0;
+    let d_r_m_s = d.1 - s;
+    let s_m_d_l = s - d.0;
+
+    let mut r1 = -f64::MAX;
+    let mut r2 = r1;
+
+    if monotonic {
+        if !is_zero(s) {
+            r1 = (d.1 + d.0) / s;
         } else if PREFER_SHAPE_PRESERVATION_OVER_SMOOTHNESS {
-            MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE
-        } else {
-            r1
+            r1 = MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE;
+        }
+    }
+
+    if convex || concave {
+        if !(is_zero(s_m_d_l) || is_zero(d_r_m_s)) {
+            r2 = (d_r_m_d_l / d_r_m_s).abs().max((d_r_m_d_l / s_m_d_l).abs());
+        } else if PREFER_SHAPE_PRESERVATION_OVER_SMOOTHNESS {
+            r2 = MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE;
         }
     } else if monotonic && PREFER_SHAPE_PRESERVATION_OVER_SMOOTHNESS {
-        MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE
-    } else {
-        r1
-    };
-    r1.max(r2)
-        .max(MINIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE)
+        r2 = MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE;
+    }
+
+    MINIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE.max(r1.max(r2))
 }
 
-#[inline(always)]
+#[inline]
 pub fn convex_rational_cubic_control_parameter_to_fit_second_derivative_at_left_side<
     const PREFER_SHAPE_PRESERVATION_OVER_SMOOTHNESS: bool,
 >(
@@ -133,7 +140,7 @@ pub fn convex_rational_cubic_control_parameter_to_fit_second_derivative_at_left_
     r.max(r_min)
 }
 
-#[inline(always)]
+#[inline]
 pub fn convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side<
     const PREFER_SHAPE_PRESERVATION_OVER_SMOOTHNESS: bool,
 >(
@@ -192,7 +199,7 @@ mod tests {
                 (0.0, 0.0),
                 MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE
             ),
-            1.2000000000000002
+            1.200_000_000_000_000_2
         );
         let x_l = 0.0;
         assert_eq!(
@@ -233,7 +240,7 @@ mod tests {
         let r = MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE - f64::EPSILON;
         assert_eq!(
             rational_cubic_interpolation(0.2 - x_l, 1.0 - x_l, (1.0, 2.0), (0.0, 0.0), r),
-            1.2000000000000002
+            1.200_000_000_000_000_2
         );
         let x_l = 0.0;
         assert_eq!(
@@ -244,7 +251,7 @@ mod tests {
                 (0.0, 2.0),
                 MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE
             ) - f64::EPSILON,
-            0.9999999999999998
+            0.999_999_999_999_999_8
         );
         let x_l = 0.5;
         assert_eq!(
@@ -255,7 +262,7 @@ mod tests {
                 (0.0, 1.0),
                 MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE
             ) - f64::EPSILON,
-            1.4999999999999998
+            1.499_999_999_999_999_8
         );
 
         let x_l = 0.0;
@@ -274,7 +281,7 @@ mod tests {
         let r = MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE + f64::EPSILON;
         assert_eq!(
             rational_cubic_interpolation(0.2 - x_l, 1.0 - x_l, (1.0, 2.0), (0.0, 0.0), r),
-            1.2000000000000002
+            1.200_000_000_000_000_2
         );
         let x_l = 0.0;
         assert_eq!(
@@ -285,7 +292,7 @@ mod tests {
                 (0.0, 2.0),
                 MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE
             ) + f64::EPSILON,
-            1.0000000000000002
+            1.000_000_000_000_000_2
         );
         let x_l = 0.5;
         assert_eq!(
@@ -296,7 +303,7 @@ mod tests {
                 (0.0, 1.0),
                 MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE
             ) + f64::EPSILON,
-            1.5000000000000002
+            1.500_000_000_000_000_2
         );
     }
 

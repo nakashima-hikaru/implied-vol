@@ -1,4 +1,4 @@
-use crate::fused_multiply_add::MulAdd;
+use crate::fused_multiply_add::MulAddSelected;
 use crate::lets_be_rational::constants::SQRT_2_PI;
 use crate::lets_be_rational::special_function::SpecialFn;
 use std::cmp::Ordering;
@@ -7,17 +7,17 @@ use std::ops::Neg;
 
 const FRAC_SQRT_2_PI: f64 = f64::from_bits(0x3fd9_8845_33d4_3651);
 
-#[inline(always)]
+#[inline]
 pub fn norm_pdf(x2: f64) -> f64 {
     FRAC_SQRT_2_PI * (-0.5 * x2).exp()
 }
 
-#[inline(always)]
+#[inline]
 pub fn inv_norm_pdf(x2: f64) -> f64 {
     SQRT_2_PI * (0.5 * x2).exp()
 }
 
-#[inline(always)]
+#[inline]
 pub(super) fn norm_cdf<SpFn: SpecialFn + ?Sized>(z: f64) -> f64 {
     const NORM_CDF_ASYMPTOTIC_EXPANSION_FIRST_THRESHOLD: f64 = -10.0;
     const NORM_CDF_ASYMPTOTIC_EXPANSION_SECOND_THRESHOLD: f64 = -67_108_864.0;
@@ -49,16 +49,16 @@ pub(super) fn norm_cdf<SpFn: SpecialFn + ?Sized>(z: f64) -> f64 {
 
 pub(super) const U_MAX: f64 = 0.341_344_746_068_542_9;
 const U_MAX2: f64 = U_MAX * U_MAX;
-#[inline(always)]
+#[inline]
 pub(super) fn inverse_norm_cdfm_half_for_midrange_probabilities(u: f64) -> f64 {
     debug_assert_ne!(u.abs().partial_cmp(&U_MAX), Some(Ordering::Greater));
-    let s = u.mul_add2(-u, U_MAX2);
-    u * (s.mul_add2(
-        s.mul_add2(
-            s.mul_add2(
-                s.mul_add2(
-                    s.mul_add2(
-                        s.mul_add2(-7.589_398_814_012_592_5, 1.342_332_435_026_538_6E2),
+    let s = u.mul_add2_sel(-u, U_MAX2);
+    u * (s.mul_add2_sel(
+        s.mul_add2_sel(
+            s.mul_add2_sel(
+                s.mul_add2_sel(
+                    s.mul_add2_sel(
+                        s.mul_add2_sel(-7.589_398_814_012_592_5, 1.342_332_435_026_538_6E2),
                         6.904_892_420_614_086E2,
                     ),
                     7.499_778_145_665_792E2,
@@ -68,11 +68,11 @@ pub(super) fn inverse_norm_cdfm_half_for_midrange_probabilities(u: f64) -> f64 {
             5.026_057_216_730_31E1,
         ),
         2.929_589_546_983_088,
-    ) / s.mul_add2(
-        s.mul_add2(
-            s.mul_add2(
-                s.mul_add2(
-                    s.mul_add2(1.792_270_085_081_026E2, 4.791_239_145_097_567_3E2),
+    ) / s.mul_add2_sel(
+        s.mul_add2_sel(
+            s.mul_add2_sel(
+                s.mul_add2_sel(
+                    s.mul_add2_sel(1.792_270_085_081_026E2, 4.791_239_145_097_567_3E2),
                     3.868_212_085_404_174_4E2,
                 ),
                 1.294_041_204_487_553E2,
@@ -83,7 +83,7 @@ pub(super) fn inverse_norm_cdfm_half_for_midrange_probabilities(u: f64) -> f64 {
     ))
 }
 
-#[inline(always)]
+#[inline]
 pub(super) fn inverse_norm_cdf_for_low_probabilities(p: f64) -> f64 {
     debug_assert_ne!(
         p.partial_cmp(&0.158_655_253_931_46),
@@ -92,11 +92,11 @@ pub(super) fn inverse_norm_cdf_for_low_probabilities(p: f64) -> f64 {
     let r = p.ln().neg().sqrt();
     if r < 2.05 {
         // Branch I: Accuracy better than 7.6E-17
-        r.mul_add2(
-            r.mul_add2(
-                r.mul_add2(
-                    r.mul_add2(
-                        r.mul_add2(-13.054_072_340_494_093, -83.383_894_003_636_97),
+        r.mul_add2_sel(
+            r.mul_add2_sel(
+                r.mul_add2_sel(
+                    r.mul_add2_sel(
+                        r.mul_add2_sel(-13.054_072_340_494_093, -83.383_894_003_636_97),
                         -74.594_687_726_045_93,
                     ),
                     65.451_292_110_261_45,
@@ -104,11 +104,11 @@ pub(super) fn inverse_norm_cdf_for_low_probabilities(p: f64) -> f64 {
                 47.170_590_600_740_69,
             ),
             3.691_562_302_945_566,
-        ) / r.mul_add2(
-            r.mul_add2(
-                r.mul_add2(
-                    r.mul_add2(
-                        r.mul_add2(0.000_182_951_748_520_535_3, 9.221_688_797_873_743),
+        ) / r.mul_add2_sel(
+            r.mul_add2_sel(
+                r.mul_add2_sel(
+                    r.mul_add2_sel(
+                        r.mul_add2_sel(0.000_182_951_748_520_535_3, 9.221_688_797_873_743),
                         59.270_122_556_046_076,
                     ),
                     71.813_812_182_579_26,
@@ -119,11 +119,11 @@ pub(super) fn inverse_norm_cdf_for_low_probabilities(p: f64) -> f64 {
         )
     } else if r < 3.41 {
         // Branch II: Accuracy better than 9.4E-17
-        r.mul_add2(
-            r.mul_add2(
-                r.mul_add2(
-                    r.mul_add2(
-                        r.mul_add2(-1.201_314_787_943_552_6, -10.059_163_395_686_461),
+        r.mul_add2_sel(
+            r.mul_add2_sel(
+                r.mul_add2_sel(
+                    r.mul_add2_sel(
+                        r.mul_add2_sel(-1.201_314_787_943_552_6, -10.059_163_395_686_461),
                         -18.125_442_779_178_92,
                     ),
                     0.683_973_702_565_915_3,
@@ -131,11 +131,11 @@ pub(super) fn inverse_norm_cdf_for_low_probabilities(p: f64) -> f64 {
                 14.491_778_286_891_22,
             ),
             3.234_017_911_631_797,
-        ) / r.mul_add2(
-            r.mul_add2(
-                r.mul_add2(
-                    r.mul_add2(
-                        r.mul_add2(0.000_010_957_576_098_829_594, 0.848_848_921_991_492_5),
+        ) / r.mul_add2_sel(
+            r.mul_add2_sel(
+                r.mul_add2_sel(
+                    r.mul_add2_sel(
+                        r.mul_add2_sel(0.000_010_957_576_098_829_594, 0.848_848_921_991_492_5),
                         7.136_981_105_610_977,
                     ),
                     14.656_370_665_176_8,
@@ -146,11 +146,11 @@ pub(super) fn inverse_norm_cdf_for_low_probabilities(p: f64) -> f64 {
         )
     } else if r < 6.7 {
         // Branch III: Accuracy better than 9.1E-17
-        r.mul_add2(
-            r.mul_add2(
-                r.mul_add2(
-                    r.mul_add2(
-                        r.mul_add2(-1.541_431_949_401_359_8E-1, -2.869_906_133_588_252_8),
+        r.mul_add2_sel(
+            r.mul_add2_sel(
+                r.mul_add2_sel(
+                    r.mul_add2_sel(
+                        r.mul_add2_sel(-1.541_431_949_401_359_8E-1, -2.869_906_133_588_252_8),
                         -1.107_053_468_930_936_7E1,
                     ),
                     -5.163_392_911_552_553,
@@ -158,11 +158,11 @@ pub(super) fn inverse_norm_cdf_for_low_probabilities(p: f64) -> f64 {
                 9.948_372_431_703_657,
             ),
             3.125_223_578_008_758_3,
-        ) / r.mul_add2(
-            r.mul_add2(
-                r.mul_add2(
-                    r.mul_add2(
-                        r.mul_add2(1.356_598_356_444_129_7E-7, 1.089_797_223_413_183E-1),
+        ) / r.mul_add2_sel(
+            r.mul_add2_sel(
+                r.mul_add2_sel(
+                    r.mul_add2_sel(
+                        r.mul_add2_sel(1.356_598_356_444_129_7E-7, 1.089_797_223_413_183E-1),
                         2.030_707_606_430_904,
                     ),
                     8.108_634_112_236_153,
@@ -173,26 +173,23 @@ pub(super) fn inverse_norm_cdf_for_low_probabilities(p: f64) -> f64 {
         )
     } else if r < 12.9 {
         // Branch IV: Accuracy better than 9E-17
-        r.mul_add2(
-            r.mul_add2(
-                r.mul_add2(
-                    r.mul_add2(
-                        r.mul_add2(
-                            r.mul_add2(-0.016_123_033_183_901_45, -0.475_951_695_467_832_17),
-                            -2.964_425_135_315_060_4,
-                        ),
-                        -0.065_127_593_753_781_67,
+        r.mul_add2_sel(
+            r.mul_add2_sel(
+                r.mul_add2_sel(
+                    r.mul_add2_sel(
+                        r.mul_add2_sel(-0.016_123_033_183_901_45, -0.475_951_695_467_832_17),
+                        -2.964_425_135_315_060_4,
                     ),
                     -3.688_196_041_019_692,
                 ),
                 2.250_881_388_987_032,
             ),
             2.616_126_495_089_728_3,
-        ) / r.mul_add2(
-            r.mul_add2(
-                r.mul_add2(
-                    r.mul_add2(
-                        r.mul_add2(
+        ) / r.mul_add2_sel(
+            r.mul_add2_sel(
+                r.mul_add2_sel(
+                    r.mul_add2_sel(
+                        r.mul_add2_sel(
                             0.000_000_003_084_809_357_096_678_6,
                             0.011_400_087_282_177_594,
                         ),
@@ -206,11 +203,11 @@ pub(super) fn inverse_norm_cdf_for_low_probabilities(p: f64) -> f64 {
         )
     } else {
         // Branch V: Accuracy better than 9.5E-17
-        r.mul_add2(
-            r.mul_add2(
-                r.mul_add2(
-                    r.mul_add2(
-                        r.mul_add2(-0.001_056_635_772_720_258_4, -0.065_127_593_753_781_67),
+        r.mul_add2_sel(
+            r.mul_add2_sel(
+                r.mul_add2_sel(
+                    r.mul_add2_sel(
+                        r.mul_add2_sel(-0.001_056_635_772_720_258_4, -0.065_127_593_753_781_67),
                         -0.863_851_812_192_137_6,
                     ),
                     -2.589_445_156_846_573,
@@ -218,11 +215,11 @@ pub(super) fn inverse_norm_cdf_for_low_probabilities(p: f64) -> f64 {
                 -0.042_799_650_734_502_09,
             ),
             2.322_684_904_787_23,
-        ) / r.mul_add2(
-            r.mul_add2(
-                r.mul_add2(
-                    r.mul_add2(
-                        r.mul_add2(
+        ) / r.mul_add2_sel(
+            r.mul_add2_sel(
+                r.mul_add2_sel(
+                    r.mul_add2_sel(
+                        r.mul_add2_sel(
                             0.000_000_000_023_135_343_206_304_888,
                             0.000_747_144_799_216_722_6,
                         ),
@@ -237,7 +234,7 @@ pub(super) fn inverse_norm_cdf_for_low_probabilities(p: f64) -> f64 {
     }
 }
 
-#[inline(always)]
+#[inline]
 pub(super) fn inverse_norm_cdf(p: f64) -> f64 {
     let u = p - 0.5;
     if u.abs() < U_MAX {

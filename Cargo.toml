@@ -15,10 +15,9 @@ fma = []
 cxx_bench = ["cxx", "cxx-build"]
 
 [dependencies]
-bon = "3.7.0"
 
 [dev-dependencies]
-rand = "0.9.2"
+rand = "0.10"
 
 [dependencies.cxx]
 version = "1"
@@ -32,13 +31,12 @@ optional = true
 pedantic = { level = "warn", priority = 1 }
 #restriction = "warn"
 cargo = { level = "warn", priority = 1 }
-#nursery = "warn"
+nursery = "warn"
 inline_always = { level = "allow", priority = 2 }
 float_cmp = { level = "allow", priority = 2 }
 too_many_lines = { level = "allow", priority = 2 }
 many_single_char_names = { level = "allow", priority = 2 }
 similar_names = { level = "allow", priority = 2 }
-neg_cmp_op_on_partial_ord = { level = "allow", priority = 2 }  # for const fn
-
+neg_cmp_op_on_partial_ord = { level = "allow", priority = 2 } # for const fn
 [profile.bench]
 lto = true
