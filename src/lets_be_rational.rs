@@ -923,17 +923,15 @@ mod tests {
                         max_input_recovery_error = input_recovery_error;
                     }
                     let attainable_accuracy =
-                        implied_volatility_attainable_accuracy_from_beta_theta_x(
-                            beta, theta_x, s,
-                        );
+                        implied_volatility_attainable_accuracy_from_beta_theta_x(beta, theta_x, s);
 
                     let solver_ratio = solver_relative_error / attainable_accuracy;
                     if solver_ratio > max_solver_ratio {
                         max_solver_ratio = solver_ratio;
                     }
 
-                    let tolerance =
-                        SOLVER_TOLERANCE_MULTIPLIER.mul_add2(attainable_accuracy, forward_relative_error);
+                    let tolerance = SOLVER_TOLERANCE_MULTIPLIER
+                        .mul_add2(attainable_accuracy, forward_relative_error);
 
                     if solver_relative_error > tolerance {
                         error_count += 1;
