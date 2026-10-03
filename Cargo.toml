@@ -1,8 +1,8 @@
 [package]
 name = "implied-vol"
-version = "2.0.0"
+version = "2.1.0"
 authors = ["Hikaru Nakashima <nakashima.alg57@gmail.com>"]
-description = "A pure rust implementation of Peter Jäckel's implied volatility calculation"
+description = "Accurate, fast implied volatility and option pricing in pure Rust"
 edition = "2024"
 repository = "https://github.com/nakashima-hikaru/implied-vol"
 license-file = "LICENSE"
@@ -12,33 +12,35 @@ categories = ["finance"]
 [features]
 default = []
 fma = []
+flashiv = []
+experimental = []
 cxx_bench = ["cxx", "cxx-build"]
 
-[dependencies]
-bon = "3.7.0"
-
 [dev-dependencies]
-rand = "0.9.2"
+rand = "0.10.3"
 
 [dependencies.cxx]
-version = "1"
+version = "1.0.202"
 optional = true
 
 [build-dependencies.cxx-build]
-version = "1"
+version = "1.0.202"
 optional = true
 
 [lints.clippy]
 pedantic = { level = "warn", priority = 1 }
 #restriction = "warn"
 cargo = { level = "warn", priority = 1 }
-#nursery = "warn"
+nursery = "warn"
 inline_always = { level = "allow", priority = 2 }
 float_cmp = { level = "allow", priority = 2 }
 too_many_lines = { level = "allow", priority = 2 }
 many_single_char_names = { level = "allow", priority = 2 }
 similar_names = { level = "allow", priority = 2 }
-neg_cmp_op_on_partial_ord = { level = "allow", priority = 2 }  # for const fn
-
+neg_cmp_op_on_partial_ord = { level = "allow", priority = 2 } # for const fn
 [profile.bench]
 lto = true
+
+[[bench]]
+name = "implied_black_vol_paths"
+harness = false

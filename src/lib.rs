@@ -15,7 +15,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! implied-vol = "2.0.0"
+//! implied-vol = "2.1.0"
 //! ```
 //!
 //! To enable aggressive fused-multiply-add optimizations (when available), enable the
@@ -23,7 +23,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! implied-vol = { version = "2.0.0", features = ["fma"] }
+//! implied-vol = { version = "2.1.0", features = ["fma"] }
 //! ```
 //!
 //! # Models and notation
@@ -55,6 +55,16 @@
 //! All heavy numerical work is done in `calculate()`; for implied-volatility builders
 //! `calculate()` returns `Option<f64>` (or `None` when the given option price is not in the
 //! function's image), and for price builders `calculate()` returns `f64`.
+//! For Black implied volatility, `calculate_explicit()` is also available as an opt-in
+//! inverse-Gaussian-based alternative to the default hybrid solver.
+//!
+//! Black implied volatility uses a precision-qualified hybrid by default.
+//! `calculate_with::<solver::Jaeckel>()` selects Jäckel directly. The `flashiv`
+//! and `experimental` features add `solver::FlashIv` and `solver::Experimental`;
+//! both may be enabled together. These solver features never change the solver
+//! used by `calculate()`.
+//! Pricing, normal implied volatility, and `calculate_explicit()` are independent
+//! of this selection.
 //!
 //! ## Special functions
 //!
@@ -63,6 +73,8 @@
 //! a default implementation named `DefaultSpecialFn` (based on the original author's code).
 //! If you need to swap in a different implementation (for testing or higher-precision math),
 //! implement the `SpecialFn` trait and call `calculate::<YourSpecialFn>()`.
+//! `solver::Experimental` uses its own fixed provider to preserve its original
+//! arithmetic; pricing and the other inverse methods still use `SpecialFn`.
 //!
 //! ## `PriceBlackScholes` (example)
 //!
@@ -132,6 +144,18 @@
 //! let sigma_opt = iv_builder.unwrap().calculate::<DefaultSpecialFn>();
 //! assert!(sigma_opt.is_some()); // implied vol found
 //!
+//! // Opt into the inverse-Gaussian explicit formula:
+//! let sigma_explicit = ImpliedBlackVolatility::builder()
+//!     .option_price(10.0)
+//!     .forward(100.0)
+//!     .strike(100.0)
+//!     .expiry(1.0)
+//!     .is_call(true)
+//!     .build()
+//!     .unwrap()
+//!     .calculate_explicit::<DefaultSpecialFn>();
+//! assert!(sigma_explicit.is_some());
+//!
 //! // Skip validation:
 //! let sigma = ImpliedBlackVolatility::builder()
 //!     .option_price(10.0)
@@ -165,7 +189,47 @@
 //!     .calculate::<DefaultSpecialFn>();
 //! assert!(out_of_range.is_none());
 //! ```
+//!
+//! ## Normalised API
+//!
+//! For advanced use cases or when working directly with log-moneyness and total volatility,
+//! the crate provides "normalised" versions of the builders:
+//!
+//! - `PriceBlackScholesNormalised`: takes $x = \ln(F/K)$ and $v = \sigma \sqrt{T}$.
+//! - `ImpliedBlackVolatilityNormalised`: takes $x$ and the normalised price $b = \frac{Price - Intrinsic}{\sqrt{FK}}$.
+//!
+//! ```rust
+//! use implied_vol::{DefaultSpecialFn, PriceBlackScholesNormalised, ImpliedBlackVolatilityNormalised};
+//!
+//! let x = 0.0; // ATM
+//! let v = 0.2; // 20% total vol
+//!
+//! // Calculate normalised price b
+//! let b = PriceBlackScholesNormalised::builder()
+//!     .log_moneyness(x)
+//!     .total_volatility(v)
+//!     .build()
+//!     .unwrap()
+//!     .calculate::<DefaultSpecialFn>();
+//!
+//! // Round-trip: calculate total volatility v from b
+//! let v2 = ImpliedBlackVolatilityNormalised::builder()
+//!     .log_moneyness(x)
+//!     .normalised_price(b)
+//!     .build()
+//!     .unwrap()
+//!     .calculate::<DefaultSpecialFn>()
+//!     .unwrap();
+//!
+//! assert!((v - v2).abs() < 1e-12);
+//! ```
 mod builder;
+#[cfg(feature = "experimental")]
+mod experimental;
+mod explicit_black;
+mod flashiv;
+pub mod solver;
+
 #[cfg(feature = "cxx_bench")]
 pub mod cxx;
 mod fused_multiply_add;

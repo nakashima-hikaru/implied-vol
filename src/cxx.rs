@@ -8,6 +8,12 @@ pub mod ffi {
         pub fn ImpliedBlackVolatility(price: f64, F: f64, K: f64, T: f64, q: f64) -> f64;
         #[must_use]
         pub fn Black(F: f64, K: f64, sigma: f64, T: f64, q: f64) -> f64;
+        #[must_use]
+        pub fn NormalisedBlack(x: f64, s: f64, q: f64) -> f64;
+        #[must_use]
+        pub fn NormalisedImpliedBlackVolatility(beta: f64, x: f64, q: f64) -> f64;
+        #[must_use]
+        pub fn ImpliedVolatilityAttainableAccuracy(x: f64, s: f64, q: f64) -> f64;
 
         include!("ImpliedNormalVolatility.cpp");
 

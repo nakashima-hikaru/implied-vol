@@ -4,80 +4,125 @@
 [![Actions status](https://github.com/nakashima-hikaru/implied-vol/actions/workflows/ci.yaml/badge.svg)](https://github.com/nakashima-hikaru/implied-vol/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Overview
+Black and Bachelier implied volatility and European option prices in pure Rust.
+The default build has no required dependencies. Builders validate inputs, and
+calculations support custom special functions through the `SpecialFn` trait.
 
-`implied-vol` is a high-performance, pure Rust library for calculating implied volatility,
-implemented based on the methods described in Peter Jäckel's seminal papers.
-
-## Usage
-
-This crate exposes builders for computing:
-
-- the implied **Black** volatility,
-- the implied **Normal** (Bachelier) volatility,
-- (undiscounted) European option prices under the **Black–Scholes** model,
-- (undiscounted) European option prices under the **Bachelier** model.
-
-Additionally, the crate provides a trait for implementing custom special functions, which can be used to customize
-the calculation of implied volatilities and option prices.
-
-Add the following to your `Cargo.toml`:
+## Getting started
 
 ```toml
 [dependencies]
-implied-vol = "2.0"
+implied-vol = "2.1"
 ```
-
-The calculations are performed via builders that allow you to handle errors.
-
-### Example
 
 ```rust
 use implied_vol::{DefaultSpecialFn, ImpliedBlackVolatility};
-let iv_builder = ImpliedBlackVolatility::builder()
+
+let option = ImpliedBlackVolatility::builder()
     .option_price(10.0)
     .forward(100.0)
     .strike(100.0)
     .expiry(1.0)
     .is_call(true)
-    .build().unwrap();
+    .build()
+    .unwrap();
 
-let iv = iv_builder.calculate::<DefaultSpecialFn>().unwrap();
-assert!(iv.is_finite());
+let volatility = option.calculate::<DefaultSpecialFn>().unwrap();
+assert!(volatility.is_finite());
 ```
 
-More details can be found in the [crate documentation](https://docs.rs/implied-vol/2.0/implied_vol/).
+Prices are undiscounted; apply discounting outside the library. The Black
+implied-volatility builder returns annualized volatility. The normalized builder
+takes log-moneyness and normalized price, and returns total volatility `sigma * sqrt(T)`.
 
-## Source References
+The crate also provides builders for Bachelier implied volatility, Black and
+Bachelier option prices, and normalized Black prices. See the
+[API documentation](https://docs.rs/implied-vol/) for their inputs and return values.
 
-This crate implements algorithms from two key papers by Peter Jäckel:
+## Choose a Black solver
 
-1. [Let's Be Rational](http://www.jaeckel.org/LetsBeRational.pdf) — A method for accurately and efficiently
-   extracting Black implied volatility from option prices.
+`calculate::<SpFn>()` always uses `solver::Hybrid`. Select a solver explicitly with
+`calculate_with::<S>()` on either Black implied-volatility builder:
 
-2. [Implied Normal Volatility](http://www.jaeckel.org/ImpliedNormalVolatility.pdf) — An analytical formula for
-   computing implied normal (Bachelier) volatility from vanilla option prices.
+```rust
+use implied_vol::{ImpliedBlackVolatilityNormalised, solver::Jaeckel};
 
-Both papers and related materials are available on [Peter Jäckel's website](http://www.jaeckel.org/).
+let option = ImpliedBlackVolatilityNormalised::builder()
+    .log_moneyness(-0.1)
+    .normalised_price(0.05)
+    .build()
+    .unwrap();
+let volatility = option.calculate_with::<Jaeckel>().unwrap();
+```
 
-## Performance
+| Solver type | Availability | Method |
+|---|---|---|
+| `solver::Hybrid` | Always | Let's Be Rational + FlashIV for selected low-price inputs |
+| `solver::Jaeckel` | Always | Let's Be Rational |
+| `solver::FlashIv` | `flashiv` feature | Safeguarded FlashIV numerical variant |
+| `solver::Experimental` | `experimental` feature | Author's own implementation |
 
-Benchmark results, available via our [GitHub Actions](https://github.com/nakashima-hikaru/implied-vol/actions),
-compare the execution speed against FFI to Jäckel’s original reference C++ implementation.
-With aggressive compiler optimizations applied to both implementations, this Rust crate often outperforms the C++ FFI
-version.
+Solver features add types and leave the default solver selection unchanged. Both
+optional solvers can be enabled together:
 
-## Precision
+```toml
+implied-vol = { version = "2.1", features = ["flashiv", "experimental"] }
+```
 
-The prices reconstructed using implied volatilities (both Black and normal) calculated from given prices exhibit
-relative errors less than four times the machine epsilon (f64::epsilon) compared to the original prices, as confirmed by
-random tests.
+Then use `calculate_with::<solver::FlashIv>()` or
+`calculate_with::<solver::Experimental>()`. Hybrid, Jaeckel, and FlashIv default to
+`DefaultSpecialFn`; use `solver::Jaeckel<MySpecialFn>` to choose your own provider.
+Experimental preserves its own special functions and explicit FMA arithmetic.
 
-## Cargo Feature Flags
+`calculate_explicit::<SpFn>()` remains a separate inverse-Gaussian Black formula.
+Black solver selection does not change pricing or Bachelier inversion.
 
-* `fma`: Enables Fused Multiply-Add (FMA) instructions when supported by the target CPU, providing a slight performance
-  boost over the default implementation.
+## Features
 
-## License
+| Feature | Effect |
+|---|---|
+| `flashiv` | Makes `solver::FlashIv` available |
+| `experimental` | Makes `solver::Experimental` available |
+| `fma` | Enables optional FMA arithmetic in shared numerical kernels |
+| `cxx_bench` | Builds the bundled C++ comparison implementation; requires a C++ compiler |
 
-This project is licensed under the [MIT License](https://github.com/nakashima-hikaru/implied-vol/blob/main/LICENSE).
+## Performance and precision
+
+Median time per calculation on Apple M1, using native CPU optimization and LTO,
+explicit FMA only, and 15 samples per solver. The mixed workloads contain 4,096
+seeded synthetic OTM calls; prices and builders are prepared before timing.
+
+| Solver | Mixed normalized | Mixed full API | Accuracy |
+|---|---:|---:|---|
+| Hybrid (default) | 181.5 ns | 202.7 ns | Targets Jäckel's maximum attainable precision; some edge cases fall short |
+| Jaeckel | 198.0 ns | 218.9 ns | Targets Jäckel's maximum attainable precision; some edge cases fall short |
+| FlashIv | 326.3 ns | 354.8 ns | Accuracy tested across price regions; may fail to converge |
+| Experimental | 129.4 ns | 145.0 ns | Met Jäckel's precision target on all 114,961 reference cases |
+
+Experimental took 28.7%/28.5% less time than Hybrid on the mixed normalized/full
+workloads, but was slower on several middle and near-ATM paths. These are local
+measurements; no solver is fastest in every region.
+
+Jäckel's maximum attainable precision accounts for how option-price rounding
+affects implied volatility: more sensitive inputs allow a larger error. The
+accuracy column describes current results, with different test coverage for each
+solver. Experimental passed all available reference cases; accuracy over its
+entire input domain remains unproven. Detailed error definitions and test results
+are in the numerical notes below.
+
+- [Performance results and reproducible benchmarks](docs/performance.md)
+- [Algorithms, accuracy contracts, and numerical limits](docs/numerics.md)
+
+## Algorithm references
+
+| Implementation / API | Algorithm and reference |
+|---|---|
+| `solver::Hybrid` | [Let's Be Rational](https://www.jaeckel.org/LetsBeRational.pdf), with [FlashIV](https://arxiv.org/abs/2605.29102v1) for selected low-price inputs |
+| `solver::Jaeckel` | Peter Jäckel's [Let's Be Rational](https://www.jaeckel.org/LetsBeRational.pdf) |
+| `solver::FlashIv` | A numerical variant of [FlashIV](https://arxiv.org/abs/2605.29102v1) |
+| `solver::Experimental` | Author's own implementation |
+| `ImpliedNormalVolatility` | Peter Jäckel's [Implied Normal Volatility](https://www.jaeckel.org/ImpliedNormalVolatility.pdf), for Bachelier inversion |
+| `calculate_explicit()` on the Black implied-volatility builders | [An Explicit Solution to Black-Scholes Implied Volatility](https://arxiv.org/abs/2604.24480), using the inverse-Gaussian representation |
+
+The FlashIV paths in Hybrid and FlashIv use initial estimates from
+[Li and Lee, equation 42 and seed coefficients](https://mpra.ub.uni-muenchen.de/6867/1/MPRA_paper_6867.pdf).

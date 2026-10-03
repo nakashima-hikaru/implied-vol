@@ -1,10 +1,10 @@
 use crate::fused_multiply_add::MulAdd;
-use crate::lets_be_rational::constants::{ONE_OVER_SQRT_2_PI, SQRT_2_PI};
+use crate::lets_be_rational::constants::{FRAC_1_SQRT_2_PI, SQRT_2_PI};
 use crate::lets_be_rational::special_function::SpecialFn;
 use crate::lets_be_rational::special_function::normal_distribution::inv_norm_pdf;
 use std::cmp::Ordering;
 
-#[inline(always)]
+#[inline]
 fn intrinsic_value<const IS_CALL: bool>(forward: f64, strike: f64) -> f64 {
     if IS_CALL {
         forward - strike
@@ -14,7 +14,7 @@ fn intrinsic_value<const IS_CALL: bool>(forward: f64, strike: f64) -> f64 {
     .max(0.0)
 }
 
-#[inline(always)]
+#[inline]
 fn phi_tilde_times_x(x: f64) -> f64 {
     if x.abs() <= 0.612_003_180_962_480_7 {
         let h = x.mul_add2(x, -1.872_739_467_540_974_8E-1) * 5.339_771_053_755_08;
@@ -25,7 +25,7 @@ fn phi_tilde_times_x(x: f64) -> f64 {
                 .mul_add2(h, 3.373_546_191_189_62E-4)
                 .mul_add2(h, 3.026_101_684_659_232_6E-2)
                 .mul_add2(h, 1.0);
-        return x.mul_add2(g, 0.5).mul_add2(x, ONE_OVER_SQRT_2_PI);
+        return x.mul_add2(g, 0.5).mul_add2(x, FRAC_1_SQRT_2_PI);
     }
 
     if x > 0.0 {
@@ -70,15 +70,15 @@ fn phi_tilde_times_x(x: f64) -> f64 {
             .mul_add2(w, 8.384_852_209_273_714E1)
             .mul_add2(w, 1.0);
 
-    ONE_OVER_SQRT_2_PI * (-0.5 * x * x).exp() * w * g.mul_add2(-w, 1.0)
+    FRAC_1_SQRT_2_PI * (-0.5 * x * x).exp() * w * g.mul_add2(-w, 1.0)
 }
 
-#[inline(always)]
+#[inline]
 fn phi_tilde(x: f64) -> f64 {
     phi_tilde_times_x(x) / x
 }
 
-#[inline(always)]
+#[inline]
 fn inv_phi_tilde<SpFn: SpecialFn>(phi_tilde_star: f64) -> f64 {
     if phi_tilde_star > 1.0 {
         return -inv_phi_tilde::<SpFn>(1.0 - phi_tilde_star);
@@ -99,7 +99,7 @@ fn inv_phi_tilde<SpFn: SpecialFn>(phi_tilde_star: f64) -> f64 {
             .mul_add2(-g2, 0.663_564_693_8)
             .mul_add2(-g2, 1.0);
         // Equation (2.3)
-        g * xi_bar.mul_add2(g2, ONE_OVER_SQRT_2_PI)
+        g * xi_bar.mul_add2(g2, FRAC_1_SQRT_2_PI)
     } else {
         // Equation (2.4)
         let h = (-(-phi_tilde_star).ln()).sqrt();
@@ -112,8 +112,8 @@ fn inv_phi_tilde<SpFn: SpecialFn>(phi_tilde_star: f64) -> f64 {
                 .mul_add2(-h, 1.0)
     };
     // Equation (2.7)
-    let q = (phi_tilde(x_bar) - phi_tilde_star) * inv_norm_pdf(x_bar);
     let x2 = x_bar * x_bar;
+    let q = (phi_tilde(x_bar) - phi_tilde_star) * inv_norm_pdf(x2);
     // Equation (2.6)
     x_bar
         + 3.0 * q * x2 * (q * x_bar).mul_add2(-(2.0 + x2), 2.0)
@@ -134,16 +134,32 @@ fn inv_phi_tilde<SpFn: SpecialFn>(phi_tilde_star: f64) -> f64 {
 /// * `strike` - The strike price of the option.
 /// * `sigma` - The volatility of the underlying asset.
 /// * `t` - The time to expiration of the option.
-/// * `q` - A boolean flag indicating whether the option is a put (true) or a call (false).
+/// * `IS_CALL` - `true` for a call option, `false` for a put option.
 ///
 /// # Returns
 ///
 /// The price of the option.
+#[inline(always)]
 pub fn bachelier_price<const IS_CALL: bool>(forward: f64, strike: f64, sigma: f64, t: f64) -> f64 {
     assert!(!forward.is_nan() && !strike.is_nan() && sigma >= 0.0 && t >= 0.0);
-    let s = sigma * t.sqrt();
+    if sigma == 0.0 || t == 0.0 {
+        return intrinsic_value::<IS_CALL>(forward, strike);
+    }
+    let sqrt_t = t.sqrt();
+    let s = sigma * sqrt_t;
     if s == 0.0 {
         return intrinsic_value::<IS_CALL>(forward, strike);
+    }
+    if s.is_infinite() {
+        if !sigma.is_finite() || !sqrt_t.is_finite() {
+            return f64::INFINITY;
+        }
+        let scaled_moneyness = if IS_CALL {
+            forward / sigma - strike / sigma
+        } else {
+            strike / sigma - forward / sigma
+        };
+        return sigma * (sqrt_t * phi_tilde_times_x(scaled_moneyness / sqrt_t));
     }
     let moneyness = if IS_CALL {
         forward - strike
@@ -151,6 +167,11 @@ pub fn bachelier_price<const IS_CALL: bool>(forward: f64, strike: f64, sigma: f6
         strike - forward
     };
     let x = moneyness / s;
+    if x.is_infinite() {
+        // A finite time value has already underflowed when this ratio overflows.
+        // Avoid multiplying s by an infinite scaled intrinsic value.
+        return intrinsic_value::<IS_CALL>(forward, strike);
+    }
     s * phi_tilde_times_x(x)
 }
 
@@ -161,10 +182,21 @@ pub fn implied_normal_volatility_input_unchecked<SpFn: SpecialFn, const IS_CALL:
     strike: f64,
     t: f64,
 ) -> Option<f64> {
-    if forward == strike {
-        return Some(price * SQRT_2_PI / t.sqrt());
-    }
     let intrinsic = intrinsic_value::<IS_CALL>(forward, strike);
+    if price == intrinsic {
+        return Some(0.0);
+    }
+    if t == 0.0 {
+        return None;
+    }
+    if forward == strike {
+        let scaled_price = price * SQRT_2_PI;
+        return Some(if scaled_price.is_finite() {
+            scaled_price / t.sqrt()
+        } else {
+            (price / t.sqrt()) * SQRT_2_PI
+        });
+    }
     match price.total_cmp(&intrinsic) {
         Ordering::Less => None,
         Ordering::Equal => Some(0.0),
@@ -181,12 +213,65 @@ pub fn implied_normal_volatility_input_unchecked<SpFn: SpecialFn, const IS_CALL:
 mod tests {
     use super::*;
     use crate::lets_be_rational::special_function::DefaultSpecialFn;
-    use rand::Rng;
+    use rand::RngExt;
+
+    #[test]
+    fn zero_expiry_only_accepts_intrinsic_price() {
+        for (forward, strike, intrinsic) in [(100.0, 100.0, 0.0), (120.0, 100.0, 20.0)] {
+            assert_eq!(
+                implied_normal_volatility_input_unchecked::<DefaultSpecialFn, true>(
+                    intrinsic, forward, strike, 0.0,
+                ),
+                Some(0.0)
+            );
+            assert!(
+                implied_normal_volatility_input_unchecked::<DefaultSpecialFn, true>(
+                    intrinsic + 1.0,
+                    forward,
+                    strike,
+                    0.0,
+                )
+                .is_none()
+            );
+        }
+    }
+
+    #[test]
+    fn zero_variance_returns_intrinsic_before_multiplication() {
+        assert_eq!(
+            bachelier_price::<true>(120.0, 100.0, 0.0, f64::INFINITY),
+            20.0
+        );
+        assert_eq!(
+            bachelier_price::<false>(100.0, 120.0, f64::INFINITY, 0.0),
+            20.0
+        );
+    }
+
+    #[test]
+    fn overflowing_moneyness_ratio_preserves_finite_intrinsic() {
+        assert_eq!(bachelier_price::<true>(1e300, 0.0, 1e-300, 1.0), 1e300);
+        assert_eq!(bachelier_price::<false>(0.0, 1e300, 1e-300, 1.0), 1e300);
+        assert_eq!(bachelier_price::<true>(0.0, 1e300, 1e-300, 1.0), 0.0);
+    }
+
+    #[test]
+    fn atm_large_price_scales_without_intermediate_overflow() {
+        let sigma = implied_normal_volatility_input_unchecked::<DefaultSpecialFn, true>(
+            1e308, 100.0, 100.0, 4.0,
+        )
+        .unwrap();
+        assert!(sigma.is_finite());
+        assert!((sigma / 1e308 - 1.253_314_137_315_500_3).abs() <= f64::EPSILON);
+        let price = bachelier_price::<true>(100.0, 100.0, sigma, 4.0);
+        assert!(price.is_finite());
+        assert!((price / 1e308 - 1.0).abs() <= f64::EPSILON);
+    }
 
     #[test]
     fn reconstruction_call_atm() {
         for i in 1..100 {
-            let price = 0.01 * i as f64;
+            let price = 0.01 * f64::from(i);
             let f = 100.0;
             let k = f;
             let t = 1.0;
@@ -201,7 +286,7 @@ mod tests {
     #[test]
     fn reconstruction_put_atm() {
         for i in 1..100 {
-            let price = 0.01 * i as f64;
+            let price = 0.01 * f64::from(i);
             let f = 100.0;
             let k = f;
             let t = 1.0;
@@ -222,7 +307,7 @@ mod tests {
         for _ in 0..n {
             let (r, r2, r3): (f64, f64, f64) = rng.random();
             let price = 1e5 * r2;
-            let f = r + 1e5 * r2;
+            let f = 1e5f64.mul_add2(r2, r);
             let k = f - price;
             let t = 1e5 * r3;
             let sigma =
@@ -240,7 +325,7 @@ mod tests {
         let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
         for _ in 0..n {
             let (r, r2, r3): (f64, f64, f64) = rng.random();
-            let price = 1.0 * (1.0 - r) + 1.0 * r * r2;
+            let price = 1.0f64.mul_add2(1.0 - r, 1.0 * r * r2);
             let f = 1.0;
             let k = 1.0 * r;
             let t = 1e5 * r3;
@@ -298,7 +383,7 @@ mod tests {
         let mut rng: rand::rngs::StdRng = rand::SeedableRng::from_seed(seed);
         for _ in 0..n {
             let (r, r2, r3): (f64, f64, f64) = rng.random();
-            let price = 1.0 * (1.0 - r) + 1.0 * r * r2;
+            let price = 1.0f64.mul_add2(1.0 - r, 1.0 * r * r2);
             let f = 1.0 * r;
             let k = 1.0;
             let t = 1e5 * r3;

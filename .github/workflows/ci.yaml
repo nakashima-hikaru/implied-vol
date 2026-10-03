@@ -8,6 +8,27 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mode: base
+            features: cxx_bench
+          - mode: base-fma
+            features: fma,cxx_bench
+          - mode: flashiv
+            features: flashiv,cxx_bench
+          - mode: flashiv-fma
+            features: flashiv,fma,cxx_bench
+          - mode: experimental
+            features: experimental,cxx_bench
+          - mode: experimental-fma
+            features: experimental,fma,cxx_bench
+          - mode: combined
+            features: flashiv,experimental,cxx_bench
+          - mode: combined-fma
+            features: flashiv,experimental,fma,cxx_bench
+    name: Test ${{ matrix.mode }}
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -18,10 +39,10 @@ jobs:
         run: |
           curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - run: cargo fmt --all --check
-      - run: cargo check --all-features --workspace
-      - run: cargo clippy --all-features -- -D warnings
-      - run: RUSTFLAGS="-C target-cpu=native -C target-feature=+fma -C llvm-args=--fp-contract=fast" cargo test --all-features --doc -- --show-output
-      - run: RUSTFLAGS="-C target-cpu=native -C target-feature=+fma -C llvm-args=--fp-contract=fast" cargo nextest run --all-features
+      - run: cargo check --workspace --features "${{ matrix.features }}"
+      - run: cargo clippy --features "${{ matrix.features }}" -- -D warnings
+      - run: RUSTFLAGS="-C target-cpu=native -C target-feature=+fma" cargo test --features "${{ matrix.features }}" --doc -- --show-output
+      - run: RUSTFLAGS="-C target-cpu=native -C target-feature=+fma" cargo nextest run --features "${{ matrix.features }}"
 
   benchmarks:
     name: Run benchmarks
@@ -36,11 +57,11 @@ jobs:
         uses: dtolnay/rust-toolchain@nightly
 
       - name: Run benchmarks
-        run: RUSTFLAGS="-C target-cpu=native -C target-feature=+fma -C llvm-args=--fp-contract=fast" cargo +nightly bench --features cxx_bench
+        run: RUSTFLAGS="-C target-cpu=native -C target-feature=+fma" cargo +nightly bench --features cxx_bench
         env:
           RUSTFLAGS: --cfg=bench
 
       - name: Run benchmarks with FMA
-        run: RUSTFLAGS="-C target-cpu=native -C target-feature=+fma -C llvm-args=--fp-contract=fast" cargo +nightly bench --features fma,cxx_bench
+        run: RUSTFLAGS="-C target-cpu=native -C target-feature=+fma" cargo +nightly bench --features fma,cxx_bench
         env:
           RUSTFLAGS: --cfg=bench
