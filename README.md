@@ -59,7 +59,7 @@ let volatility = option.calculate_with::<Jaeckel>().unwrap();
 |---|---|---|
 | `solver::Hybrid` | Always | Let's Be Rational + FlashIV for selected low-price inputs |
 | `solver::Jaeckel` | Always | Let's Be Rational |
-| `solver::FlashIv` | `flashiv` feature | Safeguarded FlashIV numerical variant |
+| `solver::FlashIv` | `flashiv` feature | FlashIV paper's fixed-count Algorithm 1 |
 | `solver::Experimental` | `experimental` feature | Author's own implementation |
 
 Solver features add types and leave the default solver selection unchanged. Both
@@ -89,17 +89,18 @@ Black solver selection does not change pricing or Bachelier inversion.
 ## Performance and precision
 
 Median time per calculation on Apple M1, using native CPU optimization and LTO,
-explicit FMA only, and 15 samples per solver. The mixed workloads contain 4,096
-seeded synthetic OTM calls; prices and builders are prepared before timing.
+the optional `fma` feature disabled, and 15 samples per solver. The mixed
+workloads contain 4,096 seeded synthetic OTM calls; prices and builders are
+prepared before timing.
 
 | Solver | Mixed normalized | Mixed full API | Accuracy |
 |---|---:|---:|---|
-| Hybrid (default) | 181.5 ns | 202.7 ns | Targets Jäckel's maximum attainable precision; some edge cases fall short |
-| Jaeckel | 198.0 ns | 218.9 ns | Targets Jäckel's maximum attainable precision; some edge cases fall short |
-| FlashIv | 326.3 ns | 354.8 ns | Accuracy tested across price regions; may fail to converge |
-| Experimental | 129.4 ns | 145.0 ns | Met Jäckel's precision target on all 114,961 reference cases |
+| Hybrid (default) | 181.4 ns | 202.6 ns | Targets Jäckel's maximum attainable precision; some edge cases fall short |
+| Jaeckel | 198.4 ns | 218.9 ns | Targets Jäckel's maximum attainable precision; some edge cases fall short |
+| FlashIv | 178.4 ns | 200.3 ns | Paper method; can lose accuracy near ATM |
+| Experimental | 129.4 ns | 145.1 ns | Met Jäckel's precision target on all 114,961 reference cases |
 
-Experimental took 28.7%/28.5% less time than Hybrid on the mixed normalized/full
+Experimental took 28.7%/28.4% less time than Hybrid on the mixed normalized/full
 workloads, but was slower on several middle and near-ATM paths. These are local
 measurements; no solver is fastest in every region.
 
@@ -110,6 +111,10 @@ solver. Experimental passed all available reference cases; accuracy over its
 entire input domain remains unproven. Detailed error definitions and test results
 are in the numerical notes below.
 
+FlashIv follows the paper's fixed iteration count and has a different accuracy
+trade-off from Hybrid. Its direct erfcx subtraction can lose digits near ATM;
+returning a finite result does not certify convergence.
+
 - [Performance results and reproducible benchmarks](docs/performance.md)
 - [Algorithms, accuracy contracts, and numerical limits](docs/numerics.md)
 
@@ -119,7 +124,7 @@ are in the numerical notes below.
 |---|---|
 | `solver::Hybrid` | [Let's Be Rational](https://www.jaeckel.org/LetsBeRational.pdf), with [FlashIV](https://arxiv.org/abs/2605.29102v1) for selected low-price inputs |
 | `solver::Jaeckel` | Peter Jäckel's [Let's Be Rational](https://www.jaeckel.org/LetsBeRational.pdf) |
-| `solver::FlashIv` | A numerical variant of [FlashIV](https://arxiv.org/abs/2605.29102v1) |
+| `solver::FlashIv` | [FlashIV, Algorithm 1](https://arxiv.org/abs/2605.29102v1) |
 | `solver::Experimental` | Author's own implementation |
 | `ImpliedNormalVolatility` | Peter Jäckel's [Implied Normal Volatility](https://www.jaeckel.org/ImpliedNormalVolatility.pdf), for Bachelier inversion |
 | `calculate_explicit()` on the Black implied-volatility builders | [An Explicit Solution to Black-Scholes Implied Volatility](https://arxiv.org/abs/2604.24480), using the inverse-Gaussian representation |

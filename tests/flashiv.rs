@@ -1,4 +1,12 @@
-//! Public-input qualification for the default hybrid and pure `FlashIV` solver.
+//! The default hybrid retains its conditioned precision qualification. Pure
+//! `FlashIV` has separate Algorithm 1 evaluation-count and objective-roundoff
+//! regressions: direct erfcx subtraction need not achieve Jaeckel's bound.
+
+#[cfg(feature = "flashiv")]
+#[path = "support/flashiv.rs"]
+mod paper_error;
+#[cfg(feature = "flashiv")]
+use paper_error::precision_limit as paper_precision_limit;
 
 #[cfg(feature = "flashiv")]
 use implied_vol::solver::FlashIv;
@@ -45,12 +53,24 @@ fn price_error_as_volatility_error(x: f64, error: f64, s: f64) -> f64 {
 }
 
 fn check_solver_price_input<S: BlackSolver>(x: f64, beta: f64) -> f64 {
+    check_price_with_limit::<S>(x, beta, hybrid_precision_limit)
+}
+
+fn hybrid_precision_limit(x: f64, beta: f64, s: f64) -> f64 {
+    4.0 * conditioning(x, beta, s)
+}
+
+fn check_price_with_limit<S: BlackSolver>(
+    x: f64,
+    beta: f64,
+    precision_limit: fn(f64, f64, f64) -> f64,
+) -> f64 {
     assert!(beta >= f64::MIN_POSITIVE && beta < (-0.5 * x.abs()).exp());
     let s = inverse(x, beta).calculate_with::<S>().unwrap();
     assert!(s.is_finite() && s > 0.0, "x={x}, beta={beta}, s={s}");
     let reprice = price(x, s);
     let residual_error = price_error_as_volatility_error(x, (reprice - beta).abs(), s);
-    let limit = 4.0 * conditioning(x, beta, s);
+    let limit = precision_limit(x, beta, s);
     assert!(residual_error.is_finite() && limit.is_finite());
     assert!(
         residual_error <= limit,
@@ -80,20 +100,35 @@ fn check_solver_roundtrip<S: BlackSolver>(x: f64, expected_s: f64) {
     );
 }
 
+#[cfg(feature = "flashiv")]
+fn check_paper_roundtrip(x: f64, expected_s: f64) {
+    let beta = price(x, expected_s);
+    if beta < f64::MIN_POSITIVE || beta >= (-0.5 * x.abs()).exp() {
+        return;
+    }
+    let s = check_price_with_limit::<FlashIv>(x, beta, paper_precision_limit);
+    let error = (s - expected_s).abs() / expected_s;
+    let limit = paper_precision_limit(x, beta, expected_s);
+    assert!(
+        error <= limit,
+        "FlashIV x={x}, beta={beta}, expected_s={expected_s}, s={s}, error={error:.3e}, limit={limit:.3e}"
+    );
+}
+
 fn check_price_input(x: f64, beta: f64) {
     check_solver_price_input::<Hybrid>(x, beta);
     #[cfg(feature = "flashiv")]
-    check_solver_price_input::<FlashIv>(x, beta);
+    check_price_with_limit::<FlashIv>(x, beta, paper_precision_limit);
 }
 
 fn check_roundtrip(x: f64, expected_s: f64) {
     check_solver_roundtrip::<Hybrid>(x, expected_s);
     #[cfg(feature = "flashiv")]
-    check_solver_roundtrip::<FlashIv>(x, expected_s);
+    check_paper_roundtrip(x, expected_s);
 }
 
 #[test]
-fn near_atm_low_price_roots_remain_in_the_convergence_basin() {
+fn near_atm_low_price_roots_match_each_solver_accuracy_contract() {
     // These are actual Black prices, not arbitrary iteration states. The price
     // can be exponentially smaller than |x|, where the Bachelier seed is close
     // to |x| even though the true total volatility can be as small as |x|/37.
@@ -102,12 +137,12 @@ fn near_atm_low_price_roots_remain_in_the_convergence_basin() {
 
 #[cfg(feature = "flashiv")]
 #[test]
-fn flashiv_extends_the_near_atm_basin_to_tiny_normal_prices() {
+fn flashiv_microscopic_terminal_branch_handles_tiny_normal_prices() {
     for x in [-1e-300_f64, -1e-200, -1e-100, -1e-32, -1e-16, -1e-12] {
         for ratio in [
             0.8, 1.0, 2.0, 3.0, 4.0, 6.0, 8.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 37.0,
         ] {
-            check_solver_roundtrip::<FlashIv>(x, x.abs() / ratio);
+            check_paper_roundtrip(x, x.abs() / ratio);
         }
     }
 }
@@ -123,7 +158,7 @@ fn check_near_atm_roots(xs: &[f64]) {
 }
 
 #[test]
-fn low_price_dispatch_boundary_preserves_conditioned_accuracy() {
+fn low_price_dispatch_boundary_respects_solver_accuracy_contracts() {
     // Obtain the mathematical lower-branch boundary from the tangent at the
     // Black inflection point. Independently price neighboring volatilities;
     // do not duplicate the implementation's fitted b_l/b_max polynomial.
@@ -218,9 +253,18 @@ fn full_call_and_put_inputs_recover_low_price_volatility() {
                     input
                         .calculate_with::<implied_vol::solver::Jaeckel>()
                         .unwrap(),
-                    #[cfg(feature = "flashiv")]
-                    input.calculate_with::<FlashIv>().unwrap(),
                 ];
+                #[cfg(feature = "flashiv")]
+                {
+                    let actual = input.calculate_with::<FlashIv>().unwrap();
+                    let beta = observed / (forward.sqrt() * strike.sqrt());
+                    let error = (actual - sigma).abs() / sigma;
+                    let limit = paper_precision_limit(-abs_x, beta, total_volatility);
+                    assert!(
+                        error <= limit,
+                        "FlashIV sigma={sigma}, actual={actual}, error={error:.3e}, limit={limit:.3e}"
+                    );
+                }
                 for actual in actuals {
                     let beta = observed / (forward.sqrt() * strike.sqrt());
                     let limit = 4.0 * conditioning(-abs_x, beta, total_volatility);
@@ -278,4 +322,121 @@ fn feature_preserves_generic_special_function_providers() {
         let borrowed = calculate_with_borrowed_provider(&scope, &iv);
         assert_eq!(borrowed.to_bits(), default.to_bits());
     }
+}
+
+// Count full-precision provider calls independently of the solver's internal
+// helpers. The FAST pre-step uses its own A&S polynomial and contributes none.
+#[cfg(feature = "flashiv")]
+thread_local! {
+    static SPECIAL_CALLS: std::cell::Cell<[usize; 3]> = const { std::cell::Cell::new([0; 3]) };
+}
+
+#[cfg(feature = "flashiv")]
+struct CountingSpecialFn;
+
+#[cfg(feature = "flashiv")]
+impl SpecialFn for CountingSpecialFn {
+    fn erf(x: f64) -> f64 {
+        SPECIAL_CALLS.with(|calls| {
+            let mut n = calls.get();
+            n[0] += 1;
+            calls.set(n);
+        });
+        DefaultSpecialFn::erf(x)
+    }
+    fn erfc(x: f64) -> f64 {
+        SPECIAL_CALLS.with(|calls| {
+            let mut n = calls.get();
+            n[1] += 1;
+            calls.set(n);
+        });
+        DefaultSpecialFn::erfc(x)
+    }
+    fn erfcx(x: f64) -> f64 {
+        SPECIAL_CALLS.with(|calls| {
+            let mut n = calls.get();
+            n[2] += 1;
+            calls.set(n);
+        });
+        DefaultSpecialFn::erfcx(x)
+    }
+    delegate!(erfinv);
+    delegate!(inverse_norm_cdf);
+    delegate!(norm_cdf);
+    delegate!(one_minus_erfcx);
+}
+
+#[cfg(feature = "flashiv")]
+fn counted_flashiv(x: f64, beta: f64) -> (f64, [usize; 3]) {
+    SPECIAL_CALLS.with(|calls| calls.set([0; 3]));
+    let s = inverse(x, beta)
+        .calculate_with::<FlashIv<CountingSpecialFn>>()
+        .unwrap();
+    let calls = SPECIAL_CALLS.with(std::cell::Cell::get);
+    (s, calls)
+}
+
+#[cfg(feature = "flashiv")]
+#[test]
+fn flashiv_ordinary_chain_uses_two_exact_steps_and_a_conditional_third() {
+    let (s, ordinary_calls) = counted_flashiv(-0.5, price(-0.5, 0.7));
+    assert_eq!(
+        ordinary_calls,
+        [0, 0, 4],
+        "two exact steps, two erfcx values each"
+    );
+    assert!((s - 0.7).abs() <= 4.0 * f64::EPSILON);
+
+    // The small-price seed is deliberately rough for this deep near-ATM tail;
+    // the residual entering the second exact step triggers the published third.
+    let (_, safety_calls) = counted_flashiv(-0.009, price(-0.009, 0.0009));
+    assert_eq!(safety_calls, [0, 0, 6]);
+}
+
+#[cfg(feature = "flashiv")]
+#[test]
+fn flashiv_upper_chain_uses_three_complementary_halley_steps() {
+    for x in [-0.01_f64, -0.5, -3.0] {
+        let b_max = (0.5 * x).exp();
+        let (_, calls) = counted_flashiv(x, 0.995 * b_max);
+        assert_eq!(
+            calls,
+            [0, 0, 6],
+            "upper steps evaluate the erfcx sum directly"
+        );
+    }
+}
+
+#[cfg(feature = "flashiv")]
+#[test]
+fn flashiv_microscopic_guard_is_terminal_before_the_general_volatility_floor() {
+    // A central Bachelier seed receives at most two expansion Newton steps,
+    // which call erfc and never the ordinary erfcx objective.
+    let (central, calls) = counted_flashiv(-1e-200, price(-1e-200, 1e-200));
+    assert!(central > 0.0 && central < 1e-10);
+    assert!(calls[1] >= 1 && calls[1] <= 2);
+    assert_eq!(calls[0], 0);
+    assert_eq!(calls[2], 0);
+
+    // The Mills branch solves the normal tail directly in at most four steps.
+    let (tail, calls) = counted_flashiv(-1e-100, price(-1e-100, 1e-101));
+    assert!(tail > 0.0 && tail < 1e-10);
+    assert_eq!(calls[0], 0);
+    assert_eq!(calls[1], 0);
+    assert!(calls[2] > 0 && calls[2] <= 4);
+}
+
+#[cfg(feature = "flashiv")]
+#[test]
+fn flashiv_direct_objective_retains_its_published_near_atm_rounding_limit() {
+    // This input is just outside the microscopic guard. The ordinary paper
+    // objective subtracts nearly equal erfcx values, losing digits that the
+    // default hybrid's stable expansion preserves. Keep the accuracy policy
+    // explicit rather than claiming an attainable-precision guarantee here.
+    let x = -1e-7;
+    let expected_s = 1.25e-7;
+    let beta = price(x, expected_s);
+    let s = check_price_with_limit::<FlashIv>(x, beta, paper_precision_limit);
+    assert!((s - expected_s).abs() / expected_s < 1e-8);
+    check_solver_roundtrip::<Hybrid>(x, expected_s);
 }

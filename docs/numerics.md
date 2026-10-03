@@ -46,12 +46,43 @@ inverse-Gaussian method and iteration limits are unchanged; intermediate mean
 or quantile overflow can still prevent a representable volatility from being
 returned.
 
-**FlashIv** uses its own FlashIV seeds, scaled Mills ratios near ATM, a
-complementary log-price objective near the upper bound, and safeguarded exact
-Householder iterations. It is a numerical variant of FlashIV rather than a
-bit-identical implementation of the fixed-count paper algorithm. It has no
-Let's Be Rational inverse fallback or FlashIV+ final Newton alignment.
-Numerical nonconvergence returns `None`.
+**FlashIv** follows [FlashIV Algorithm 1](https://arxiv.org/pdf/2605.29102v1).
+The ordinary path uses the Li/asymptotic seed, one inexpensive Householder
+step, two full-precision steps, and a third only when the residual entering
+the second full-precision step is at least `1e-4`. It evaluates the paper's
+erfcx/log-price objective directly. Microscopic near-ATM prices use a terminal
+Bachelier/Mills branch; prices at or above the `0.99` forward-normalized
+threshold use three Halley steps on the complementary log-price objective.
+The ordinary path has no adaptive convergence loop or unconditional bracket
+search. The solver has no Let's Be Rational inverse fallback or FlashIV+ final
+Newton alignment. Invalid
+arithmetic steps retain the current iterate as in the author's implementation;
+a finite return value does not certify convergence. Invalid inputs return
+`None`, and the microscopic guard may return its defensive zero limit.
+
+This is an independent implementation of the paper's algorithm, using the
+crate's sqrt-forward input convention, `SpecialFn` provider, and optional FMA
+policy. The [author's May 2026 source archive](https://chasethedevil.github.io/post/thiophene-iv-rust-full.zip)
+supplies the shared microscopic-branch formulas and rational seed coefficients.
+That source predates the paper and uses two Householder steps near the upper
+bound; Algorithm 1 specifies three Halley steps and takes precedence here.
+The source calls its Bachelier seed LFK2026, whereas the FlashIV paper cites
+LFK2016. These version differences and arithmetic choices preclude a claim
+of bit-identical reference outputs.
+
+FlashIv has the paper method's accuracy trade-off. It does not adopt the
+default hybrid's Jäckel attainable-precision contract: cancellation in the
+erfcx difference and an inadequate seed in extreme tails can cause larger
+errors even when the returned result is finite. The paper's finite benchmark
+results are not a whole-domain precision guarantee.
+
+The regression tests retain the previous input population. Hybrid and Jaeckel
+keep their existing attainable-precision thresholds; FlashIv uses a separate
+empirical allowance for erfcx subtraction, log-price rounding, and the rational
+Bachelier seed. For example, a round trip at `x=-1e-7` and total volatility
+`1.25e-7`, just outside the microscopic guard, showed relative error around
+`6e-10`. Passing the FlashIv checks therefore does not imply passing Jäckel's
+precision target on those inputs.
 
 **Experimental** is the author's own implementation. It uses fitted seeds,
 compensated residuals, Mills evaluation, exact cap handling, and Householder

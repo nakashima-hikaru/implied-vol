@@ -34,9 +34,11 @@ pub struct Hybrid<SpFn = DefaultSpecialFn>(PhantomData<SpFn>);
 /// Jäckel's Let's Be Rational inverse, with no cross-method fallback.
 pub struct Jaeckel<SpFn = DefaultSpecialFn>(PhantomData<SpFn>);
 
-/// The independently implemented, safeguarded `FlashIV` inverse.
+/// The fixed-count `FlashIV` inverse following the paper's Algorithm 1.
 ///
-/// Available with the `flashiv` feature. It never falls back to Jäckel.
+/// Available with the `flashiv` feature. It never falls back to Jäckel or adds
+/// the optional `FlashIV+` final price correction. Its accuracy follows the
+/// paper method, rather than the default hybrid's attainable-precision target.
 #[cfg(feature = "flashiv")]
 pub struct FlashIv<SpFn = DefaultSpecialFn>(PhantomData<SpFn>);
 

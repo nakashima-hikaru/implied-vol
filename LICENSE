@@ -83,3 +83,11 @@ Argonne National Laboratory, Argonne, IL 60439.
 Latest modification recorded in the original CALERF source: March 19, 1990.
 The approximations are described in "Rational Chebyshev Approximations for the
 Error Function", Mathematics of Computation, 1969, pp. 631-638.
+
+The FlashIV routines independently implement the mathematical algorithms in
+Fabien Le Floc'h and Jherek Healy, "Implying Volatility: How Fast Can We Go?":
+https://arxiv.org/abs/2605.29102v1
+
+The microscopic Bachelier branch uses mathematical formulas and numerical
+approximation coefficients described in the authors' shared reference material:
+https://chasethedevil.github.io/post/thiophene-iv-rust-full.zip

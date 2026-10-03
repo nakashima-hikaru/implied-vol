@@ -9,6 +9,10 @@ use implied_vol::{
     PriceBlackScholesNormalised,
 };
 
+#[cfg(feature = "flashiv")]
+#[path = "support/flashiv.rs"]
+mod paper_error;
+
 fn price(x: f64, s: f64) -> f64 {
     PriceBlackScholesNormalised::builder()
         .log_moneyness(x)
@@ -43,12 +47,24 @@ fn conditioning(x: f64, beta: f64, s: f64) -> f64 {
     f64::EPSILON * (1.0 + price_error_as_volatility_error(x, beta, s))
 }
 
+fn attainable_precision_limit(x: f64, beta: f64, s: f64) -> f64 {
+    4.0 * conditioning(x, beta, s)
+}
+
 fn check_price_input<S: BlackSolver>(x: f64, beta: f64) {
+    check_price_with_limit::<S>(x, beta, attainable_precision_limit);
+}
+
+fn check_price_with_limit<S: BlackSolver>(
+    x: f64,
+    beta: f64,
+    precision_limit: fn(f64, f64, f64) -> f64,
+) {
     let s = inverse(x, beta).calculate_with::<S>().unwrap();
     assert!(s.is_finite() && s > 0.0, "x={x}, beta={beta}, s={s}");
     let repriced = price(x, s);
     let error = price_error_as_volatility_error(x, (repriced - beta).abs(), s);
-    let limit = 4.0 * conditioning(x, beta, s);
+    let limit = precision_limit(x, beta, s);
     assert!(error.is_finite() && limit.is_finite());
     assert!(
         error <= limit,
@@ -64,7 +80,7 @@ fn check_family_price_input(x: f64, beta: f64) {
     check_price_input::<Hybrid>(x, beta);
     check_price_input::<Jaeckel>(x, beta);
     #[cfg(feature = "flashiv")]
-    check_price_input::<FlashIv>(x, beta);
+    check_price_with_limit::<FlashIv>(x, beta, paper_error::precision_limit);
 }
 
 #[test]
@@ -85,7 +101,7 @@ fn normalized_boundaries_are_shared_by_solver_modes() {
 }
 
 #[test]
-fn complementary_prices_preserve_the_conditioned_accuracy_goal() {
+fn complementary_prices_respect_each_solver_accuracy_contract() {
     for x in [-1e-8_f64, -0.01, -0.5, -3.0, -190.0, -580.0, -1000.0] {
         let b_max = (0.5 * x).exp();
         for fraction in [0.5_f64.next_down(), 0.5, 0.5_f64.next_up(), 0.75, 0.99] {
@@ -169,7 +185,13 @@ fn flashiv_inverts_normal_prices_near_the_exponent_limit() {
             0x3ceb_6b98_54d5_1b20,
         ),
     ] {
-        check_exact_root::<FlashIv>(fixture.0, fixture.1, fixture.2, fixture.3);
+        check_exact_root_with_limit::<FlashIv>(
+            fixture.0,
+            fixture.1,
+            fixture.2,
+            fixture.3,
+            paper_error::precision_limit,
+        );
     }
 }
 
@@ -178,6 +200,22 @@ fn check_exact_root<S: BlackSolver>(
     beta_bits: u64,
     root_bits: u64,
     correction_bits: u64,
+) {
+    check_exact_root_with_limit::<S>(
+        x_bits,
+        beta_bits,
+        root_bits,
+        correction_bits,
+        attainable_precision_limit,
+    );
+}
+
+fn check_exact_root_with_limit<S: BlackSolver>(
+    x_bits: u64,
+    beta_bits: u64,
+    root_bits: u64,
+    correction_bits: u64,
+    precision_limit: fn(f64, f64, f64) -> f64,
 ) {
     let x = f64::from_bits(x_bits);
     let beta = f64::from_bits(beta_bits);
@@ -190,7 +228,7 @@ fn check_exact_root<S: BlackSolver>(
         inverse(-x, beta).calculate_with::<S>().unwrap().to_bits()
     );
     let error = ((actual - root) - correction).abs() / root;
-    let limit = 4.0 * conditioning(x, beta, root);
+    let limit = precision_limit(x, beta, root);
     assert!(limit.is_finite());
     assert!(
         error <= limit,
@@ -232,7 +270,13 @@ fn upper_tail_matches_independent_exact_input_roots() {
         check_exact_root::<Hybrid>(fixture.0, fixture.1, fixture.2, fixture.3);
         check_exact_root::<Jaeckel>(fixture.0, fixture.1, fixture.2, fixture.3);
         #[cfg(feature = "flashiv")]
-        check_exact_root::<FlashIv>(fixture.0, fixture.1, fixture.2, fixture.3);
+        check_exact_root_with_limit::<FlashIv>(
+            fixture.0,
+            fixture.1,
+            fixture.2,
+            fixture.3,
+            paper_error::precision_limit,
+        );
     }
 }
 
@@ -271,7 +315,13 @@ fn solvers_recover_normal_roots_at_microscopic_moneyness() {
         check_exact_root::<Hybrid>(fixture.0, fixture.1, fixture.2, fixture.3);
         check_exact_root::<Jaeckel>(fixture.0, fixture.1, fixture.2, fixture.3);
         #[cfg(feature = "flashiv")]
-        check_exact_root::<FlashIv>(fixture.0, fixture.1, fixture.2, fixture.3);
+        check_exact_root_with_limit::<FlashIv>(
+            fixture.0,
+            fixture.1,
+            fixture.2,
+            fixture.3,
+            paper_error::precision_limit,
+        );
     }
 }
 
@@ -312,17 +362,24 @@ fn full_otm_call_and_put_use_the_selected_solver_across_price_regions() {
                     .build()
                     .unwrap();
                 let actuals = [
-                    input.calculate_with::<Hybrid>().unwrap(),
-                    input
-                        .calculate_with::<implied_vol::solver::Jaeckel>()
-                        .unwrap(),
+                    (
+                        input.calculate_with::<Hybrid>().unwrap(),
+                        attainable_precision_limit as fn(f64, f64, f64) -> f64,
+                    ),
+                    (
+                        input.calculate_with::<Jaeckel>().unwrap(),
+                        attainable_precision_limit,
+                    ),
                     #[cfg(feature = "flashiv")]
-                    input.calculate_with::<FlashIv>().unwrap(),
+                    (
+                        input.calculate_with::<FlashIv>().unwrap(),
+                        paper_error::precision_limit,
+                    ),
                 ];
-                for actual in actuals {
+                for (actual, precision_limit) in actuals {
                     let beta = observed / (f.sqrt() * k.sqrt());
                     let error = (actual - sigma).abs() / sigma;
-                    let limit = 4.0 * conditioning(-abs_x, beta, s);
+                    let limit = precision_limit(-abs_x, beta, s);
                     assert!(error.is_finite() && limit.is_finite());
                     assert!(
                         error <= limit,
@@ -358,7 +415,7 @@ fn pure_flashiv_handles_all_price_regions_without_jaeckel_interpolation() {
         let actual = inverse(x, beta)
             .calculate_with::<FlashIv<NoJaeckelInterpolation>>()
             .unwrap();
-        let limit = 4.0 * conditioning(x, beta, s);
+        let limit = paper_error::precision_limit(x, beta, s);
         assert!((actual - s).abs() / s <= limit);
     }
 }
