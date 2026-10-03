@@ -6,6 +6,10 @@ use std::f64::consts::FRAC_1_SQRT_2;
 use std::ops::Neg;
 
 #[inline]
+#[allow(
+    clippy::excessive_precision,
+    reason = "Retain Cody's published coefficient literals for source correspondence."
+)]
 fn ab(z: f64) -> f64 {
     const A: [f64; 5] = [
         3.161_123_743_870_565_6,
@@ -31,6 +35,10 @@ fn ab(z: f64) -> f64 {
 }
 
 #[inline]
+#[allow(
+    clippy::excessive_precision,
+    reason = "Retain Cody's published coefficient literals for source correspondence."
+)]
 fn cd(y: f64) -> f64 {
     const C: [f64; 9] = [
         0.564_188_496_988_670_089,
@@ -72,6 +80,10 @@ fn cd(y: f64) -> f64 {
 }
 
 #[inline]
+#[allow(
+    clippy::excessive_precision,
+    reason = "Retain Cody's published coefficient literals for source correspondence."
+)]
 fn pq(z: f64) -> f64 {
     const P: [f64; 6] = [
         0.305_326_634_961_232_344,

@@ -183,7 +183,7 @@ fn inverse_f_upper_map<SpFn: SpecialFn>(f: f64) -> f64 {
 }
 
 #[inline]
-pub(crate) fn implied_normalised_volatility_atm<SpFn: SpecialFn>(beta: f64) -> f64 {
+pub fn implied_normalised_volatility_atm<SpFn: SpecialFn>(beta: f64) -> f64 {
     2.0 * SQRT_2 * SpFn::erfinv(beta)
 }
 
@@ -295,6 +295,10 @@ fn lets_be_rational_with_dispatch<SpFn: SpecialFn, const HYBRID: bool>(
 
                 let ds = nu
                     * if theta_x < -190.0 {
+                        #[allow(
+                            clippy::suboptimal_flops,
+                            reason = "Keep separate rounding in the reference fourth-order correction; FMA is selected explicitly."
+                        )]
                         householder::householder_4factor(
                             nu,
                             h2,

@@ -11,7 +11,7 @@ const MAX_QUANTILE_ITERATIONS: usize = 64;
 const QUANTILE_BRACKET_TOLERANCE: f64 = 32.0 * f64::EPSILON;
 
 #[inline]
-pub(crate) fn implied_black_volatility_normalised<SpFn: SpecialFn>(
+pub fn implied_black_volatility_normalised<SpFn: SpecialFn>(
     log_moneyness: f64,
     normalised_price: f64,
 ) -> Option<f64> {
@@ -49,7 +49,7 @@ pub(crate) fn implied_black_volatility_normalised<SpFn: SpecialFn>(
 }
 
 #[inline]
-pub(crate) fn implied_black_volatility_input<SpFn: SpecialFn, const IS_CALL: bool>(
+pub fn implied_black_volatility_input<SpFn: SpecialFn, const IS_CALL: bool>(
     price: f64,
     f: f64,
     k: f64,
@@ -87,9 +87,11 @@ fn inverse_gaussian_quantile<SpFn: SpecialFn>(probability: f64, mu: f64) -> Opti
         return None;
     }
 
-    inverse_gaussian_quantile_actuar::<SpFn>(probability, mu)
-        .filter(|x| x.is_finite() && *x > 0.0)
-        .or_else(|| inverse_gaussian_quantile_bracketed::<SpFn>(probability, mu))
+    Some(
+        inverse_gaussian_quantile_actuar::<SpFn>(probability, mu)
+            .filter(|x| x.is_finite() && *x > 0.0)
+            .unwrap_or_else(|| inverse_gaussian_quantile_bracketed::<SpFn>(probability, mu)),
+    )
 }
 
 #[inline]
@@ -138,6 +140,10 @@ fn inverse_gaussian_quantile_actuar<SpFn: SpecialFn>(probability: f64, mu: f64) 
 }
 
 #[inline]
+#[allow(
+    clippy::suboptimal_flops,
+    reason = "Preserve the inverse-Gaussian mode's separate rounding steps."
+)]
 fn inverse_gaussian_mode_standardized(phi: f64) -> f64 {
     let kappa = 1.5 * phi;
     if kappa <= LARGE_KAPPA_THRESHOLD {
@@ -186,7 +192,7 @@ fn inverse_gaussian_pdf_standardized(x: f64, phi: f64) -> f64 {
 }
 
 #[inline]
-fn inverse_gaussian_quantile_bracketed<SpFn: SpecialFn>(probability: f64, mu: f64) -> Option<f64> {
+fn inverse_gaussian_quantile_bracketed<SpFn: SpecialFn>(probability: f64, mu: f64) -> f64 {
     let mut x = inverse_gaussian_quantile_initial_guess::<SpFn>(probability, mu);
     if !x.is_finite() || !(x > 0.0) {
         x = mu;
@@ -212,7 +218,7 @@ fn inverse_gaussian_quantile_bracketed<SpFn: SpecialFn>(probability: f64, mu: f6
         let cdf = inverse_gaussian_cdf::<SpFn>(x, mu);
         let error = cdf - probability;
         if error == 0.0 {
-            return Some(x);
+            return x;
         }
         if error <= 0.0 {
             lower = x;
@@ -221,14 +227,14 @@ fn inverse_gaussian_quantile_bracketed<SpFn: SpecialFn>(probability: f64, mu: f6
         }
 
         if bracket_is_tight(lower, upper) {
-            return Some(bracket_midpoint(lower, upper));
+            return bracket_midpoint(lower, upper);
         }
 
         let pdf = inverse_gaussian_pdf(x, mu);
         let newton = if pdf > 0.0 && pdf.is_finite() {
             let step = error / pdf;
             if step.abs() <= QUANTILE_BRACKET_TOLERANCE * x.max(1.0) {
-                return Some(x - step);
+                return x - step;
             }
             x - step
         } else {
@@ -242,12 +248,12 @@ fn inverse_gaussian_quantile_bracketed<SpFn: SpecialFn>(probability: f64, mu: f6
         };
 
         if next == x {
-            return Some(midpoint);
+            return midpoint;
         }
         x = next;
     }
 
-    Some(bracket_midpoint(lower, upper))
+    bracket_midpoint(lower, upper)
 }
 
 #[inline]
@@ -356,6 +362,10 @@ fn inverse_gaussian_quantile_initial_guess<SpFn: SpecialFn>(probability: f64, mu
 }
 
 #[inline]
+#[allow(
+    clippy::suboptimal_flops,
+    reason = "Preserve the seed's separate product and subtraction rounding."
+)]
 fn inverse_gaussian_quantile_initial_guess_from_z(z: f64, mu: f64) -> f64 {
     let sqrt_discriminant = (mu.mul_add(mu * z * z, 4.0 * mu)).sqrt();
     let sqrt_x = if z >= 0.0 {
@@ -406,6 +416,10 @@ fn bracket_quantile_from_above<SpFn: SpecialFn>(
 }
 
 #[inline]
+#[allow(
+    clippy::manual_midpoint,
+    reason = "Finite positive binary64 bounds have bounded logarithms; retain the geometric midpoint's rounding."
+)]
 fn bracket_midpoint(lower: f64, upper: f64) -> f64 {
     debug_assert!(upper.is_finite() && upper > 0.0);
     if lower <= 0.0 {
@@ -425,6 +439,10 @@ fn bracket_is_tight(lower: f64, upper: f64) -> bool {
 }
 
 #[inline]
+#[allow(
+    clippy::suboptimal_flops,
+    reason = "Preserve the inverse-Gaussian CDF's separate product and sum rounding."
+)]
 fn inverse_gaussian_cdf<SpFn: SpecialFn>(x: f64, mu: f64) -> f64 {
     debug_assert!(x > 0.0 && mu > 0.0);
     let sqrt_x = x.sqrt();

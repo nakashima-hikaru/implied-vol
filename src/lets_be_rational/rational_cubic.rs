@@ -5,6 +5,11 @@ const MINIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE: f64 =
 const MAXIMUM_RATIONAL_CUBIC_CONTROL_PARAMETER_VALUE: f64 = 2f64 / (f64::EPSILON * f64::EPSILON);
 
 #[inline]
+#[allow(
+    clippy::manual_midpoint,
+    clippy::suboptimal_flops,
+    reason = "Preserve the reference interpolation's midpoint and polynomial rounding, which determine solver seeds."
+)]
 pub fn rational_cubic_interpolation(
     x_minus_x_l: f64,
     h: f64,
