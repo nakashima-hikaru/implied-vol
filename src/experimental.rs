@@ -1,8 +1,9 @@
 //! Native Rust implementation of the experimental normalized Black implied volatility solver.
 //!
 //! The author's own implementation, ported from `implied-black-volatility`.
-//! The numerical modules preserve the original coefficients, evaluation order,
-//! native vector lanes, and internal Jaeckel translation.
+//! The numerical modules retain the imported coefficients, compensated arithmetic,
+//! native vector lanes, and internal Jaeckel translation. The AS1 asymptotic seed
+//! includes the next inverse-logarithm term; see `docs/numerics.md`.
 //!
 //! The inputs are `a = abs(ln(F/K))` and the undiscounted out-of-the-money
 //! option price divided by `sqrt(F*K)`. The result is **total** volatility,

@@ -117,6 +117,20 @@ the cap because `ln(2)>0.5`; a price at or below this bound cannot enter the upp
 route. The large route specializes the initial logarithm for its already
 validated positive normal price, preserving both compensated components.
 
+The AS1 low-price route includes the next term of its inverse-logarithm seed.
+In exact arithmetic, with `L=2*log(a/(b*sqrt(2*pi)))`, `l=log(L)`, and
+`A=a*a/4`, the seed for `y=(a/s)^2` is
+
+```text
+y0 = L - 3*l + (9*l - 6 - A)/L
+y  = y0 + (13.5*l*l - (45 + 3*A)*l + 39 + 5*A)/(L*L)
+```
+
+The additional polynomial uses explicit FMA and retains the single Householder
+correction. Its changed geometry can send an input to the existing wing route;
+the original guards remain in force. This improves precision margin at a small
+AS1 timing cost, documented in [the performance comparison](performance.md#experimental-as1-seed-refinement).
+
 ## Accuracy contracts
 
 The default hybrid targets Jäckel's attainable accuracy. Faster routes must pass
@@ -147,7 +161,7 @@ conditioning-based bound rather than correct rounding or uniform 16-digit
 relative accuracy. General subnormal prices, market normalization, and
 annualization are outside the core contract.
 
-The analytical bound `rho_J<0.999991` is conditional on round-to-nearest-even,
+The original implementation's analytical bound `rho_J<0.999991` is conditional on round-to-nearest-even,
 gradual underflow, preserved operation order, and correctly rounded explicit
 FMA/sqrt. It assumes relative errors at most `u=2^-53` for exp/log and `2u` for
 log1p/expm1 at reached arguments, plus an external
@@ -176,6 +190,25 @@ checks. A separate unfiltered 660-input seam replay also preserved all output
 bits and classifications, including eight subnormal-price inputs and five
 existing invalid cases. These seam inputs have no independent root references;
 their parity does not extend the subnormal accuracy contract.
+
+The AS1 next-term revision passed all 117,044 archived references under their
+respective core or paper/adapter metrics with both FMA feature policies. One
+archived output changed and improved. An additional 489 exact core-coordinate
+inputs covered AS1 geometry, quadrature rules, tiny scaling, and dispatch seams:
+91 errors decreased, 12 increased, and 386 outputs were unchanged. All remained
+strictly below `rho_J=1`; the largest observed ratio fell from `0.742010` to
+`0.493706`. Sixteen independent two-precision roots are checked in as regressions.
+
+Conditional interval revalidation of the revised AS1 helper covered the original
+606 rectangles on `L in [70,1424]`, `a^2 in [0,100]`: 554 accepted-region leaves
+and 52 geometry exclusions, with no incomplete cells. Its bound is
+`rho_AS1<0.915824`, using the original primitive assumptions and unchanged Mills
+component certificates. The source-order seed error remains within the existing
+preprocessing allowance. A separate routing bound preserves the wing/tiny
+connection for declined AS1 attempts. These results concern AS1 and its
+fallthrough; they are not a new whole-Experimental or end-to-end Lean certificate.
+The [AS1 validation record](experimental-as1-2026-10-03.json) separates finite
+measurements, conditional bounds, and the two input-coordinate contracts.
 
 ## Algorithm references
 

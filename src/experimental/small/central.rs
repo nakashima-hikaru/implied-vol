@@ -255,15 +255,17 @@ pub(super) fn balanced(a: f64, b: f64) -> f64 {
     }
     let l = L.ln();
     let r = 1.0 / L;
-    let p1 = fma(9.0, l, -6.0 - a * a * 0.25);
-    let y = fma(p1, r, fma(-3.0, l, L));
+    let A = a * a / 4.0;
+    let p1 = fma(9.0, l, -6.0 - A);
+    let y0 = fma(p1, r, fma(-3.0, l, L));
+    let c2 = fma(fma(13.5, l, -fma(3.0, A, 45.0)), l, fma(5.0, A, 39.0));
+    let y = fma(c2, r * r, y0);
     let h = y.sqrt();
     let t = a / (2.0 * h);
     if !(h - t >= 7.0 && a >= 1e-100 && h <= 40.0 && t <= 0.7) {
         return f64::NAN;
     }
     let D = slope(h, t);
-    let A = a * a / 4.0;
     let Al = fma(a / 2.0, a / 2.0, -A);
     let t2 = A / y;
     let t2l = (fma(-t2, y, A) + Al) / y;

@@ -210,6 +210,47 @@ Source/build hashes, all final timing samples, screening evidence, guard
 derivations, and reference provenance are saved in the
 [dispatch measurement record](experimental-dispatch-speed-2026-10-03.json).
 
+## Experimental AS1 seed refinement
+
+The additional AS1 inverse-logarithm seed term improves precision margin while
+adding arithmetic. On the local Apple Silicon host, separate baseline/candidate
+release builds used Rust 1.98.1, `-C target-cpu=native`, LTO, and
+`experimental,cxx_bench`, with and without the `fma` feature. Each case has
+24 samples per version: 200,000 calls, two rounds, six alternating ABBA blocks.
+Other validation jobs were paused during measurement. The FMA columns select
+the crate feature; AS1 uses explicit FMA in both columns.
+
+| Input | FMA off, before → after | FMA on, before → after |
+|---|---:|---:|
+| AS1 central | 80.40 → 81.98 ns (+1.96%) | 82.96 → 84.57 ns (+1.94%) |
+| AS1 high-a guard | 80.33 → 82.03 ns (+2.11%) | 82.99 → 84.62 ns (+1.97%) |
+| AS1 deep tail | 81.84 → 83.39 ns (+1.90%) | 84.94 → 84.90 ns (-0.05%) |
+| AS1 tiny scaling | 101.28 → 104.44 ns (+3.12%) | 104.60 → 107.60 ns (+2.87%) |
+| AS1 mixed, 4,096 inputs | 81.62 → 83.02 ns (+1.71%) | 84.21 → 85.54 ns (+1.58%) |
+| Ordinary mixed normalized | 128.09 → 128.16 ns (+0.06%) | 131.75 → 131.95 ns (+0.16%) |
+| Ordinary mixed full | 144.40 → 143.64 ns (-0.52%) | 148.03 → 148.19 ns (+0.11%) |
+
+The AS1 mixed inputs were traced through the actual Rust dispatcher: all 4,096
+use AS1 in both versions. C++ timing controls and per-block variation are retained
+in the [measurement record](experimental-as1-2026-10-03.json). C++ retains its
+existing fast-math flags and serves as a timing control, not an accuracy oracle.
+Small changes in the ordinary mixed rows and the FMA-on deep-tail row are within
+the observed variation. These local measurements do not establish Windows or
+universal performance.
+
+Run the additional fixed and mixed cases with:
+
+```sh
+RUSTFLAGS="-C target-cpu=native" \
+  cargo bench --bench implied_black_vol_paths --features experimental,cxx_bench -- \
+  200000 2 --solver experimental --as1-paths
+```
+
+Repeat with `--features experimental,cxx_bench,fma` for the other feature policy.
+Input construction is outside the timed loops, and the existing default workload
+is unchanged. Accuracy checks permit changed outputs and compare them against
+independent roots; checksum stability is checked within each binary.
+
 ## Hybrid low-price dispatch optimization
 
 The 2026-10-03 change starts the existing restricted FlashIV path before

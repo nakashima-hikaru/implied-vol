@@ -133,12 +133,15 @@ fn main() {
     let mut args = args.iter().filter(|arg| *arg != "--bench");
     let mut solver = "hybrid";
     let mut experimental_paths = false;
+    let mut as1_paths = false;
     let mut numbers = Vec::new();
     while let Some(arg) = args.next() {
         if arg == "--solver" {
             solver = args.next().expect("--solver requires a solver name");
         } else if arg == "--experimental-paths" {
             experimental_paths = true;
+        } else if arg == "--as1-paths" {
+            as1_paths = true;
         } else {
             numbers.push(arg);
         }
@@ -154,23 +157,33 @@ fn main() {
 
     // Select one monomorphized runner before constructing or timing inputs.
     match solver {
-        "hybrid" => run::<RustSolver<Hybrid>>(n, rounds, experimental_paths),
-        "jaeckel" => run::<RustSolver<Jaeckel>>(n, rounds, experimental_paths),
+        "hybrid" => run::<RustSolver<Hybrid>>(n, rounds, experimental_paths, as1_paths),
+        "jaeckel" => run::<RustSolver<Jaeckel>>(n, rounds, experimental_paths, as1_paths),
         "flashiv" => {
             #[cfg(feature = "flashiv")]
-            run::<RustSolver<implied_vol::solver::FlashIv>>(n, rounds, experimental_paths);
+            run::<RustSolver<implied_vol::solver::FlashIv>>(
+                n,
+                rounds,
+                experimental_paths,
+                as1_paths,
+            );
             #[cfg(not(feature = "flashiv"))]
             usage_error("solver flashiv requires the flashiv Cargo feature");
         }
         "experimental" => {
             #[cfg(feature = "experimental")]
-            run::<RustSolver<implied_vol::solver::Experimental>>(n, rounds, experimental_paths);
+            run::<RustSolver<implied_vol::solver::Experimental>>(
+                n,
+                rounds,
+                experimental_paths,
+                as1_paths,
+            );
             #[cfg(not(feature = "experimental"))]
             usage_error("solver experimental requires the experimental Cargo feature");
         }
         "cpp" => {
             #[cfg(feature = "cxx_bench")]
-            run::<CppSolver>(n, rounds, experimental_paths);
+            run::<CppSolver>(n, rounds, experimental_paths, as1_paths);
             #[cfg(not(feature = "cxx_bench"))]
             usage_error("solver cpp requires the cxx_bench Cargo feature");
         }
@@ -185,7 +198,7 @@ fn usage_error(message: &str) -> ! {
     std::process::exit(2);
 }
 
-fn run<S: BenchmarkSolver>(n: usize, rounds: usize, experimental_paths: bool) {
+fn run<S: BenchmarkSolver>(n: usize, rounds: usize, experimental_paths: bool, as1_paths: bool) {
     let mut fixed = Vec::new();
     for (name, x, s) in [
         ("atm", 0.0, 0.2),
@@ -234,6 +247,33 @@ fn run<S: BenchmarkSolver>(n: usize, rounds: usize, experimental_paths: bool) {
             near_atm.push(S::prepare_normalised(x, normalised_price(x, s)));
         }
         fixed.push(("mixed_near_atm", near_atm));
+    }
+
+    if as1_paths {
+        // Source-defined exact binary64 (a,b) populations. The price parameter
+        // L is only used to generate inputs; both versions get identical bits.
+        let from_l = |a: f64, l: f64| a * (-0.5 * l).exp() / std::f64::consts::TAU.sqrt();
+        for (name, a, l) in [
+            ("as1_high_a_guard", 8.0, 70.001),
+            ("as1_central", 1.0, 120.0),
+            ("as1_deep_tail", 1.0, 1400.0),
+            ("as1_scaled", 1e-110, 120.0),
+        ] {
+            fixed.push((name, vec![S::prepare_normalised(-a, from_l(a, l))]));
+        }
+        let mut rng = rand::rngs::StdRng::from_seed([107; 32]);
+        let mut as1 = Vec::with_capacity(4096);
+        while as1.len() < 4096 {
+            let exponent: f64 = rng.random_range(-100.0..1.0);
+            let a = 10.0_f64.powf(exponent);
+            let l: f64 = rng.random_range(78.0..1400.0);
+            let b = from_l(a, l);
+            // Keep normal prices according to the declared core contract.
+            if b >= f64::MIN_POSITIVE {
+                as1.push(S::prepare_normalised(-a, b));
+            }
+        }
+        fixed.push(("as1_mixed", as1));
     }
 
     // Prepare all prices and builders before timing. All solvers use the

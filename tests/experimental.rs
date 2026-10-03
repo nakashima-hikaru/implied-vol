@@ -1,9 +1,9 @@
-//! Independent mathematical-root fixtures for the source-preserving experimental backend.
+//! Independent mathematical-root fixtures for the experimental backend.
 //! High-precision core roots: supplied archive `input/all_references.json`.
 //! Tiny/ATM/seam roots: original repository `fresh_accuracy.json` and
 //! `optimization/fresh_combined_fma.json` (direct Black, 140/440 digits).
 //! Paper roots: archived `reference_{dataset}.bin` hi+lo values, not solver outputs.
-//! These are finite regression checks of rho <= 1, not a global precision proof.
+//! These are finite regression checks of rho < 1, not a global precision proof.
 #![cfg(feature = "experimental")]
 
 use implied_vol::solver::{BlackSolver, Experimental};
@@ -577,7 +577,7 @@ fn check_root(r: &Reference, actual: f64) {
     // the independent low part avoids replacing the mathematical root with
     // an already-rounded f64 target.
     let rho = (((actual - r.root_hi) - r.root_lo).abs() / r.root_hi) / r.eta;
-    assert!(rho <= 1.0, "{}: attainable-accuracy ratio {rho}", r.name);
+    assert!(rho < 1.0, "{}: attainable-accuracy ratio {rho}", r.name);
 }
 
 #[test]
