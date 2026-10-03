@@ -1,10 +1,8 @@
 //! Native Rust implementation of the experimental normalized Black implied volatility solver.
 //!
-//! Imported from the current Rust port in `implied-black-volatility`, whose
-//! numerical modules correspond to the retained research reference archive.
-//! The copied modules preserve their coefficients, evaluation order,
-//! native vector lanes, and the experimental port's internal Jaeckel translation.
-//! `performance/experimental-source-2026-10-03.json` records the source correspondence.
+//! The author's own implementation, ported from `implied-black-volatility`.
+//! The numerical modules preserve the original coefficients, evaluation order,
+//! native vector lanes, and internal Jaeckel translation.
 //!
 //! The inputs are `a = abs(ln(F/K))` and the undiscounted out-of-the-money
 //! option price divided by `sqrt(F*K)`. The result is **total** volatility,

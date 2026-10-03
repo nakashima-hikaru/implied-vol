@@ -59,21 +59,6 @@ The current Hybrid measured 181.5/202.7 ns against the paired earlier default's
 and separate tests verified unchanged default outputs under both FMA policies.
 This is a local measurement of the API change, not a universal overhead bound.
 
-[Raw measurements](../performance/solver-api-2026-10-03.json) contain all samples,
-checksums, compiler flags, source/executable hashes, and the retained earlier
-layout trials. Solver selection occurs outside every timed loop.
-
-## Other recorded measurements
-
-- [Earlier solver comparison](../performance/solver-modes-2026-10-03.json) uses
-  implicit FMA contraction and a different selection API.
-- [Earlier research-solver comparison](../performance/experimental-2026-10-03.json)
-  measures build-selected solvers before the explicit API.
-- [Restricted hybrid qualification](../performance/flashiv-2026-10-02.json) records
-  the lower-price route and its FMA checks.
-- [Earlier baseline and exponential reuse](../performance/2026-10-02.json) records
-  the earlier baseline, isolated candidates, and their retained samples.
-
-These files preserve distinct source and arithmetic configurations. They do not
-measure cold caches, parallel batches, tail latency, or a live market workload.
+These measurements do not cover cold caches, parallel batches, tail latency,
+or a live market workload.
 The bundled C++ comparison checks are separate from the four-solver benchmark.

@@ -73,12 +73,9 @@ Rust's standard library does not guarantee those platform math error bounds.
 Full end-to-end Lean verification remains unfinished; component proofs and
 finite testing are separate evidence.
 
-[Source correspondence](../performance/experimental-source-2026-10-03.json)
-records unchanged numerical modules after normalizing module qualification and
-renamed comment labels.
-[Independent-reference validation](../performance/experimental-validation-2026-10-03.json)
-replays 46,688 core references and 68,273 paper inputs through explicit
-Experimental selection in a native release build with all features. The imported
+Independent-reference validation during integration covered 46,688 core
+references and 68,273 paper inputs through explicit Experimental selection in a
+native release build with all features. The imported
 implementation matched bit for bit, with zero
 invalid outputs or `rho_J>1`, including 3,075 valid prices equal to a rounded-down
 cap. Paper references target exact `(x,c)` inputs and include adapter rounding;
