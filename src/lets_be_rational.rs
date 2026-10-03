@@ -335,6 +335,16 @@ fn lets_be_rational_with_dispatch<SpFn: SpecialFn, const HYBRID: bool>(
     theta_x: f64,
     b_max: f64,
 ) -> f64 {
+    // At |x|>=0.01, both lower-half boundaries exceed 0.0005*b_max:
+    // b_c/b_max > exp(-1)/(22*sqrt(pi)) and fitted b_l/b_max > 0.0005447.
+    // See docs/numerics.md. Keep subnormal caps on the original classifier.
+    let flashiv_attempted =
+        HYBRID && theta_x <= -0.01 && beta <= 0.0005 * b_max && b_max >= f64::MIN_POSITIVE;
+    if flashiv_attempted
+        && let Some(s) = crate::flashiv::try_lowest_branch::<SpFn>(beta, theta_x, b_max)
+    {
+        return s;
+    }
     let mut s;
     let sqrt_ax = theta_x.neg().sqrt();
     let s_c = SQRT_2 * sqrt_ax;
@@ -356,6 +366,7 @@ fn lets_be_rational_with_dispatch<SpFn: SpecialFn, const HYBRID: bool>(
         // LOWEST BRANCH: s < s_l
         if beta < b_l {
             if HYBRID
+                && !flashiv_attempted
                 && let Some(s) = crate::flashiv::try_lowest_branch::<SpFn>(beta, theta_x, b_max)
             {
                 return s;
@@ -613,6 +624,38 @@ mod tests {
     use rand::RngExt;
 
     const FOURTH_ROOT_DBL_EPSILON: f64 = f64::from_bits(0x3f20_0000_0000_0000);
+
+    #[test]
+    fn early_hybrid_price_threshold_stays_inside_original_lowest_region() {
+        let mut moneyness = vec![0.01, 0.25, 3.0, 27.0];
+        // Exercise the fitted b_l polynomial transitions and their neighbors.
+        for s_c in [
+            0.709_929_573_971_953_9_f64,
+            2.626_785_107_312_739_5,
+            7.348_469_228_349_534,
+        ] {
+            let a = 0.5 * s_c * s_c;
+            moneyness.extend([a.next_down(), a, a.next_up()]);
+        }
+        // Test every normal cap scale, including the smallest positive normal
+        // threshold product becoming subnormal. Avoid filtering on the result.
+        moneyness
+            .extend((1..=1022).map(|exponent| 2.0 * f64::from(exponent) * std::f64::consts::LN_2));
+        for a in moneyness {
+            let b_max = (-0.5 * a).exp();
+            assert!(b_max.is_normal(), "a={a:.17e}");
+            let s_c = SQRT_2 * a.sqrt();
+            let b_c = 0.5 * b_max * DefaultSpecialFn::one_minus_erfcx(a.sqrt());
+            let b_l = b_l_over_b_max(s_c) * b_max;
+            let cutoff = 0.0005 * b_max;
+            for beta in [cutoff.next_down(), cutoff, cutoff.next_up()] {
+                assert!(
+                    beta < b_l && beta < b_c,
+                    "a={a:.17e}, beta={beta:.17e}, b_l={b_l:.17e}, b_c={b_c:.17e}"
+                );
+            }
+        }
+    }
 
     fn normalised_intrinsic(theta_x: f64) -> f64 {
         // if theta_x <= 0.0 {

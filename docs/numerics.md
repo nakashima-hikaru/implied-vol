@@ -27,6 +27,24 @@ Rational. Its exact FlashIV steps use stable Black expansions in the asymptotic
 and small-volatility regions. The route uses one approximate step, two exact
 Householder steps, and a third when selected by the residual.
 
+For a normal cap, `abs(x)>=0.01` and `b<=0.0005*b_max` select that same
+restricted path before constructing LBR's interpolation nodes. This guard
+lies strictly inside both original lower boundaries. Writing `r=sqrt(abs(x))`,
+the integral for `1-erfcx(r)` on `[0.5,1]` gives
+`b_c/b_max > exp(-1)/(22*sqrt(pi)) > 0.00943` for `r>=0.1`.
+For the first fitted `b_l` polynomial, its positive rational term and
+`s_c^2*(0.0756099664-0.0967271929*s_c)` give bounds above `0.0005447`
+on `[sqrt(0.02),0.5]` and above `0.0017304` on `[0.5,0.71]`.
+In each remaining rational segment, `N-0.01D` has positive cubic-and-higher
+coefficients and a positive, increasing quadratic remainder above the
+segment's lower endpoint, hence `b_l/b_max>0.01`. A normal cap limits `s_c`
+to less than 54. The smallest first-segment margin exceeds `4.47e-5` of
+the cap, well beyond binary64 rounding even when the threshold is subnormal.
+Subnormal caps retain the original classifier. If the early FlashIV attempt
+declines, LBR runs once; the same attempt is not repeated. The iterations,
+arithmetic policy, and default numerical outputs are preserved; calls to a
+custom mathematical `SpecialFn` provider may occur in a different order.
+
 **Jaeckel** uses Let's Be Rational interpolation and its Householder corrections.
 It does not switch to another inverse method.
 

@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main ]
   pull_request:
-    types: [opened, reopened]
+    types: [opened, reopened, synchronize]
 jobs:
   tests:
     runs-on: ubuntu-latest
@@ -65,3 +65,63 @@ jobs:
         run: RUSTFLAGS="-C target-cpu=native -C target-feature=+fma" cargo +nightly bench --features fma,cxx_bench
         env:
           RUSTFLAGS: --cfg=bench
+
+  hybrid-benchmarks:
+    name: Compare Hybrid with LBR (${{ matrix.mode }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mode: crate-fma-off
+            features: cxx_bench
+          - mode: crate-fma-on
+            features: fma,cxx_bench
+    env:
+      RUSTFLAGS: -C target-cpu=native -C target-feature=+fma
+      CARGO_TARGET_DIR: target/solver-comparison
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build Hybrid and LBR implementations
+        shell: bash
+        run: |
+          mkdir -p benchmark-results
+          cargo bench --bench implied_black_vol_paths --features "${{ matrix.features }}" \
+            --no-run --message-format=json > benchmark-results/build.jsonl
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          artifacts = [json.loads(line) for line in Path("benchmark-results/build.jsonl").read_text().splitlines()]
+          executables = [item["executable"] for item in artifacts
+                         if item.get("reason") == "compiler-artifact"
+                         and item["target"]["name"] == "implied_black_vol_paths"
+                         and item.get("executable")]
+          if len(executables) != 1:
+              raise RuntimeError(f"expected one benchmark executable, got {executables}")
+          with open(os.environ["GITHUB_ENV"], "a") as env:
+              env.write(f"SOLVER_BENCHMARK={Path(executables[0]).resolve()}\n")
+          PY
+          rustc -vV > benchmark-results/rustc.txt
+          c++ --version > benchmark-results/cxx.txt
+          lscpu > benchmark-results/cpu.txt
+      - name: Compare identical seeded workloads
+        shell: bash
+        run: |
+          python3 -m unittest discover -s benches -p test_compare_solvers.py
+          python3 benches/compare_solvers.py "$SOLVER_BENCHMARK" \
+            --iterations 200000 --rounds 2 --blocks 6 \
+            --features "${{ matrix.features }}" --flags "$RUSTFLAGS" \
+            --output benchmark-results/solvers.json \
+            --summary benchmark-results/solvers.md
+          cat benchmark-results/solvers.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Save solver measurements
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hybrid-lbr-${{ matrix.mode }}
+          path: benchmark-results/

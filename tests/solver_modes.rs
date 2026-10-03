@@ -444,3 +444,149 @@ fn pure_jaeckel_retains_its_seed_in_every_non_atm_price_region() {
         assert!((actual - s).abs() / s <= limit);
     }
 }
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum HybridProviderCall {
+    Erfcx(u64),
+    JaeckelSeed(u64),
+}
+
+#[derive(Default)]
+struct HybridProviderTrace {
+    fail_erfcx_at: Option<u64>,
+    failures: usize,
+    calls: Vec<HybridProviderCall>,
+}
+
+thread_local! {
+    static HYBRID_PROVIDER_TRACE: std::cell::RefCell<HybridProviderTrace> =
+        const { std::cell::RefCell::new(HybridProviderTrace {
+            fail_erfcx_at: None,
+            failures: 0,
+            calls: Vec::new(),
+        }) };
+}
+
+struct TraceHybridProvider;
+
+impl SpecialFn for TraceHybridProvider {
+    fn erfcx(x: f64) -> f64 {
+        let fail = HYBRID_PROVIDER_TRACE.with(|trace| {
+            let mut trace = trace.borrow_mut();
+            trace.calls.push(HybridProviderCall::Erfcx(x.to_bits()));
+            let fail = trace.fail_erfcx_at == Some(x.to_bits());
+            trace.failures += usize::from(fail);
+            fail
+        });
+        if fail {
+            f64::NAN
+        } else {
+            DefaultSpecialFn::erfcx(x)
+        }
+    }
+
+    fn one_minus_erfcx(x: f64) -> f64 {
+        HYBRID_PROVIDER_TRACE.with(|trace| {
+            trace
+                .borrow_mut()
+                .calls
+                .push(HybridProviderCall::JaeckelSeed(x.to_bits()));
+        });
+        DefaultSpecialFn::one_minus_erfcx(x)
+    }
+}
+
+fn trace_inverse<S: BlackSolver>(
+    x: f64,
+    beta: f64,
+    fail_erfcx_at: Option<u64>,
+) -> (f64, HybridProviderTrace) {
+    HYBRID_PROVIDER_TRACE.with(|trace| {
+        *trace.borrow_mut() = HybridProviderTrace {
+            fail_erfcx_at,
+            ..HybridProviderTrace::default()
+        };
+    });
+    let actual = inverse(x, beta).calculate_with::<S>().unwrap();
+    let trace = HYBRID_PROVIDER_TRACE.with(|trace| std::mem::take(&mut *trace.borrow_mut()));
+    (actual, trace)
+}
+
+#[test]
+fn hybrid_skips_the_jaeckel_seed_only_inside_its_predispatch_guard() {
+    for (x, fraction, seed_calls) in [
+        (-20.0_f64, 0.0004, 0),
+        (-20.0, 0.001, 1),
+        ((-0.01_f64).next_up(), 0.0004, 1),
+        (-1420.0, 0.0004, 1),
+    ] {
+        let beta = fraction * (0.5 * x).exp();
+        let (hybrid, hybrid_trace) = trace_inverse::<Hybrid<TraceHybridProvider>>(x, beta, None);
+        let (jaeckel, jaeckel_trace) = trace_inverse::<Jaeckel<TraceHybridProvider>>(x, beta, None);
+        let seeds = |trace: &HybridProviderTrace| {
+            trace
+                .calls
+                .iter()
+                .filter(|call| matches!(call, HybridProviderCall::JaeckelSeed(_)))
+                .count()
+        };
+        assert_eq!(seeds(&hybrid_trace), seed_calls, "x={x}, beta={beta}");
+        assert_eq!(seeds(&jaeckel_trace), 1, "x={x}, beta={beta}");
+        assert_eq!(
+            hybrid.to_bits(),
+            inverse(x, beta)
+                .calculate_with::<Hybrid>()
+                .unwrap()
+                .to_bits()
+        );
+        assert_eq!(
+            jaeckel.to_bits(),
+            inverse(x, beta)
+                .calculate_with::<Jaeckel>()
+                .unwrap()
+                .to_bits()
+        );
+    }
+}
+
+#[test]
+fn hybrid_failed_predispatch_restores_the_jaeckel_path_without_retry() {
+    let x = -20.0_f64;
+    let beta = 0.0004 * (0.5 * x).exp();
+    // This deep case uses the provider in the first exact FlashIV step. Record
+    // its argument under the current FMA policy, then fail only that argument;
+    // all remaining function values are deterministic default Cody values.
+    let (_, qualified) = trace_inverse::<Hybrid<TraceHybridProvider>>(x, beta, None);
+    assert!(
+        qualified
+            .calls
+            .iter()
+            .all(|call| matches!(call, HybridProviderCall::Erfcx(_)))
+    );
+    let Some(HybridProviderCall::Erfcx(fail_at)) = qualified.calls.first() else {
+        panic!("the fixture must reach the exact FlashIV erfcx objective");
+    };
+    let fail_at = *fail_at;
+    let (expected, jaeckel) = trace_inverse::<Jaeckel<TraceHybridProvider>>(x, beta, Some(fail_at));
+    assert_eq!(
+        jaeckel.failures, 0,
+        "the failed argument must be exclusive to FlashIV"
+    );
+    let (actual, hybrid) = trace_inverse::<Hybrid<TraceHybridProvider>>(x, beta, Some(fail_at));
+    assert_eq!(hybrid.failures, 1);
+    assert_eq!(actual.to_bits(), expected.to_bits());
+    assert!(
+        matches!(hybrid.calls.first(), Some(HybridProviderCall::Erfcx(bits)) if *bits == fail_at)
+    );
+    assert!(matches!(
+        hybrid.calls.get(1),
+        Some(HybridProviderCall::Erfcx(_))
+    ));
+    // One failed exact step evaluates its erfcx pair. Every later provider
+    // call must match the original Jaeckel path, including its seed call.
+    assert_eq!(&hybrid.calls[2..], jaeckel.calls.as_slice());
+    assert!(matches!(
+        jaeckel.calls.first(),
+        Some(HybridProviderCall::JaeckelSeed(_))
+    ));
+}

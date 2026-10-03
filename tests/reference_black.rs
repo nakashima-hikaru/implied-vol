@@ -97,6 +97,137 @@ fn historical_regressions_match_high_precision_roots() {
     }
 }
 
+#[test]
+fn hybrid_predispatch_seams_match_independent_exact_input_roots() {
+    // mpmath 1.4.1 evaluated the normalized Black equation independently
+    // using exact binary64 integer ratios. Bisection at 100 and 180 digits
+    // agreed on each rounded root and its sub-ULP correction. Inputs span
+    // both neighbors of |x|=0.01 and b=0.0005*exp(-|x|/2).
+    let cases = [
+        (
+            0xbf84_7ae1_47ae_147c,
+            0x3f40_4d62_83a9_e4a0,
+            0x3f81_60fd_d4c2_2832,
+            0x3c2a_2145_b7a8_b178,
+        ),
+        (
+            0xbf84_7ae1_47ae_147c,
+            0x3f40_4d62_83a9_e4a1,
+            0x3f81_60fd_d4c2_2833,
+            0xbc21_cadc_48c9_e751,
+        ),
+        (
+            0xbf84_7ae1_47ae_147c,
+            0x3f40_4d62_83a9_e4a2,
+            0x3f81_60fd_d4c2_2833,
+            0x3bf2_480d_b61b_ff27,
+        ),
+        (
+            0xbf84_7ae1_47ae_147b,
+            0x3f40_4d62_83a9_e4a0,
+            0x3f81_60fd_d4c2_2832,
+            0xbc18_64fa_d8c6_af8a,
+        ),
+        (
+            0xbf84_7ae1_47ae_147b,
+            0x3f40_4d62_83a9_e4a1,
+            0x3f81_60fd_d4c2_2832,
+            0x3c0f_8582_4ca8_3dc5,
+        ),
+        (
+            0xbf84_7ae1_47ae_147b,
+            0x3f40_4d62_83a9_e4a2,
+            0x3f81_60fd_d4c2_2832,
+            0x3c2b_f53e_92b7_76a7,
+        ),
+        (
+            0xbf84_7ae1_47ae_147a,
+            0x3f40_4d62_83a9_e4a0,
+            0x3f81_60fd_d4c2_2831,
+            0x3c1a_f37e_df21_3dfb,
+        ),
+        (
+            0xbf84_7ae1_47ae_147a,
+            0x3f40_4d62_83a9_e4a1,
+            0x3f81_60fd_d4c2_2832,
+            0xbc2e_7262_90e1_f9cd,
+        ),
+        (
+            0xbf84_7ae1_47ae_147a,
+            0x3f40_4d62_83a9_e4a2,
+            0x3f81_60fd_d4c2_2832,
+            0xbc14_bd09_22a9_252f,
+        ),
+        (
+            0xbfe0_0000_0000_0000,
+            0x3f39_850d_f25a_a1d5,
+            0x3fc9_8718_3031_b754,
+            0xbc4a_6620_2b7c_1922,
+        ),
+        (
+            0xbfe0_0000_0000_0000,
+            0x3f39_850d_f25a_a1d6,
+            0x3fc9_8718_3031_b754,
+            0x3c16_3fce_8723_6ca0,
+        ),
+        (
+            0xbfe0_0000_0000_0000,
+            0x3f39_850d_f25a_a1d7,
+            0x3fc9_8718_3031_b754,
+            0x3c4f_f613_cd44_f449,
+        ),
+        (
+            0xc008_0000_0000_0000,
+            0x3f1d_3f01_7b2e_72cd,
+            0x3fed_35e0_206b_12b5,
+            0x3c85_9e7b_6fc3_d906,
+        ),
+        (
+            0xc008_0000_0000_0000,
+            0x3f1d_3f01_7b2e_72ce,
+            0x3fed_35e0_206b_12b5,
+            0x3c8a_6ef0_fb4e_93e0,
+        ),
+        (
+            0xc008_0000_0000_0000,
+            0x3f1d_3f01_7b2e_72cf,
+            0x3fed_35e0_206b_12b5,
+            0x3c8f_3f66_86d9_4eba,
+        ),
+        (
+            0xc03b_0000_0000_0000,
+            0x3e07_8d8a_b528_3729,
+            0x4013_6b69_5624_f189,
+            0xbcbf_d5fd_0922_6fe2,
+        ),
+        (
+            0xc03b_0000_0000_0000,
+            0x3e07_8d8a_b528_372a,
+            0x4013_6b69_5624_f189,
+            0xbcbd_fc93_56e5_735a,
+        ),
+        (
+            0xc03b_0000_0000_0000,
+            0x3e07_8d8a_b528_372b,
+            0x4013_6b69_5624_f189,
+            0xbcbc_2329_a4a8_76d3,
+        ),
+    ];
+    for (x_bits, beta_bits, root_bits, correction_bits) in cases {
+        let x = f64::from_bits(x_bits);
+        let beta = f64::from_bits(beta_bits);
+        let reference_s = f64::from_bits(root_bits);
+        let root_correction = f64::from_bits(correction_bits);
+        let actual_s = implied_volatility(x, beta);
+        let root_error = ((actual_s - reference_s) - root_correction).abs() / reference_s;
+        let limit = 4.0 * conditioned_accuracy(x, beta, reference_s);
+        assert!(
+            root_error <= limit,
+            "x={x:.17e}, beta={beta:.17e}, actual={actual_s:.17e}, root={reference_s:.17e}, root_error={root_error:.3e}, limit={limit:.3e}"
+        );
+    }
+}
+
 #[cfg(feature = "cxx_bench")]
 mod cpp_reference {
     use super::*;

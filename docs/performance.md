@@ -1,7 +1,8 @@
 # Performance
 
-The stable benchmark measures seven fixed Black solver paths and two mixed
-workloads. It prepares prices and builders before timing and reports
+The stable benchmark measures seven fixed Black solver paths, two mixed
+workloads, and three full-API inputs from the Actions benchmarks. It prepares
+prices and builders before timing and reports
 nanoseconds per calculation plus a checksum. The mixed workloads contain 4,096
 seeded synthetic OTM calls; they are not a market distribution.
 With `--solver experimental --experimental-paths`, it also measures eight
@@ -83,7 +84,7 @@ This is a local measurement of the API change, not a universal overhead bound.
 
 These measurements do not cover cold caches, parallel batches, tail latency,
 or a live market workload.
-The bundled C++ comparison checks are separate from the four-solver benchmark.
+The C++ comparison added below uses the same benchmark adapter and inputs.
 
 ## Experimental polynomial optimization
 
@@ -209,18 +210,84 @@ Source/build hashes, all final timing samples, screening evidence, guard
 derivations, and reference provenance are saved in the
 [dispatch measurement record](experimental-dispatch-speed-2026-10-03.json).
 
+## Hybrid low-price dispatch optimization
+
+The 2026-10-03 change starts the existing restricted FlashIV path before
+constructing LBR's interpolation nodes for `abs(x)>=0.01`,
+`b<=0.0005*b_max`, and a normal cap. The [numerical notes](numerics.md)
+derive why this guard is strictly inside the existing lowest-price region.
+If the attempt declines, the existing LBR path runs once. The special-function
+arithmetic, iteration counts, and other numerical methods are unchanged.
+
+Separate immutable baseline/candidate executables used Apple M1, Rust 1.98.1,
+native optimization, LTO, and matching SDK 27.0. Each feature policy enabled
+only `cxx_bench`, optionally with `fma`. Four alternating ABBA blocks with
+two rounds per invocation supplied 16 samples per version, solver, and case
+at 200,000 calls per sample. The same twelve-case benchmark source was copied
+into both snapshots. Medians in ns/call were:
+
+| Hybrid input | FMA off, before → after | FMA on, before → after |
+|---|---:|---:|
+| Lowest region | 193.15 → 184.32 (-4.58%) | 162.10 → 150.31 (-7.28%) |
+| Mixed normalized | 181.29 → 177.08 (-2.32%) | 157.45 → 154.39 (-1.94%) |
+| Mixed full API | 202.84 → 197.47 (-2.65%) | 177.84 → 174.50 (-1.88%) |
+| Lower middle | 110.39 → 113.01 (+2.38%) | 89.99 → 92.03 (+2.27%) |
+| Deep OTM, full API | 128.71 → 128.09 (-0.48%) | 109.07 → 110.58 (+1.38%) |
+| Near-ATM short expiry, full API | 198.26 → 170.06 (-14.22%) | 150.80 → 152.45 (+1.09%) |
+
+Some fixed ordinary paths regressed by up to 2.93% without FMA and 2.27%
+with FMA. The deep-OTM and short near-ATM inputs do not enter the shortcut;
+their changes reflect dispatch cost and generated-code layout. In particular,
+the short-case FMA-off improvement is not a faster FlashIV calculation.
+Jaeckel control mixed medians were within 0.1% without FMA but increased
+about 2% with FMA, demonstrating Rust layout sensitivity. C++ controls
+changed by at most 0.26%. Every timed checksum matched its baseline.
+
+In the final FMA-on build, Hybrid mixed normalized/full medians were
+154.39/174.50 ns against C++'s 170.29/187.81 ns. The short near-ATM full
+case still took 152.45 ns against C++'s 141.16 ns, or 8.00% more time.
+The C++ fast-math policy described below remains different from Rust's.
+These local synthetic, warm-cache, single-threaded results do not establish
+a universal speedup or a change to the Linux Actions result.
+
+Moving the ATM branch before its cap exponential improved the fixed ATM
+case, but the combined candidate increased FMA-on short-case time by 6.81%.
+It was rejected. Normalization sorting, cap reuse, and outlining the middle
+Black evaluator also failed to establish a suitable broad improvement;
+the outline screen additionally had possible concurrent-build interference
+and is excluded from adoption evidence.
+
+Final revalidation passed 100 library/integration tests and six doctests per
+FMA policy, plus formatting, Clippy for the library, stable benchmark and
+changed integration targets, and 14 comparison-report tests. Independent
+100/180-digit roots cover 18 neighboring dispatch inputs. An unfiltered
+baseline/candidate replay covered 477,112 normalized/full call/put inputs
+and 954,224 Hybrid/Jaeckel outputs per policy with zero bit differences.
+It retains existing extreme-input failures and NaNs; this is preservation
+evidence rather than a new accuracy guarantee. The
+[measurement record](hybrid-speed-2026-10-03.json) retains all final samples,
+source/build/executable hashes, runner and replay sources, classifications,
+and rejected-candidate qualification.
+
 ## Actions C++ comparison
 
-The [2026-10-03 Actions benchmark](https://github.com/nakashima-hikaru/implied-vol/actions/runs/37083979975/job/111090342937)
+The [latest 2026-10-03 Actions benchmark](https://github.com/nakashima-hikaru/implied-vol/actions/runs/37110794388/job/111168142389)
 compares the default Hybrid with the bundled C++ LBR. It enables `cxx_bench`,
-and optionally `fma`; it does not select pure FlashIv. That run predates the
-near-ATM stability change below.
+and optionally `fma`. Hybrid retains LBR in the middle and upper regions and
+uses the restricted FlashIV method in selected lowest-region cases. Improving
+that lowest region does not make every LBR path faster.
 
 | Black implied-volatility case | Rust, FMA off | C++ | Rust, FMA on | C++ |
 |---|---:|---:|---:|---:|
-| Legacy OTM call, input preparation included | 210.65 ns | 181.78 ns | 192.23 ns | 181.65 ns |
-| Deep OTM call, calculation only | 196.64 ns | 180.16 ns | 179.98 ns | 180.43 ns |
-| Near-ATM short call, calculation only | 238.93 ns | 198.22 ns | 204.55 ns | 200.83 ns |
+| Legacy OTM call, input preparation included | 189.24 ns | 165.95 ns | 167.94 ns | 165.24 ns |
+| Deep OTM call, calculation only | 181.69 ns | 165.37 ns | 170.05 ns | 166.02 ns |
+| Near-ATM short call, calculation only | 224.09 ns | 207.46 ns | 198.68 ns | 207.18 ns |
+| ATM call, calculation only | 21.21 ns | 23.53 ns | 19.29 ns | 23.60 ns |
+
+The FMA-on Hybrid is 2.4% slower in the deep OTM calculation and 4.1% faster
+in the near-ATM calculation. The FMA-off near-ATM C++ sample reported
+`+/- 84.11 ns`, so that particular difference is noisy. The default solver
+still has slower paths; these results do not show that Rust wins everywhere.
 
 The C++ build uses `-Ofast` and `-ffp-contract=fast` in both runs. The Rust
 benchmark command overrides the repository's configured compiler flags and
@@ -233,9 +300,39 @@ The legacy Rust benchmark now includes input preparation in its timed loop
 and prevents constant propagation of inputs and outputs. Its v2.0 version
 prepared the builder outside that loop. Use the split `calculate_only` and
 `cpp_direct` measurements to distinguish calculation cost from API preparation.
+Legacy C++ loops black-box only the result, whereas the split C++ loops also
+black-box the inputs.
 The timing region and arithmetic policy changes prevent a direct regression
 claim from older Actions numbers alone. Hosted-runner variation remains another
 limit of these measurements.
+
+The added **Compare Hybrid with LBR** jobs explicitly select Hybrid, Jaeckel,
+and C++ in the same compiled benchmark, using the same
+fixed and 4,096-input seeded workloads. Prices and builders are prepared before
+timing. Every solver's outputs are checked for finite positive values before
+timing; the report rotates solver order, checks within-solver checksum stability,
+and saves all samples and the executable hash. Cross-solver checksums may differ
+because the solvers have different numerical contracts. The C++ arithmetic
+policy above remains in effect. These jobs supplement the existing benchmark
+logs with a median comparison table in the Actions summary and downloadable
+measurement artifacts; the new jobs have not yet run remotely.
+The full-API rows include the deep-OTM, near-ATM short-expiry, and legacy OTM
+inputs from the existing Actions benchmarks. The legacy row prepares its input
+before timing here, so it measures calculation cost rather than the legacy
+job's preparation-plus-calculation loop.
+
+To run the same comparison locally with the crate's `fma` feature disabled:
+
+```sh
+RUSTFLAGS="-C target-cpu=native" cargo bench --bench implied_black_vol_paths \
+  --features cxx_bench --no-run
+python3 benches/compare_solvers.py <benchmark-executable> \
+  --features cxx_bench --flags "-C target-cpu=native" \
+  --output solvers.json --summary solvers.md
+```
+
+Use the executable path printed by Cargo. Add `fma` to the feature list for the
+explicit-FMA comparison in shared kernels.
 
 ## Near-ATM stability change
 

@@ -7,35 +7,108 @@ use implied_vol::{
     PriceBlackScholesNormalised,
 };
 use rand::{RngExt, SeedableRng};
-use std::{hint::black_box, time::Instant};
+use std::{hint::black_box, marker::PhantomData, time::Instant};
 
-fn time_normalised<S: BlackSolver>(
-    cases: &[ImpliedBlackVolatilityNormalised],
-    n: usize,
-) -> (f64, f64) {
+#[path = "support/mod.rs"]
+mod support;
+
+// Keep the comparison adapter local to the benchmark. Rust retains its original
+// prebuilt case layout, while C++ receives the same inputs as raw arguments.
+trait BenchmarkSolver {
+    type NormalisedCase;
+    type FullCase;
+
+    fn prepare_normalised(x: f64, beta: f64) -> Self::NormalisedCase;
+    fn prepare_full(price: f64, f: f64, k: f64, expiry: f64) -> Self::FullCase;
+    fn normalised_volatility(case: &Self::NormalisedCase) -> Option<f64>;
+    fn full_volatility(case: &Self::FullCase) -> Option<f64>;
+}
+
+struct RustSolver<S>(PhantomData<S>);
+
+impl<S: BlackSolver> BenchmarkSolver for RustSolver<S> {
+    type NormalisedCase = ImpliedBlackVolatilityNormalised;
+    type FullCase = ImpliedBlackVolatility;
+
+    fn prepare_normalised(x: f64, beta: f64) -> Self::NormalisedCase {
+        ImpliedBlackVolatilityNormalised::builder()
+            .log_moneyness(x)
+            .normalised_price(beta)
+            .build()
+            .unwrap()
+    }
+
+    fn prepare_full(price: f64, f: f64, k: f64, expiry: f64) -> Self::FullCase {
+        ImpliedBlackVolatility::builder()
+            .forward(f)
+            .strike(k)
+            .expiry(expiry)
+            .is_call(true)
+            .option_price(price)
+            .build()
+            .unwrap()
+    }
+
+    #[inline(always)]
+    fn normalised_volatility(case: &Self::NormalisedCase) -> Option<f64> {
+        case.calculate_with::<S>()
+    }
+
+    #[inline(always)]
+    fn full_volatility(case: &Self::FullCase) -> Option<f64> {
+        case.calculate_with::<S>()
+    }
+}
+
+#[cfg(feature = "cxx_bench")]
+struct CppSolver;
+
+#[cfg(feature = "cxx_bench")]
+impl BenchmarkSolver for CppSolver {
+    type NormalisedCase = (f64, f64);
+    type FullCase = (f64, f64, f64, f64);
+
+    fn prepare_normalised(x: f64, beta: f64) -> Self::NormalisedCase {
+        (x, beta)
+    }
+
+    fn prepare_full(price: f64, f: f64, k: f64, expiry: f64) -> Self::FullCase {
+        (price, f, k, expiry)
+    }
+
+    #[inline(always)]
+    fn normalised_volatility(&(x, beta): &Self::NormalisedCase) -> Option<f64> {
+        // Every generated case is an OTM call (x <= 0), so no intrinsic-value
+        // conversion is needed in the normalized C++ entry point.
+        Some(implied_vol::cxx::ffi::NormalisedImpliedBlackVolatility(
+            beta, x, 1.0,
+        ))
+    }
+
+    #[inline(always)]
+    fn full_volatility(&(price, f, k, expiry): &Self::FullCase) -> Option<f64> {
+        Some(implied_vol::cxx::ffi::ImpliedBlackVolatility(
+            price, f, k, expiry, 1.0,
+        ))
+    }
+}
+
+fn time_normalised<S: BenchmarkSolver>(cases: &[S::NormalisedCase], n: usize) -> (f64, f64) {
     let start = Instant::now();
     let mut sum = 0.0;
     for i in 0..n {
-        sum += black_box(
-            black_box(&cases[i % cases.len()])
-                .calculate_with::<S>()
-                .unwrap(),
-        );
+        sum += black_box(S::normalised_volatility(black_box(&cases[i % cases.len()])).unwrap());
     }
     #[allow(clippy::cast_precision_loss)]
     let ns = start.elapsed().as_secs_f64() * 1e9 / n as f64;
     (ns, black_box(sum))
 }
 
-fn time_full<S: BlackSolver>(cases: &[ImpliedBlackVolatility], n: usize) -> (f64, f64) {
+fn time_full<S: BenchmarkSolver>(cases: &[S::FullCase], n: usize) -> (f64, f64) {
     let start = Instant::now();
     let mut sum = 0.0;
     for i in 0..n {
-        sum += black_box(
-            black_box(&cases[i % cases.len()])
-                .calculate_with::<S>()
-                .unwrap(),
-        );
+        sum += black_box(S::full_volatility(black_box(&cases[i % cases.len()])).unwrap());
     }
     #[allow(clippy::cast_precision_loss)]
     let ns = start.elapsed().as_secs_f64() * 1e9 / n as f64;
@@ -81,22 +154,28 @@ fn main() {
 
     // Select one monomorphized runner before constructing or timing inputs.
     match solver {
-        "hybrid" => run::<Hybrid>(n, rounds, experimental_paths),
-        "jaeckel" => run::<Jaeckel>(n, rounds, experimental_paths),
+        "hybrid" => run::<RustSolver<Hybrid>>(n, rounds, experimental_paths),
+        "jaeckel" => run::<RustSolver<Jaeckel>>(n, rounds, experimental_paths),
         "flashiv" => {
             #[cfg(feature = "flashiv")]
-            run::<implied_vol::solver::FlashIv>(n, rounds, experimental_paths);
+            run::<RustSolver<implied_vol::solver::FlashIv>>(n, rounds, experimental_paths);
             #[cfg(not(feature = "flashiv"))]
             usage_error("solver flashiv requires the flashiv Cargo feature");
         }
         "experimental" => {
             #[cfg(feature = "experimental")]
-            run::<implied_vol::solver::Experimental>(n, rounds, experimental_paths);
+            run::<RustSolver<implied_vol::solver::Experimental>>(n, rounds, experimental_paths);
             #[cfg(not(feature = "experimental"))]
             usage_error("solver experimental requires the experimental Cargo feature");
         }
+        "cpp" => {
+            #[cfg(feature = "cxx_bench")]
+            run::<CppSolver>(n, rounds, experimental_paths);
+            #[cfg(not(feature = "cxx_bench"))]
+            usage_error("solver cpp requires the cxx_bench Cargo feature");
+        }
         _ => usage_error(&format!(
-            "unknown solver {solver}; expected hybrid, jaeckel, flashiv, or experimental"
+            "unknown solver {solver}; expected hybrid, jaeckel, flashiv, experimental, or cpp"
         )),
     }
 }
@@ -106,7 +185,7 @@ fn usage_error(message: &str) -> ! {
     std::process::exit(2);
 }
 
-fn run<S: BlackSolver>(n: usize, rounds: usize, experimental_paths: bool) {
+fn run<S: BenchmarkSolver>(n: usize, rounds: usize, experimental_paths: bool) {
     let mut fixed = Vec::new();
     for (name, x, s) in [
         ("atm", 0.0, 0.2),
@@ -117,16 +196,7 @@ fn run<S: BlackSolver>(n: usize, rounds: usize, experimental_paths: bool) {
         ("near_atm", -0.01, 0.5),
         ("near_atm_wider", -0.1, 0.6),
     ] {
-        fixed.push((
-            name,
-            vec![
-                ImpliedBlackVolatilityNormalised::builder()
-                    .log_moneyness(x)
-                    .normalised_price(normalised_price(x, s))
-                    .build()
-                    .unwrap(),
-            ],
-        ));
+        fixed.push((name, vec![S::prepare_normalised(x, normalised_price(x, s))]));
     }
 
     if experimental_paths {
@@ -142,16 +212,7 @@ fn run<S: BlackSolver>(n: usize, rounds: usize, experimental_paths: bool) {
             ("large_near_cap", 300.0, (-150.0_f64).exp() * (1.0 - 1e-12)),
             ("microscopic", 1e-200, 1e-201),
         ] {
-            fixed.push((
-                name,
-                vec![
-                    ImpliedBlackVolatilityNormalised::builder()
-                        .log_moneyness(-a)
-                        .normalised_price(b)
-                        .build()
-                        .unwrap(),
-                ],
-            ));
+            fixed.push((name, vec![S::prepare_normalised(-a, b)]));
         }
         let mut rng = rand::rngs::StdRng::from_seed([73; 32]);
         let mut large = Vec::with_capacity(4096);
@@ -161,13 +222,7 @@ fn run<S: BlackSolver>(n: usize, rounds: usize, experimental_paths: bool) {
             #[allow(clippy::suboptimal_flops)] // Keep workload construction arithmetic explicit.
             let b = (-0.5 * a - z).exp();
             if b >= f64::MIN_POSITIVE {
-                large.push(
-                    ImpliedBlackVolatilityNormalised::builder()
-                        .log_moneyness(-a)
-                        .normalised_price(b)
-                        .build()
-                        .unwrap(),
-                );
+                large.push(S::prepare_normalised(-a, b));
             }
         }
         fixed.push(("mixed_large", large));
@@ -176,13 +231,7 @@ fn run<S: BlackSolver>(n: usize, rounds: usize, experimental_paths: bool) {
         for _ in 0..4096 {
             let x: f64 = -rng.random_range(1e-6..0.25);
             let s: f64 = rng.random_range(0.1..0.5);
-            near_atm.push(
-                ImpliedBlackVolatilityNormalised::builder()
-                    .log_moneyness(x)
-                    .normalised_price(normalised_price(x, s))
-                    .build()
-                    .unwrap(),
-            );
+            near_atm.push(S::prepare_normalised(x, normalised_price(x, s)));
         }
         fixed.push(("mixed_near_atm", near_atm));
     }
@@ -199,13 +248,7 @@ fn run<S: BlackSolver>(n: usize, rounds: usize, experimental_paths: bool) {
         if beta < f64::MIN_POSITIVE || beta >= (0.5 * x).exp() {
             continue;
         }
-        normalised.push(
-            ImpliedBlackVolatilityNormalised::builder()
-                .log_moneyness(x)
-                .normalised_price(beta)
-                .build()
-                .unwrap(),
-        );
+        normalised.push(S::prepare_normalised(x, beta));
         let f = 100.0;
         let k = f * (-x).exp();
         let expiry: f64 = rng.random_range(0.01..2.0);
@@ -218,16 +261,47 @@ fn run<S: BlackSolver>(n: usize, rounds: usize, experimental_paths: bool) {
             .build()
             .unwrap()
             .calculate::<DefaultSpecialFn>();
-        full.push(
-            ImpliedBlackVolatility::builder()
-                .forward(f)
-                .strike(k)
-                .expiry(expiry)
-                .is_call(true)
-                .option_price(price)
-                .build()
-                .unwrap(),
-        );
+        full.push(S::prepare_full(price, f, k, expiry));
+    }
+
+    // Match the concrete inputs in the legacy and split Actions benchmarks.
+    // Prices and both adapters' case containers are prepared before timing.
+    let mut fixed_full = Vec::new();
+    for (name, source) in [
+        ("deep_otm_full", support::DEEP_OTM_CALL_LONG),
+        ("near_atm_short_full", support::NEAR_ATM_CALL_SHORT),
+    ] {
+        let case = support::black_implied_case(source);
+        fixed_full.push((
+            name,
+            vec![S::prepare_full(
+                case.option_price,
+                case.forward,
+                case.strike,
+                case.expiry,
+            )],
+        ));
+    }
+    let mut legacy_rng = rand::rngs::StdRng::from_seed([13; 32]);
+    let (r, r2, r3): (f64, f64, f64) = legacy_rng.random();
+    fixed_full.push((
+        "legacy_otm_full",
+        vec![S::prepare_full(r * r2, r, 1.0, 1e5 * r3)],
+    ));
+
+    // Validate every prepared input before warming up or reporting timings.
+    // Numerical failure must not be mistaken for a fast solver result.
+    for (name, cases) in &fixed {
+        preflight_normalised::<S>(name, cases);
+    }
+    preflight_normalised::<S>("mixed_normalised", &normalised);
+    for (index, case) in full.iter().enumerate() {
+        preflight_output("mixed_full", index, S::full_volatility(case));
+    }
+    for (name, cases) in &fixed_full {
+        for (index, case) in cases.iter().enumerate() {
+            preflight_output(name, index, S::full_volatility(case));
+        }
     }
 
     for (_, cases) in &fixed {
@@ -235,6 +309,9 @@ fn run<S: BlackSolver>(n: usize, rounds: usize, experimental_paths: bool) {
     }
     black_box(time_normalised::<S>(&normalised, 10_000));
     black_box(time_full::<S>(&full, 10_000));
+    for (_, cases) in &fixed_full {
+        black_box(time_full::<S>(cases, 10_000));
+    }
 
     println!("case,round,ns_per_call,checksum");
     for round in 0..rounds {
@@ -246,5 +323,22 @@ fn run<S: BlackSolver>(n: usize, rounds: usize, experimental_paths: bool) {
         println!("mixed_normalised,{round},{ns:.6},{sum:.16e}");
         let (ns, sum) = time_full::<S>(&full, n);
         println!("mixed_full,{round},{ns:.6},{sum:.16e}");
+        for (name, cases) in &fixed_full {
+            let (ns, sum) = time_full::<S>(cases, n);
+            println!("{name},{round},{ns:.6},{sum:.16e}");
+        }
     }
+}
+
+fn preflight_normalised<S: BenchmarkSolver>(name: &str, cases: &[S::NormalisedCase]) {
+    for (index, case) in cases.iter().enumerate() {
+        preflight_output(name, index, S::normalised_volatility(case));
+    }
+}
+
+fn preflight_output(name: &str, index: usize, output: Option<f64>) {
+    assert!(
+        output.is_some_and(|value| value.is_finite() && value > 0.0 && value < f64::MAX),
+        "solver failed preflight for {name}[{index}]: {output:?}"
+    );
 }
