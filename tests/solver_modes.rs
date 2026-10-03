@@ -236,12 +236,11 @@ fn upper_tail_matches_independent_exact_input_roots() {
     }
 }
 
-#[cfg(feature = "flashiv")]
 #[test]
-fn flashiv_recovers_normal_roots_beyond_the_jaeckel_small_x_range() {
-    // These known Jäckel limitations are intentionally not a new requirement
-    // on the unchanged hybrid or pure Jäckel modes. All beta/root values here
-    // are normal. Exact Black roots agree at two independent precisions;
+fn solvers_recover_normal_roots_at_microscopic_moneyness() {
+    // All beta/root values here are normal. Exact Black roots agree at two
+    // independent precisions. The dimensionless Jaeckel correction must avoid
+    // overflow even when its unscaled second derivative is unrepresentable;
     // x=1e-300 needs 400/500 digits to resolve the formula's cancellation.
     for fixture in [
         (
@@ -269,6 +268,9 @@ fn flashiv_recovers_normal_roots_beyond_the_jaeckel_small_x_range() {
             0x0000_0000_002d_a5b9,
         ),
     ] {
+        check_exact_root::<Hybrid>(fixture.0, fixture.1, fixture.2, fixture.3);
+        check_exact_root::<Jaeckel>(fixture.0, fixture.1, fixture.2, fixture.3);
+        #[cfg(feature = "flashiv")]
         check_exact_root::<FlashIv>(fixture.0, fixture.1, fixture.2, fixture.3);
     }
 }

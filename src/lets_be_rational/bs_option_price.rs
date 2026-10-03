@@ -538,7 +538,9 @@ pub fn normalised_vega(h: f64, t: f64) -> f64 {
 
 #[inline]
 pub fn inv_normalised_vega(h: f64, t: f64) -> f64 {
-    debug_assert!(t > 0.0);
+    // Half of a positive subnormal tangent node can round to zero. The
+    // reciprocal-vega formula remains valid at t=0 for its finite h.
+    debug_assert!(t >= 0.0);
     SQRT_2_PI * (0.5 * mul_add_selected(t, t, h * h)).exp()
 }
 #[inline(always)]

@@ -54,7 +54,7 @@ against Hybrid in this measurement. Several fixed middle and near-ATM paths
 were slower. FlashIv denotes this crate's safeguarded numerical variant, which
 differs from the author's fixed-count implementation.
 
-The current Hybrid measured 181.5/202.7 ns against the paired earlier default's
+The solver API comparison measured Hybrid at 181.5/202.7 ns against the paired earlier default's
 180.0/200.0 ns: 0.8%/1.3% more time on these mixed workloads. Checksums matched,
 and separate tests verified unchanged default outputs under both FMA policies.
 This is a local measurement of the API change, not a universal overhead bound.
@@ -62,3 +62,25 @@ This is a local measurement of the API change, not a universal overhead bound.
 These measurements do not cover cold caches, parallel batches, tail latency,
 or a live market workload.
 The bundled C++ comparison checks are separate from the four-solver benchmark.
+
+## Near-ATM stability change
+
+The 2026-10-03 comparison used the same Apple M1 and Rust 1.98.1, native CPU
+optimization, LTO, and separate immutable release/candidate executables. Each
+case used 300,000 calls and 16 samples per version, solver, and FMA policy,
+with alternating paired order. Medians on the existing mixed workloads were:
+
+| Explicit FMA | Solver | Normalized, before → after | Full API, before → after |
+|---|---|---:|---:|
+| Off | Hybrid | 181.8 → 181.4 ns (-0.2%) | 202.8 → 202.7 ns (0.0%) |
+| Off | Jaeckel | 198.0 → 198.5 ns (+0.2%) | 219.0 → 219.2 ns (+0.1%) |
+| On | Hybrid | 154.7 → 157.3 ns (+1.7%) | 174.5 → 178.3 ns (+2.2%) |
+| On | Jaeckel | 171.7 → 173.3 ns (+1.0%) | 189.8 → 192.6 ns (+1.5%) |
+
+Separating the near-ATM lowest-price correction from the ordinary kernel kept
+Jaeckel's fixed lowest-region cost at 261.8 → 263.0 ns without FMA and
+227.4 → 227.7 ns with FMA. All benchmark checksums matched the release baseline.
+These timings measure ordinary inputs outside the new numerical path, so they
+qualify its dispatch overhead rather than the cost of solving microscopic
+inputs. Small increases remain in the FMA build; this is a numerical repair,
+not a demonstrated speedup. The workload and machine limitations above apply.

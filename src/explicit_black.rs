@@ -3,7 +3,7 @@ use crate::{SpecialFn, lets_be_rational};
 use std::f64::consts::FRAC_1_SQRT_2;
 
 const ACTUAR_MAX_QUANTILE_ITERATIONS: usize = 100;
-const ACTUAR_QUANTILE_TOLERANCE: f64 = 1.0e-14;
+const ACTUAR_RELATIVE_QUANTILE_TOLERANCE: f64 = 1.0e-14;
 const LARGE_KAPPA_THRESHOLD: f64 = 1.0e3;
 const LEFT_SMALL_PROBABILITY_LOG_THRESHOLD: f64 = -11.51;
 const RIGHT_SMALL_PROBABILITY_LOG_THRESHOLD: f64 = -1.0e-5;
@@ -121,7 +121,10 @@ fn inverse_gaussian_quantile_actuar<SpFn: SpecialFn>(probability: f64, mu: f64) 
     }
 
     for _ in 1..ACTUAR_MAX_QUANTILE_ITERATIONS {
-        if dx.abs() <= ACTUAR_QUANTILE_TOLERANCE {
+        // The standardized quantile shrinks with |log-moneyness|. An
+        // absolute tolerance can accept the first step far from its root.
+        // Divide instead of multiplying the tolerance by a microscopic x.
+        if dx.abs() / x <= ACTUAR_RELATIVE_QUANTILE_TOLERANCE {
             return Some(x * mu);
         }
 
@@ -147,7 +150,9 @@ fn inverse_gaussian_quantile_actuar<SpFn: SpecialFn>(probability: f64, mu: f64) 
 fn inverse_gaussian_mode_standardized(phi: f64) -> f64 {
     let kappa = 1.5 * phi;
     if kappa <= LARGE_KAPPA_THRESHOLD {
-        (1.0 + kappa * kappa).sqrt() - kappa
+        // Rationalize sqrt(1 + kappa^2) - kappa before its two terms become
+        // nearly equal. The denominator is finite throughout this branch.
+        ((1.0 + kappa * kappa).sqrt() + kappa).recip()
     } else {
         let reciprocal = 0.5 / kappa;
         reciprocal * (1.0 - reciprocal * reciprocal)
@@ -494,6 +499,35 @@ mod tests {
                 (repriced / normalised_price - 1.0).abs() <= 2.0e-12,
                 "price={normalised_price}, recovered={recovered}, repriced={repriced}"
             );
+        }
+    }
+
+    #[test]
+    fn explicit_formula_handles_microscopic_standardized_quantiles() {
+        // Direct Black roots for exact binary64 inputs, independently
+        // evaluated with mpmath at 180 and 450 decimal digits. These rounded
+        // roots agree for each microscopic log-moneyness below. The original
+        // absolute stopping test accepted one step at these tiny IG scales.
+        let cases = [
+            (0.001, 0x3f64_88c8_2900_306c),
+            (0.1, 0x3fd0_15ab_c78e_92d1),
+            (0.5, 0x3ff5_956b_8752_8a49),
+            (0.9, 0x400a_5152_0967_6abe),
+        ];
+        for log_moneyness in [1e-50, 1e-150, 1e-300] {
+            for (normalised_price, root_bits) in cases {
+                let root = f64::from_bits(root_bits);
+                let recovered = implied_black_volatility_normalised::<DefaultSpecialFn>(
+                    log_moneyness,
+                    normalised_price,
+                )
+                .unwrap();
+                assert!(recovered.is_finite() && recovered > 0.0);
+                assert!(
+                    (recovered / root - 1.0).abs() <= 4.0e-14,
+                    "x={log_moneyness}, price={normalised_price}, recovered={recovered}, root={root}"
+                );
+            }
         }
     }
 

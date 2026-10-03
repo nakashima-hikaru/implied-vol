@@ -22,6 +22,25 @@ use std::f64::consts::{FRAC_1_SQRT_2, SQRT_2};
 use std::ops::Neg;
 
 const MAX_HOUSEHOLDER_CORRECTIVE_STEPS: usize = 2;
+// Below this cutoff the tangent-node subtraction loses digits even though
+// the node itself is of the same order as |x|. Its Taylor variable is at most
+// 2^-10, so the first omitted term in the polynomial is below 3e-30.
+const NEAR_ATM_MONEYNESS: f64 = f64::from_bits(0x3eb0_0000_0000_0000);
+
+#[inline]
+fn near_atm_lower_tangent(a: f64, sqrt_a: f64) -> f64 {
+    let inv_sqrt_pi = std::f64::consts::FRAC_2_SQRT_PI * 0.5;
+    let polynomial = sqrt_a
+        .mul_add2(1.0 / 120.0, -32.0 * inv_sqrt_pi / 945.0)
+        .mul_add2(sqrt_a, 1.0 / 24.0)
+        .mul_add2(sqrt_a, -16.0 * inv_sqrt_pi / 105.0)
+        .mul_add2(sqrt_a, 1.0 / 6.0)
+        .mul_add2(sqrt_a, -8.0 * inv_sqrt_pi / 15.0)
+        .mul_add2(sqrt_a, 0.5)
+        .mul_add2(sqrt_a, -4.0 * inv_sqrt_pi / 3.0)
+        .mul_add2(sqrt_a, 1.0);
+    (SQRT_PI_OVER_2 * a) * polynomial
+}
 
 #[inline]
 fn b_u_over_b_max(s_c: f64) -> f64 {
@@ -158,6 +177,105 @@ fn compute_f_lower_map_and_first_two_derivatives<SpFn: SpecialFn>(
 }
 
 #[inline]
+fn near_atm_f_lower_map_and_first_two_derivatives<SpFn: SpecialFn>(
+    theta_x: f64,
+    s: f64,
+) -> (f64, f64, f64) {
+    let price_scale = -theta_x;
+    let z = -FRAC_1_SQRT_3 * theta_x / s;
+    let y = z * z;
+    let s2 = s * s;
+    let phi_m = 0.5 * SpFn::erfc(FRAC_1_SQRT_2 * z);
+    let phi2 = phi_m * phi_m;
+    let first = std::f64::consts::TAU * y * phi2 * s2.mul_add2(0.125, y).exp();
+    // Interpolate f/a against beta/a. The first derivative is unchanged;
+    // the second is a*f'' and remains finite as a and s tend to zero.
+    // Factor s^2 out of the dimensional numerator before dividing by s^3.
+    let h = theta_x / s;
+    (
+        -FRAC_2_PI_SQRT_27 * (theta_x / price_scale) * (phi2 * phi_m),
+        first,
+        std::f64::consts::FRAC_PI_6
+            * y
+            * (price_scale / s)
+            * phi_m
+            * (-8.0 * SQRT_3).mul_add2(
+                h,
+                3.0f64.mul_add2(s2 - 8.0, -8.0 * h * h) * phi_m * inv_norm_pdf(y),
+            )
+            * 2.0f64.mul_add2(y, 0.25 * s2).exp(),
+    )
+}
+
+// Keep this exceptional coordinate path separate so the common interpolation
+// and correction kernel retains its original size and expression ordering.
+#[inline(never)]
+fn near_atm_lowest_branch<SpFn: SpecialFn>(beta: f64, theta_x: f64, s_l: f64, b_l: f64) -> f64 {
+    let price_scale = -theta_x;
+    let interpolation_beta = beta / price_scale;
+    let interpolation_b_l = b_l / price_scale;
+    let (f_lower_map_l, d_f_lower_map_l_d_beta, d2_f_lower_map_l_d_beta2) =
+        near_atm_f_lower_map_and_first_two_derivatives::<SpFn>(theta_x, s_l);
+    let r2 = convex_rational_cubic_control_parameter_to_fit_second_derivative_at_right_side::<true>(
+        interpolation_b_l,
+        f_lower_map_l,
+        (1.0, d_f_lower_map_l_d_beta),
+        d2_f_lower_map_l_d_beta2,
+    );
+    let mut f = rational_cubic_interpolation(
+        interpolation_beta,
+        interpolation_b_l,
+        (0.0, f_lower_map_l),
+        (1.0, d_f_lower_map_l_d_beta),
+        r2,
+    );
+    if !(f > 0.0) {
+        let t = interpolation_beta / interpolation_b_l;
+        f = f_lower_map_l.mul_add2(t, interpolation_b_l.mul_add2(-t, interpolation_b_l)) * t;
+    }
+    // f is already divided by |x|. Do not rescale it to a tiny dimensional
+    // value only to divide its cube root by |x|^(1/3).
+    let mut s = (theta_x * FRAC_1_SQRT_3
+        / SpFn::inverse_norm_cdf(FRAC_SQRT_3_CUBIC_ROOT_2_PI * f.cbrt()))
+    .abs();
+    let ln_beta = beta.ln();
+    for _ in 0..MAX_HOUSEHOLDER_CORRECTIVE_STEPS {
+        debug_assert!(s > 0.0);
+        debug_assert!(s.is_finite(), "s is not finite: s={s}");
+        let h = theta_x / s;
+        let t = 0.5 * s;
+        let (bx, ln_vega) =
+            bs_option_price::scaled_normalised_black_and_ln_vega::<SpFn>(0.5 * theta_x, h, t);
+        let b = if bs_option_price::uses_scaled_expansion(h, t) {
+            bx * bs_option_price::normalised_vega(h, t)
+        } else {
+            bs_option_price::normalised_black::<SpFn>(0.5 * theta_x, h, t)
+        };
+        let relative_price = (b - beta) / beta;
+        let residual = if (-0.5..0.5).contains(&relative_price) {
+            relative_price.ln_1p()
+        } else {
+            bx.ln() + ln_vega - ln_beta
+        };
+        if residual == 0.0 {
+            return s;
+        }
+        let ln_b = ln_beta + residual;
+        let d = s / bx;
+        let lambda = ln_b.recip();
+        let ot_lambda = lambda.mul_add2(2.0, 1.0);
+        let a = h.mul_add2(h, -(t * t));
+        let b_h3 = a.mul_add2(a, (-3.0f64).mul_add2(h * h, -(t * t)));
+        let h2 = d.mul_add2(-ot_lambda, a);
+        let mu = 6.0 * lambda * (lambda + 1.0);
+        let h3 = (3.0 * a * d).mul_add2(-ot_lambda, (d * d).mul_add2(2.0 + mu, b_h3));
+        let z = -residual * (ln_b / ln_beta) / d;
+        s *= z.mul_add2(householder::householder_3factor(z, h2, h3), 1.0);
+    }
+    s
+}
+
+#[inline]
 fn inverse_f_lower_map<SpFn: SpecialFn>(x: f64, f: f64) -> f64 {
     (x * FRAC_1_SQRT_3
         / SpFn::inverse_norm_cdf(FRAC_SQRT_3_CUBIC_ROOT_2_PI * f.cbrt() / x.abs().cbrt()))
@@ -220,13 +338,18 @@ fn lets_be_rational_with_dispatch<SpFn: SpecialFn, const HYBRID: bool>(
     let mut s;
     let sqrt_ax = theta_x.neg().sqrt();
     let s_c = SQRT_2 * sqrt_ax;
+    let near_atm = -theta_x <= NEAR_ATM_MONEYNESS;
     let ome = SpFn::one_minus_erfcx(sqrt_ax);
     let b_c = 0.5 * b_max * ome;
 
     // LOWER HALF: s < s_c
     if beta < b_c {
         debug_assert!(theta_x < 0.0);
-        let s_l = (-SQRT_PI_OVER_2).mul_add2(ome, s_c);
+        let s_l = if near_atm {
+            near_atm_lower_tangent(-theta_x, sqrt_ax)
+        } else {
+            (-SQRT_PI_OVER_2).mul_add2(ome, s_c)
+        };
         debug_assert!(s_l > 0.0);
         let b_l = b_l_over_b_max(s_c) * b_max;
 
@@ -236,6 +359,9 @@ fn lets_be_rational_with_dispatch<SpFn: SpecialFn, const HYBRID: bool>(
                 && let Some(s) = crate::flashiv::try_lowest_branch::<SpFn>(beta, theta_x, b_max)
             {
                 return s;
+            }
+            if near_atm {
+                return near_atm_lowest_branch::<SpFn>(beta, theta_x, s_l, b_l);
             }
             let (f_lower_map_l, d_f_lower_map_l_d_beta, d2_f_lower_map_l_d_beta2) =
                 compute_f_lower_map_and_first_two_derivatives::<SpFn>(theta_x, s_l);
@@ -445,6 +571,15 @@ fn lets_be_rational_with_dispatch<SpFn: SpecialFn, const HYBRID: bool>(
             bs_option_price::normalised_black_and_inv_vega::<SpFn>(0.5 * theta_x, h, t);
         if b == beta {
             return s;
+        }
+        if near_atm {
+            // Use z=ds/s and scaled derivative ratios. Squaring h2~1/s
+            // would overflow for normal prices with microscopic total vol.
+            let z = ((beta - b) / s) * inv_bp;
+            let h2 = h.mul_add2(h, -(t * t));
+            let h3 = h2.mul_add2(h2, (-3.0f64).mul_add2(h * h, -(t * t)));
+            s *= z.mul_add2(householder::householder_3factor(z, h2, h3), 1.0);
+            continue;
         }
         let nu = (beta - b) * inv_bp;
         let x2_over_s3 = h * h / s;

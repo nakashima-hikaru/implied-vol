@@ -30,6 +30,22 @@ Householder steps, and a third when selected by the residual.
 **Jaeckel** uses Let's Be Rational interpolation and its Householder corrections.
 It does not switch to another inverse method.
 
+For `abs(x)<=2^-20`, both Hybrid and Jaeckel evaluate the lower tangent node
+with a cancellation-free Taylor polynomial in `sqrt(abs(x))`. The first omitted
+term is below `3e-30` at the cutoff. Lowest-branch interpolation uses `b/abs(x)`
+and the similarly scaled lower map, while lower and middle corrections use
+relative volatility changes and scaled derivative ratios. These are coordinate
+changes to the Black solver, not a Bachelier approximation. The existing Black
+price expansions and the two-correction limit are retained.
+
+The separate explicit inverse-Gaussian implementation checks relative changes
+in its standardized quantile. An absolute step tolerance would stop too early
+as log-moneyness approaches zero. Its moderate-parameter mode is evaluated in
+rationalized reciprocal form to avoid subtracting nearly equal terms. The
+inverse-Gaussian method and iteration limits are unchanged; intermediate mean
+or quantile overflow can still prevent a representable volatility from being
+returned.
+
 **FlashIv** uses its own FlashIV seeds, scaled Mills ratios near ATM, a
 complementary log-price objective near the upper bound, and safeguarded exact
 Householder iterations. It is a numerical variant of FlashIV rather than a
@@ -49,6 +65,14 @@ the existing accuracy checks without relaxed thresholds. Seeded round trips,
 independent high-precision roots, and the optional C++ comparison exercise
 regressions. These finite checks do not establish a universal error bound;
 existing Jaeckel and forward-price evaluator limitations remain.
+
+Near-ATM regressions include 81 independent exact-input roots evaluated at two
+precisions (at least 100 decimal digits), with cutoff neighbors, minimum normal
+prices, microscopic volatility, and ordinary prices at tiny log-moneyness. The
+fixtures on the stabilized path require one attainable-accuracy estimate; the
+neighbor above its cutoff retains the existing four-estimate envelope. Both
+explicit FMA policies are checked. This is finite regression evidence, not a
+whole-domain precision proof.
 
 Experimental's core metric uses the exact mathematical root `s_star` and vega `V_star`:
 
