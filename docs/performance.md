@@ -4,6 +4,8 @@ The stable benchmark measures seven fixed Black solver paths and two mixed
 workloads. It prepares prices and builders before timing and reports
 nanoseconds per calculation plus a checksum. The mixed workloads contain 4,096
 seeded synthetic OTM calls; they are not a market distribution.
+With `--solver experimental --experimental-paths`, it also measures eight
+additional fixed inputs and seeded mixed large-moneyness and near-ATM inputs.
 
 ## Reproduce a comparison
 
@@ -80,6 +82,72 @@ This is a local measurement of the API change, not a universal overhead bound.
 These measurements do not cover cold caches, parallel batches, tail latency,
 or a live market workload.
 The bundled C++ comparison checks are separate from the four-solver benchmark.
+
+## Experimental polynomial optimization
+
+The 2026-10-03 optimization pairs independent Horner chains in the wing/upper
+tensor seeds and the near-ATM conversion polynomial. On this Apple M1, those
+chains use two NEON lanes. Each chain retains its coefficients, degree, and
+explicit FMA sequence; the final scalar reductions are unchanged. The shared
+upper route also reuses the cap exponential already computed by its dispatcher.
+
+Separate immutable baseline/candidate executables used Rust 1.98.1, native CPU
+optimization, LTO, and explicit FMA without implicit contraction. Both used the
+same extended benchmark source. Four rotating ABBA blocks with two rounds per
+invocation supplied 16 samples per version, solver, and feature policy, at
+200,000 calls per case. The medians were:
+
+| Experimental input | FMA off, before → after | FMA on, before → after |
+|---|---:|---:|
+| Near ATM, existing fixed case | 107.4 → 74.8 ns (-30.4%) | 107.3 → 74.7 ns (-30.4%) |
+| Mixed near ATM | 122.2 → 93.9 ns (-23.2%) | 123.8 → 92.9 ns (-25.0%) |
+| Microscopic input | 133.4 → 118.0 ns (-11.5%) | 133.1 → 118.0 ns (-11.4%) |
+| Wing tensor seed | 127.1 → 126.0 ns (-0.9%) | 127.1 → 125.8 ns (-1.0%) |
+| Existing mixed normalized | 129.5 → 129.2 ns (-0.2%) | 129.9 → 129.1 ns (-0.6%) |
+| Existing mixed full API | 145.1 → 145.3 ns (+0.1%) | 145.3 → 144.9 ns (-0.3%) |
+| Mixed large moneyness | 218.3 → 218.1 ns (-0.1%) | 218.2 → 218.0 ns (-0.1%) |
+
+The new near-ATM workload has 4,096 seeded OTM prices, with
+`abs(x)` uniform in `[1e-6, 0.25)` and generating total volatility uniform in
+`[0.1, 0.5)`. The large workload samples `a` in `[10, 1416)` and log relative
+price parameter in `(-300, -0.01]`, retaining normal prices. These are synthetic
+distributions. Existing broad mixed inputs improved little; the benefit is
+concentrated in the near-ATM conversion path. Hybrid control mixed medians
+changed by at most 0.2%, and every timed checksum matched. Individual fixed
+cases also showed compiler/layout sensitivity across feature builds; the
+complete samples are retained in the [measurement record](experimental-speed-2026-10-03.json).
+No performance claim is made for other architectures or market distributions.
+
+Moving the large-domain derivative divisions after convergence regressed its
+mixed workload by 2.3%. Inspection found that the compiler stopped inlining
+the paired Mills evaluator. Forcing that inline, or returning a reduced pair,
+also failed to improve the large mixed workload in subsequent screening.
+These candidates were rejected; the large-domain implementation is unchanged.
+
+Final native release revalidation covered 117,044 independent inputs per FMA
+policy: 46,688 archived core roots, 2,083 additional tiny/ATM/seam/cap roots,
+and 68,273 paper inputs. All public outputs matched the baseline bit for bit,
+with zero invalid outputs or `rho_J>=1`. Maximum core-coordinate rho was
+0.6049, and maximum paper rho was 0.7733 (0.8690 after reannualization).
+All these adapted prices are positive normal values. The finite validation
+does not expand the mathematical or platform assumptions in
+[the numerical contract](numerics.md).
+
+The paired runner retains executable SHA-256 hashes, all samples, and checksum
+checks. It records caller-supplied build flags/features and the current host
+compiler; it does not infer build provenance from binaries. The saved record
+also includes the source/build hashes verified for this comparison.
+Build the baseline and candidate in separate target directories, copying the
+same benchmark source into both checkouts before building, then run:
+
+```sh
+python3 benches/compare_experimental.py /path/to/baseline /path/to/candidate \
+  --output comparison.json
+```
+
+Repeat with identically built FMA executables and
+`--features flashiv,experimental,fma`. The existing no-affinity, warm-cache,
+single-threaded measurement limitations apply.
 
 ## Actions C++ comparison
 

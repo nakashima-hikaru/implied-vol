@@ -59,10 +59,13 @@ fn main() {
     }
     let mut args = args.iter().filter(|arg| *arg != "--bench");
     let mut solver = "hybrid";
+    let mut experimental_paths = false;
     let mut numbers = Vec::new();
     while let Some(arg) = args.next() {
         if arg == "--solver" {
             solver = args.next().expect("--solver requires a solver name");
+        } else if arg == "--experimental-paths" {
+            experimental_paths = true;
         } else {
             numbers.push(arg);
         }
@@ -78,17 +81,17 @@ fn main() {
 
     // Select one monomorphized runner before constructing or timing inputs.
     match solver {
-        "hybrid" => run::<Hybrid>(n, rounds),
-        "jaeckel" => run::<Jaeckel>(n, rounds),
+        "hybrid" => run::<Hybrid>(n, rounds, experimental_paths),
+        "jaeckel" => run::<Jaeckel>(n, rounds, experimental_paths),
         "flashiv" => {
             #[cfg(feature = "flashiv")]
-            run::<implied_vol::solver::FlashIv>(n, rounds);
+            run::<implied_vol::solver::FlashIv>(n, rounds, experimental_paths);
             #[cfg(not(feature = "flashiv"))]
             usage_error("solver flashiv requires the flashiv Cargo feature");
         }
         "experimental" => {
             #[cfg(feature = "experimental")]
-            run::<implied_vol::solver::Experimental>(n, rounds);
+            run::<implied_vol::solver::Experimental>(n, rounds, experimental_paths);
             #[cfg(not(feature = "experimental"))]
             usage_error("solver experimental requires the experimental Cargo feature");
         }
@@ -103,7 +106,7 @@ fn usage_error(message: &str) -> ! {
     std::process::exit(2);
 }
 
-fn run<S: BlackSolver>(n: usize, rounds: usize) {
+fn run<S: BlackSolver>(n: usize, rounds: usize, experimental_paths: bool) {
     let mut fixed = Vec::new();
     for (name, x, s) in [
         ("atm", 0.0, 0.2),
@@ -124,6 +127,64 @@ fn run<S: BlackSolver>(n: usize, rounds: usize) {
                     .unwrap(),
             ],
         ));
+    }
+
+    if experimental_paths {
+        // Exact represented (a,b) inputs exercise paths absent from the
+        // ordinary a<5 mixed workload. No price evaluation is timed.
+        for (name, a, b) in [
+            ("central_deferred", 0.1, 0.05),
+            ("wing_seed", 1.0, 1e-10),
+            ("finite_seed", 5.0, 0.005),
+            ("large_lower", 20.0, (-10.0_f64).exp() * 0.1),
+            ("large_upper", 20.0, (-10.0_f64).exp() * 0.9),
+            ("large_asymptotic", 100.0, f64::MIN_POSITIVE),
+            ("large_near_cap", 300.0, (-150.0_f64).exp() * (1.0 - 1e-12)),
+            ("microscopic", 1e-200, 1e-201),
+        ] {
+            fixed.push((
+                name,
+                vec![
+                    ImpliedBlackVolatilityNormalised::builder()
+                        .log_moneyness(-a)
+                        .normalised_price(b)
+                        .build()
+                        .unwrap(),
+                ],
+            ));
+        }
+        let mut rng = rand::rngs::StdRng::from_seed([73; 32]);
+        let mut large = Vec::with_capacity(4096);
+        while large.len() < 4096 {
+            let a: f64 = rng.random_range(10.0..1416.0);
+            let z: f64 = rng.random_range(0.01..300.0);
+            #[allow(clippy::suboptimal_flops)] // Keep workload construction arithmetic explicit.
+            let b = (-0.5 * a - z).exp();
+            if b >= f64::MIN_POSITIVE {
+                large.push(
+                    ImpliedBlackVolatilityNormalised::builder()
+                        .log_moneyness(-a)
+                        .normalised_price(b)
+                        .build()
+                        .unwrap(),
+                );
+            }
+        }
+        fixed.push(("mixed_large", large));
+        let mut near_atm = Vec::with_capacity(4096);
+        let mut rng = rand::rngs::StdRng::from_seed([91; 32]);
+        for _ in 0..4096 {
+            let x: f64 = -rng.random_range(1e-6..0.25);
+            let s: f64 = rng.random_range(0.1..0.5);
+            near_atm.push(
+                ImpliedBlackVolatilityNormalised::builder()
+                    .log_moneyness(x)
+                    .normalised_price(normalised_price(x, s))
+                    .build()
+                    .unwrap(),
+            );
+        }
+        fixed.push(("mixed_near_atm", near_atm));
     }
 
     // Prepare all prices and builders before timing. All solvers use the

@@ -201,7 +201,17 @@ fn finish(a: f64, b: f64, s: f64) -> f64 {
 #[inline]
 fn tensor_seed<const NJ: usize, const NI: usize>(c: &[[f64; 12]; NJ], x: f64, y: f64) -> f64 {
     let mut rows = [0.0; 12];
-    for i in 0..NI {
+    let paired = NI - NI % 2;
+    let arg = F64x2::splat(y);
+    for i in (0..paired).step_by(2) {
+        let mut v = F64x2::new(c[NJ - 1][i], c[NJ - 1][i + 1]);
+        for j in (0..NJ - 1).rev() {
+            v = v.mul_add(arg, F64x2::new(c[j][i], c[j][i + 1]));
+        }
+        rows[i..i + 2].copy_from_slice(&v.to_array());
+    }
+    if !NI.is_multiple_of(2) {
+        let i = NI - 1;
         rows[i] = c[NJ - 1][i];
         for j in (0..NJ - 1).rev() {
             rows[i] = fma(rows[i], y, c[j][i]);
@@ -438,7 +448,7 @@ pub(crate) fn solve(a: f64, b: f64) -> f64 {
             if terminal || positive(s) {
                 return s;
             }
-            let s = upper::shared(a, b);
+            let s = upper::shared(a, b, cap);
             if positive(s) {
                 return s;
             }

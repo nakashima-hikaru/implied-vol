@@ -88,6 +88,8 @@ precision target on those inputs.
 compensated residuals, Mills evaluation, exact cap handling, and Householder
 corrections. Its original dispatcher includes an internal LBR
 branch. No additional output search or refinement wraps the selected solver.
+Independent Horner chains share two SIMD lanes where available, while retaining
+each chain's degree and FMA sequence and the scalar reduction order.
 
 ## Accuracy contracts
 
@@ -135,6 +137,12 @@ implementation matched bit for bit, with zero
 invalid outputs or `rho_J>1`, including 3,075 valid prices equal to a rounded-down
 cap. Paper references target exact `(x,c)` inputs and include adapter rounding;
 they are distinct from the exact `(a,b)` core contract.
+
+Polynomial optimization revalidation expanded this population with 2,083
+independent tiny/ATM/seam/cap roots. Both FMA feature policies passed all 117,044
+inputs with bit-identical baseline outputs, zero invalid outputs, and zero
+`rho_J>=1`. This population includes 3,121 valid core-coordinate prices equal
+to a rounded-down cap and contains only positive normal adapted prices.
 
 ## Algorithm references
 

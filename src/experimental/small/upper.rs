@@ -325,8 +325,8 @@ fn finish_upper(a: f64, delta: Pair, s: f64) -> f64 {
     let ds = n * (1.0 + H2 * n / 2.0) / (1.0 + n * (H2 + H3 * n / 6.0));
     fma(s, ds, s)
 }
-pub(super) fn shared(a: f64, b: f64) -> f64 {
-    let (cap, gap) = match price_gap(a, b, (-a / 2.0).exp(), false) {
+pub(super) fn shared(a: f64, b: f64, cap0: f64) -> f64 {
+    let (cap, gap) = match price_gap(a, b, cap0, false) {
         Ok(q) => q,
         Err(_) => return f64::NAN,
     };

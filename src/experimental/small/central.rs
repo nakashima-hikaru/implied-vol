@@ -123,6 +123,28 @@ fn normal_deferred(z: Pair) -> Pair {
     }
     Pair::new(p.hi, fma(dp, t.lo, p.lo))
 }
+#[inline]
+fn conversion_pair<const LEFT: usize, const RIGHT: usize>(
+    a: &[f64; LEFT],
+    b: &[f64; RIGHT],
+    x: f64,
+) -> [f64; 2] {
+    // The rows have different degrees. Evaluate the longer row's leading
+    // stages first, then pair the remaining stages without padding either row.
+    const { assert!(LEFT >= RIGHT && RIGHT > 0) };
+    let head = LEFT - RIGHT;
+    let mut p = a[0];
+    for c in &a[1..=head] {
+        p = fma(p, x, *c);
+    }
+    let mut p = F64x2::new(p, b[0]);
+    let arg = F64x2::splat(x);
+    for i in 1..RIGHT {
+        p = p.mul_add(arg, F64x2::new(a[head + i], b[i]));
+    }
+    p.to_array()
+}
+
 pub(super) fn deferred(a: f64, b: f64) -> f64 {
     let sc = sinhc_half(a);
     let d = rawmul(Pair::from(a), sc);
@@ -144,14 +166,12 @@ pub(super) fn deferred(a: f64, b: f64) -> f64 {
     let u = rawdiv(rawmul(q, normal_deferred(z)), sc);
     let w = rawmul(u, u);
     let a2 = rawmul(Pair::from(a), Pair::from(a));
-    let mut rows = [0.0; 10];
-    for (k, c) in conversion_rows.iter().enumerate() {
-        let mut p = c[0];
-        for v in &c[1..] {
-            p = fma(p, w.hi, *v);
-        }
-        rows[k] = p;
-    }
+    let [p0, p1] = conversion_pair(&conversion_0, &conversion_1, w.hi);
+    let [p2, p3] = conversion_pair(&conversion_2, &conversion_3, w.hi);
+    let [p4, p5] = conversion_pair(&conversion_4, &conversion_5, w.hi);
+    let [p6, p7] = conversion_pair(&conversion_6, &conversion_7, w.hi);
+    let [p8, p9] = conversion_pair(&conversion_8, &conversion_9, w.hi);
+    let rows = [p0, p1, p2, p3, p4, p5, p6, p7, p8, p9];
     let mut y = rows[9];
     for i in (0..9).rev() {
         y = fma(y, a2.hi, rows[i]);
