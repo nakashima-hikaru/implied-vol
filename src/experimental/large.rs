@@ -109,6 +109,23 @@ fn logdd(a: DD) -> DD {
     add(scale(LN2, e as f64), t)
 }
 
+// The dispatcher has already checked that the price is positive and normal.
+// Its DD low part is zero, so logdd(dd(b)) uses this exact frexp mantissa and
+// exponent with a positive zero correction. Keep its compensated sum unchanged.
+#[inline]
+fn log_positive_normal_price(b: f64) -> DD {
+    debug_assert!(b.is_normal() && b > 0.0);
+    let bits = b.to_bits();
+    let mut e = ((bits >> 52) & 2047) as i32 - 1022;
+    let mut m = f64::from_bits((bits & 0x800fffffffffffff) | (1022u64 << 52));
+    if m < f64::from_bits(0x3fe6a09e667f3bcd) {
+        m *= 2.0;
+        e -= 1;
+    }
+    let t = two(m.ln(), 0.0);
+    add(scale(LN2, e as f64), t)
+}
+
 #[inline(always)]
 fn raw_stage(p: DD, z: DD, c: DD) -> DD {
     let ph = p.hi * z.hi;
@@ -432,7 +449,7 @@ pub(crate) fn solve(a: f64, b: f64) -> f64 {
     if !(a > 10.0 && a < 1417.0 && b.is_normal() && b > 0.0 && a.is_finite()) {
         return f64::NAN;
     }
-    let ell = add(logdd(dd(b)), dd(a / 2.0));
+    let ell = add(log_positive_normal_price(b), dd(a / 2.0));
     let upper = ell.hi > -0.6;
     let mut target = ell;
     if upper {
@@ -1046,4 +1063,34 @@ fn log_step5(a: f64, x: f64, e: &Eval) -> f64 {
         f64::from_bits(0x3ff0000000000000),
     );
     n * num / den
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{dd, log_positive_normal_price, logdd};
+
+    #[test]
+    fn normal_price_log_preserves_both_compensated_components() {
+        // Sweep normal exponents and the mantissa-renormalization seam.
+        // The general DD logarithm remains the reference for gap/ratio inputs.
+        let cutoff = 0x0006_a09e_667f_3bcd_u64;
+        let fractions = [
+            0,
+            1,
+            cutoff - 1,
+            cutoff,
+            cutoff + 1,
+            (1 << 52) - 2,
+            (1 << 52) - 1,
+        ];
+        for exponent in 1_u64..2047 {
+            for fraction in fractions {
+                let b = f64::from_bits((exponent << 52) | fraction);
+                let expected = logdd(dd(b));
+                let actual = log_positive_normal_price(b);
+                assert_eq!(actual.hi.to_bits(), expected.hi.to_bits(), "b={b:e}");
+                assert_eq!(actual.lo.to_bits(), expected.lo.to_bits(), "b={b:e}");
+            }
+        }
+    }
 }

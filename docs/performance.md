@@ -40,6 +40,8 @@ built immutable pre-change executable provides paired FlashIv and Hybrid
 controls. The benchmark has no CPU affinity on macOS;
 scheduler and frequency variation remain possible. These timings exclude input
 construction and are specific to this workload and machine.
+Experimental values in this table precede the two optimizations documented
+below.
 
 | Input | Hybrid | Jaeckel | FlashIv | Experimental |
 |---|---:|---:|---:|---:|
@@ -122,7 +124,8 @@ Moving the large-domain derivative divisions after convergence regressed its
 mixed workload by 2.3%. Inspection found that the compiler stopped inlining
 the paired Mills evaluator. Forcing that inline, or returning a reduced pair,
 also failed to improve the large mixed workload in subsequent screening.
-These candidates were rejected; the large-domain implementation is unchanged.
+These candidates were rejected; the polynomial optimization retained the
+large-domain implementation.
 
 Final native release revalidation covered 117,044 independent inputs per FMA
 policy: 46,688 archived core roots, 2,083 additional tiny/ATM/seam/cap roots,
@@ -148,6 +151,63 @@ python3 benches/compare_experimental.py /path/to/baseline /path/to/candidate \
 Repeat with identically built FMA executables and
 `--features flashiv,experimental,fma`. The existing no-affinity, warm-cache,
 single-threaded measurement limitations apply.
+
+## Experimental dispatch and logarithm optimization
+
+The subsequent 2026-10-03 comparison starts from `84a7f1f`, which already
+contains the polynomial optimization above. It adopts three changes:
+
+- A conservative dyadic lower bound avoids the cap exponential when the upper
+  route cannot accept the price. In an untimed pass over the existing mixed
+  workload, this skips 747 exponentials per 4,096 inputs.
+- The deferred route rejects guaranteed failures before evaluating `sinhc`.
+  Keeping these checks inside the route limits their cost to its callers.
+  The [numerical notes](numerics.md) give the rejection margins.
+- The initial large-domain logarithm uses the validated positive normal price
+  to omit generic special-case checks and a zero-correction division. Both
+  compensated components and all subsequent arithmetic are preserved.
+
+The same separate immutable native/LTO builds and four rotating ABBA blocks
+supplied 16 samples per version at 200,000 calls per case.
+The feature columns toggle the crate's `fma` feature. Experimental uses explicit
+FMA in both, while generated prices can differ between feature builds.
+Medians on Apple M1 with Rust 1.98.1, explicit FMA, and no implicit contraction
+were:
+
+| Experimental input | FMA off, before → after | FMA on, before → after |
+|---|---:|---:|
+| Existing mixed normalized | 129.5 → 127.8 ns (-1.3%) | 129.2 → 127.7 ns (-1.2%) |
+| Existing mixed full API | 145.4 → 143.5 ns (-1.3%) | 145.3 → 143.8 ns (-1.0%) |
+| Mixed near ATM | 94.2 → 89.6 ns (-4.9%) | 93.2 → 90.0 ns (-3.4%) |
+| Mixed large moneyness | 218.5 → 215.2 ns (-1.5%) | 218.5 → 215.4 ns (-1.4%) |
+| Near ATM, wider fixed case | 145.1 → 128.4 ns (-11.5%) | 144.9 → 128.4 ns (-11.4%) |
+| Finite seed | 123.4 → 118.4 ns (-4.0%) | 123.3 → 118.4 ns (-3.9%) |
+| Near ATM, successful fixed case | 74.9 → 75.5 ns (+0.9%) | 74.9 → 75.7 ns (+1.1%) |
+
+Successful fixed deferred cases pay about 0.6–0.9 ns for the new checks;
+their mixed workload benefits from cheaper failed attempts. Hybrid mixed
+control medians changed by at most 0.3%, and every timed checksum matched.
+The workload definitions and local, warm-cache, single-threaded limitations
+above apply. These synthetic inputs do not establish a market-workload or
+other-platform speedup.
+
+Degree-interleaved rank chains, paired quadrature atoms, and bit-based normal
+`frexp` did not establish a broad mixed-input improvement in screening. An
+additional deferred lower-price rejection improved the microscopic fixed case
+by 5.8%, but regressed the wing fixed case by 8.1%; it was rejected.
+
+Both feature policies again passed all 117,044 independent references with
+zero bitwise differences, invalid outputs, or `rho_J>=1`. A separate unfiltered
+660-input replay checked guard thresholds, dyadic integer jumps, logarithm
+mantissa/exponent seams, and subnormal continuation. It preserved all six
+output lanes and classifications, including five existing invalid cases per
+lane. This latter replay checks parity and makes no new root-accuracy claim.
+The two added regression tests check threshold neighbors and both compensated
+log components across all 2,046 normal exponents.
+
+Source/build hashes, all final timing samples, screening evidence, guard
+derivations, and reference provenance are saved in the
+[dispatch measurement record](experimental-dispatch-speed-2026-10-03.json).
 
 ## Actions C++ comparison
 

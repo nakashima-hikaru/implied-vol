@@ -441,7 +441,9 @@ pub(crate) fn solve(a: f64, b: f64) -> f64 {
             return s;
         }
     }
-    if a >= 0.5 {
+    // For validated 0.5<=a<=10, ln(2)>0.5 gives exp(-a/2)>=2^-a
+    // >=2^-ceil(a). The normal dyadic floor is constructed exactly.
+    if a >= 0.5 && b > f64::from_bits((1022_u64 - a.ceil() as u64) << 52) {
         let cap = (-a / 2.0).exp();
         if b > 0.5 * cap {
             let (s, terminal) = upper::wide_upper(a, b, cap);
@@ -552,6 +554,36 @@ mod tests {
             (1.0, f64::INFINITY),
         ] {
             assert!(solve(a, b).is_nan());
+        }
+    }
+
+    #[test]
+    fn conservative_preflight_seams_preserve_original_results() {
+        // Frozen original experimental outputs at the new reject thresholds,
+        // including adjacent prices and the dyadic jump just above a=1.
+        let cases: &[(u64, u64, u64)] = &[
+            (0x3fb999999999999a, 0x3f79999999999999, 0x3fb74aa89cb8b539),
+            (0x3fb999999999999a, 0x3f7999999999999a, 0x3fb74aa89cb8b539),
+            (0x3fb999999999999a, 0x3f7999999999999b, 0x3fb74aa89cb8b539),
+            (0x3fb999999999999a, 0x3fc3333333333333, 0x3fdfbf7426673d99),
+            (0x3fb999999999999a, 0x3fc3333333333334, 0x3fdfbf7426673d9a),
+            (0x3fb999999999999a, 0x3fc3333333333335, 0x3fdfbf7426673d9b),
+            (0x3ff0000000000000, 0x3fcfffffffffffff, 0x3ffbc1183e525ee1),
+            (0x3ff0000000000000, 0x3fd0000000000000, 0x3ffbc1183e525ee1),
+            (0x3ff0000000000000, 0x3fd0000000000001, 0x3ffbc1183e525ee2),
+            (0x3ff0000000000001, 0x3fbfffffffffffff, 0x3ff363b69fb0f1c0),
+            (0x3ff0000000000001, 0x3fc0000000000000, 0x3ff363b69fb0f1c0),
+            (0x3ff0000000000001, 0x3fc0000000000001, 0x3ff363b69fb0f1c0),
+            (0x4014000000000000, 0x3f8fffffffffffff, 0x400539daf0082b98),
+            (0x4014000000000000, 0x3f90000000000000, 0x400539daf0082b99),
+            (0x4014000000000000, 0x3f90000000000001, 0x400539daf0082b99),
+        ];
+        for &(a, b, want) in cases {
+            assert_eq!(
+                solve(f64::from_bits(a), f64::from_bits(b)).to_bits(),
+                want,
+                "a={a:x}, b={b:x}"
+            );
         }
     }
 

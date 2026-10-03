@@ -91,6 +91,14 @@ branch. No additional output search or refinement wraps the selected solver.
 Independent Horner chains share two SIMD lanes where available, while retaining
 each chain's degree and FMA sequence and the scalar reduction order.
 
+Conservative preflights skip attempts that fail the existing range checks.
+For the deferred caller's `a<=0.36`, `b<a/16` implies `z>0.503`, and
+`b+a/2>=0.2` implies `q>0.5013`, with margins exceeding rounding errors.
+For validated `0.5<=a<=10`, `2^(-ceil(a)-1)` is an exact lower bound on half
+the cap because `ln(2)>0.5`; a price at or below this bound cannot enter the upper
+route. The large route specializes the initial logarithm for its already
+validated positive normal price, preserving both compensated components.
+
 ## Accuracy contracts
 
 The default hybrid targets Jäckel's attainable accuracy. Faster routes must pass
@@ -143,6 +151,13 @@ independent tiny/ATM/seam/cap roots. Both FMA feature policies passed all 117,04
 inputs with bit-identical baseline outputs, zero invalid outputs, and zero
 `rho_J>=1`. This population includes 3,121 valid core-coordinate prices equal
 to a rounded-down cap and contains only positive normal adapted prices.
+
+Dispatch/logarithm optimization passed the same 117,044 independent inputs
+under both FMA policies with unchanged bits and the same strict `rho_J<1`
+checks. A separate unfiltered 660-input seam replay also preserved all output
+bits and classifications, including eight subnormal-price inputs and five
+existing invalid cases. These seam inputs have no independent root references;
+their parity does not extend the subnormal accuracy contract.
 
 ## Algorithm references
 

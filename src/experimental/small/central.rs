@@ -146,6 +146,11 @@ fn conversion_pair<const LEFT: usize, const RIGHT: usize>(
 }
 
 pub(super) fn deferred(a: f64, b: f64) -> f64 {
+    // These margins necessarily fail the q or z range guard below:
+    // b<a/16 gives z>0.503; b+a/2>=0.2 gives q>0.5013.
+    if b < a / 16.0 || b + 0.5 * a >= 0.2 {
+        return f64::NAN;
+    }
     let sc = sinhc_half(a);
     let d = rawmul(Pair::from(a), sc);
     let q = rawmul(
