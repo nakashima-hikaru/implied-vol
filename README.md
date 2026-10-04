@@ -88,28 +88,27 @@ Black solver selection does not change pricing or Bachelier inversion.
 
 ## Performance and precision
 
-Median time per calculation on Apple M1, using native CPU optimization and LTO,
-the optional `fma` feature disabled, and 15 samples per solver. The mixed
+2026-10-04 median time per calculation on Apple M1 and Rust 1.98.1, using native
+CPU optimization and LTO, the optional `fma` feature disabled, and 24 samples
+per solver from the same executable with rotating solver order. The mixed
 workloads contain 4,096 seeded synthetic OTM calls; prices and builders are
 prepared before timing.
 
 | Solver | Mixed normalized | Mixed full API | Accuracy |
 |---|---:|---:|---|
-| Hybrid (default) | 181.4 ns | 202.6 ns | Targets Jäckel's maximum attainable precision; some edge cases fall short |
-| Jaeckel | 198.4 ns | 218.9 ns | Targets Jäckel's maximum attainable precision; some edge cases fall short |
-| FlashIv | 178.4 ns | 200.3 ns | Paper method; can lose accuracy near ATM |
-| Experimental | 129.4 ns | 145.1 ns | Met Jäckel's precision target on all 114,961 reference cases |
+| Hybrid (default) | 178.4 ns | 199.3 ns | Targets Jäckel's maximum attainable precision; some edge cases fall short |
+| Jaeckel | 199.2 ns | 220.8 ns | Targets Jäckel's maximum attainable precision; some edge cases fall short |
+| FlashIv | 179.1 ns | 201.2 ns | Paper method; can lose accuracy near ATM |
+| Experimental | 128.1 ns | 144.2 ns | Targets Jäckel's maximum attainable precision |
 
-Experimental took 28.7%/28.4% less time than Hybrid on the mixed normalized/full
-workloads, but was slower on several middle and near-ATM paths. These are local
-measurements; no solver is fastest in every region.
+These are local measurements on synthetic inputs; no solver is fastest in
+every region. Detailed comparisons and measurement records are linked below.
 
 Jäckel's maximum attainable precision accounts for how option-price rounding
 affects implied volatility: more sensitive inputs allow a larger error. The
 accuracy column describes current results, with different test coverage for each
-solver. Experimental passed all available reference cases; accuracy over its
-entire input domain remains unproven. Detailed error definitions and test results
-are in the numerical notes below.
+solver. Detailed error definitions, test results, and numerical limits are in
+the numerical notes below.
 
 FlashIv follows the paper's fixed iteration count and has a different accuracy
 trade-off from Hybrid. Its direct erfcx subtraction can lose digits near ATM;

@@ -13,7 +13,7 @@ additional fixed inputs and seeded mixed large-moneyness and near-ATM inputs.
 ```sh
 RUSTFLAGS="-C target-cpu=native" \
   cargo bench --bench implied_black_vol_paths --features flashiv,experimental -- \
-  200000 15 --solver hybrid
+  200000 3 --solver hybrid
 ```
 
 Repeat with `--solver jaeckel`, `--solver flashiv`, and `--solver experimental`.
@@ -33,6 +33,57 @@ policy and should be kept separate.
 
 ## Local comparison
 
+The 2026-10-04 comparison measures the current implementation at `19d5eab`,
+including the Experimental polynomial degree reductions and Hybrid low-price
+dispatch optimization below. It used Apple M1, macOS 27.0.1, Rust 1.98.1,
+`-C target-cpu=native`, the bench profile with LTO, and
+`flashiv,experimental`, with the optional `fma` feature disabled. All four
+solvers use the same immutable executable and the same twelve workloads.
+Prices and builders are constructed outside timing.
+
+Each case has 24 samples per solver: 200,000 calculations per round, three
+rounds per invocation, and eight blocks. Four cyclic solver rotations are
+followed by their reversed rotations, so each solver occupies each position
+twice. All builds finished before timing, and no proof or reference jobs ran
+during measurement. The benchmark has no CPU affinity on macOS; scheduler
+and frequency variation remain possible.
+
+| Input | Hybrid | Jaeckel | FlashIv | Experimental |
+|---|---:|---:|---:|---:|
+| ATM | 7.6 ns | 7.6 ns | 162.7 ns | 10.5 ns |
+| Lowest region | 182.6 ns | 263.8 ns | 147.2 ns | 162.3 ns |
+| Lower middle | 111.6 ns | 109.8 ns | 159.5 ns | 125.6 ns |
+| Upper middle | 112.9 ns | 111.0 ns | 161.0 ns | 131.0 ns |
+| Highest region | 188.6 ns | 184.6 ns | 175.9 ns | 91.3 ns |
+| Near ATM | 105.3 ns | 103.0 ns | 166.0 ns | 75.3 ns |
+| Near ATM, wider | 96.0 ns | 94.2 ns | 165.0 ns | 128.7 ns |
+| Mixed normalized | 178.4 ns | 199.2 ns | 179.1 ns | 128.1 ns |
+| Mixed full API | 199.3 ns | 220.8 ns | 201.2 ns | 144.2 ns |
+| Deep OTM, full API | 129.1 ns | 128.6 ns | 187.3 ns | 127.2 ns |
+| Near-ATM short expiry, full API | 171.0 ns | 171.7 ns | 191.4 ns | 93.2 ns |
+| Legacy OTM, full API | 134.6 ns | 136.5 ns | 191.9 ns | 150.3 ns |
+
+Experimental used 28.2%/27.6% less time than Hybrid on the mixed
+normalized/full workloads. The middle-price, wider near-ATM, and legacy full
+cases favor Hybrid or Jaeckel. These medians describe the current solvers on
+this workload; differences from older runs are not paired optimization results.
+The separate before/after measurements below qualify each accepted change.
+
+All within-solver checksums were stable, and the executable and numerical-source
+hashes were unchanged after measurement. Cross-solver checksums may differ.
+The finite-positive-output preflight is separate from the independent-root
+accuracy checks described in [the numerical notes](numerics.md#accuracy-contracts).
+Full samples, invocation order, block medians, build/source/executable hashes,
+and the measurement runner are retained in the
+[current comparison record](local-solvers-2026-10-04.json).
+
+To reproduce this sampling schedule, use the command above with three rounds
+and run the four solver selections in each of the eight recorded orders.
+These are warm single-threaded synthetic inputs; the comparison does not cover
+cold caches, parallel batches, tail latency, or native Windows performance.
+
+## Earlier FlashIV and solver comparison (2026-10-03)
+
 The 2026-10-03 comparison used Apple M1 and Rust 1.98.1, warm single-threaded
 calls, 200,000 calculations per case, and 15 samples per solver in five rotating
 batches of three rounds. All four solver types use one executable with both
@@ -41,8 +92,8 @@ built immutable pre-change executable provides paired FlashIv and Hybrid
 controls. The benchmark has no CPU affinity on macOS;
 scheduler and frequency variation remain possible. These timings exclude input
 construction and are specific to this workload and machine.
-Experimental values in this table precede the two optimizations documented
-below.
+These historical values precede the subsequent Experimental and Hybrid
+optimizations documented below; the current four-solver comparison is above.
 
 | Input | Hybrid | Jaeckel | FlashIv | Experimental |
 |---|---:|---:|---:|---:|
