@@ -133,9 +133,10 @@ fn dpoly(h: Pair, t: Pair) -> Pair {
     let c = &M_COEFF[k];
     let x = sub(h, Pair::from((2.0 * (k as f64 - 12.0) + 1.0) * 0.25));
     let tt = mul(t, t);
-    let mut e = c[18].hi;
+    let n = (mills_degree[k] + 1).min(18);
+    let mut e = c[n].hi;
     let mut o = 0.0;
-    for i in (3..18).rev() {
+    for i in (3..n).rev() {
         let ne = fma(e, x.hi, fma(o, tt.hi, c[i].hi));
         o = fma(o, x.hi, e);
         e = ne;

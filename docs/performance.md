@@ -251,6 +251,70 @@ Input construction is outside the timed loops, and the existing default workload
 is unchanged. Accuracy checks permit changed outputs and compare them against
 independent roots; checksum stability is checked within each binary.
 
+## Experimental polynomial degrees under the precision contract
+
+The 2026-10-04 comparison starts from `ca050c6`, including the AS1 seed
+refinement above. It accepts the degree-five AS1 atan approximation (A1) and
+the cell-dependent degree of the intermediate-`t` Mills divided difference
+(A4). Acceptance requires `rho_J<1`, rather than matching the old output bits.
+The [numerical discussion](numerics.md#accuracy-contracts) distinguishes the
+conditional component bounds from finite independent-root checks.
+
+Separate frozen baseline/candidate builds used Apple M1, macOS 27.0.1,
+Rust 1.98.1, `-C target-cpu=native`, the bench profile with LTO, and
+`flashiv,experimental`, with and without `fma`. C++ was not enabled in these
+timings. The identical harness measured 29 Experimental cases and 12 Hybrid
+controls, using 200,000 calls per round, two rounds and six alternating ABBA
+blocks: 24 samples per version per case. Other build, proof, and reference
+jobs were stopped during timing. The columns toggle the crate feature;
+Experimental's affected arithmetic uses explicit FMA in both.
+
+| Input | FMA off, before → after | FMA on, before → after |
+|---|---:|---:|
+| AS1 mixed, 4,096 inputs | 82.83 → 80.72 ns (-2.55%) | 82.87 → 80.75 ns (-2.55%) |
+| Divided difference, fixed | 170.62 → 157.96 ns (-7.42%) | 170.76 → 157.84 ns (-7.56%) |
+| Divided difference, 160 inputs | 169.49 → 158.85 ns (-6.27%) | 169.57 → 159.00 ns (-6.24%) |
+| Lowest branch | 171.08 → 161.56 ns (-5.56%) | 170.92 → 161.57 ns (-5.47%) |
+| Ordinary mixed normalized | 127.55 → 127.69 ns (+0.11%) | 127.75 → 127.84 ns (+0.07%) |
+| Ordinary mixed full | 143.53 → 143.56 ns (+0.03%) | 144.12 → 144.20 ns (+0.05%) |
+| Deep OTM full | 126.21 → 126.67 ns (+0.37%) | 126.18 → 126.71 ns (+0.41%) |
+
+All six paired blocks improved for the AS1 mixed and divided-difference
+workloads. Instrumented copies of the final combined source confirmed that all
+4,096 AS1 mixed inputs use AS1 and all 161 divided-difference inputs (one fixed
+plus 160 mixed) reach the shortened polynomial in the accepted final correction
+under both feature policies. The ordinary mixed workloads were essentially
+unchanged. Deep OTM full consistently cost about 0.5 ns more in both policies;
+this trade-off is retained alongside the targeted gains. Hybrid controls remained within 0.13%
+of their baseline medians. These warm single-threaded synthetic workloads do
+not establish native Windows or universal performance.
+
+The dynamic degree loop was faster than a separately qualified constant-degree
+dispatch: the latter improved divided-difference mixed timing by only about
+3.0–3.2%, versus 6.2% for the dynamic loop in the screening run. The proposed
+large-route reduction in precise evaluations (A5) was also profiled: all 47,091
+archived inputs with `a>10` already performed exactly one precise evaluation,
+so that path was left unchanged. This observation applies to that population.
+
+The [validation and measurement record](experimental-rho-2026-10-04.json)
+retains per-block comparisons, source and executable hashes, candidate screens,
+input classifications and proof assumptions. To repeat the comparison, build
+both versions in separate target directories with this same benchmark harness,
+then compare the frozen executables:
+
+```sh
+python3 benches/compare_experimental.py /path/to/baseline /path/to/candidate \
+  --iterations 200000 --rounds 2 --blocks 6 \
+  --experimental-paths --as1-paths --dpoly-paths \
+  --features flashiv,experimental --flags="-C target-cpu=native" \
+  --output /path/to/comparison.json
+```
+
+Repeat with binaries built using `flashiv,experimental,fma` and update
+`--features` accordingly. These provenance arguments describe the build; they
+do not recompile or change the supplied binaries. The additional AS1 and
+divided-difference populations are opt-in and are constructed outside timing.
+
 ## Hybrid low-price dispatch optimization
 
 The 2026-10-03 change starts the existing restricted FlashIV path before

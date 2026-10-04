@@ -12,6 +12,9 @@ use std::{hint::black_box, marker::PhantomData, time::Instant};
 #[path = "support/mod.rs"]
 mod support;
 
+#[path = "support/dpoly_cases.rs"]
+mod dpoly_cases;
+
 // Keep the comparison adapter local to the benchmark. Rust retains its original
 // prebuilt case layout, while C++ receives the same inputs as raw arguments.
 trait BenchmarkSolver {
@@ -134,6 +137,7 @@ fn main() {
     let mut solver = "hybrid";
     let mut experimental_paths = false;
     let mut as1_paths = false;
+    let mut dpoly_paths = false;
     let mut numbers = Vec::new();
     while let Some(arg) = args.next() {
         if arg == "--solver" {
@@ -142,6 +146,8 @@ fn main() {
             experimental_paths = true;
         } else if arg == "--as1-paths" {
             as1_paths = true;
+        } else if arg == "--dpoly-paths" {
+            dpoly_paths = true;
         } else {
             numbers.push(arg);
         }
@@ -157,8 +163,12 @@ fn main() {
 
     // Select one monomorphized runner before constructing or timing inputs.
     match solver {
-        "hybrid" => run::<RustSolver<Hybrid>>(n, rounds, experimental_paths, as1_paths),
-        "jaeckel" => run::<RustSolver<Jaeckel>>(n, rounds, experimental_paths, as1_paths),
+        "hybrid" => {
+            run::<RustSolver<Hybrid>>(n, rounds, experimental_paths, as1_paths, dpoly_paths);
+        }
+        "jaeckel" => {
+            run::<RustSolver<Jaeckel>>(n, rounds, experimental_paths, as1_paths, dpoly_paths);
+        }
         "flashiv" => {
             #[cfg(feature = "flashiv")]
             run::<RustSolver<implied_vol::solver::FlashIv>>(
@@ -166,6 +176,7 @@ fn main() {
                 rounds,
                 experimental_paths,
                 as1_paths,
+                dpoly_paths,
             );
             #[cfg(not(feature = "flashiv"))]
             usage_error("solver flashiv requires the flashiv Cargo feature");
@@ -177,13 +188,14 @@ fn main() {
                 rounds,
                 experimental_paths,
                 as1_paths,
+                dpoly_paths,
             );
             #[cfg(not(feature = "experimental"))]
             usage_error("solver experimental requires the experimental Cargo feature");
         }
         "cpp" => {
             #[cfg(feature = "cxx_bench")]
-            run::<CppSolver>(n, rounds, experimental_paths, as1_paths);
+            run::<CppSolver>(n, rounds, experimental_paths, as1_paths, dpoly_paths);
             #[cfg(not(feature = "cxx_bench"))]
             usage_error("solver cpp requires the cxx_bench Cargo feature");
         }
@@ -198,7 +210,13 @@ fn usage_error(message: &str) -> ! {
     std::process::exit(2);
 }
 
-fn run<S: BenchmarkSolver>(n: usize, rounds: usize, experimental_paths: bool, as1_paths: bool) {
+fn run<S: BenchmarkSolver>(
+    n: usize,
+    rounds: usize,
+    experimental_paths: bool,
+    as1_paths: bool,
+    dpoly_paths: bool,
+) {
     let mut fixed = Vec::new();
     for (name, x, s) in [
         ("atm", 0.0, 0.2),
@@ -274,6 +292,21 @@ fn run<S: BenchmarkSolver>(n: usize, rounds: usize, experimental_paths: bool, as
             }
         }
         fixed.push(("as1_mixed", as1));
+    }
+
+    if dpoly_paths {
+        // Exact archived inputs reach the public final dpoly branch. Each of
+        // the five reduced degrees contributes 32 inputs to the mixed case.
+        let (a, b) = dpoly_cases::DPOLY_CELL;
+        fixed.push((
+            "dpoly_cell",
+            vec![S::prepare_normalised(-f64::from_bits(a), f64::from_bits(b))],
+        ));
+        let cases = dpoly_cases::DPOLY_MIXED
+            .iter()
+            .map(|&(a, b)| S::prepare_normalised(-f64::from_bits(a), f64::from_bits(b)))
+            .collect();
+        fixed.push(("dpoly_mixed", cases));
     }
 
     // Prepare all prices and builders before timing. All solvers use the
