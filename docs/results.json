@@ -1,0 +1,298 @@
+{
+  "performance": {
+    "measured_on": "2026-10-04",
+    "source_revision": "19d5eabe4aeb971574773cfa58cb7bf58be0da5e",
+    "cpu": "Apple M1",
+    "host": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "compiler": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "features": "flashiv,experimental",
+    "rustflags": "-C target-cpu=native",
+    "profile": "bench, lto=true",
+    "fma_feature": false,
+    "calls_per_round": 200000,
+    "rounds_per_invocation": 3,
+    "balanced_measurement_blocks": 8,
+    "samples_per_solver_per_input": 24,
+    "sampling": "Four cyclic solver rotations, followed by their four reversed rotations; all solvers occupy each position twice.",
+    "input_preparation_timed": false,
+    "results": [
+      {
+        "input": "atm",
+        "hybrid_ns": 7.6048925,
+        "jaeckel_ns": 7.6137525,
+        "flashiv_ns": 162.71281249999998,
+        "experimental_ns": 10.4919775
+      },
+      {
+        "input": "lowest",
+        "hybrid_ns": 182.6238525,
+        "jaeckel_ns": 263.77729250000004,
+        "flashiv_ns": 147.19791750000002,
+        "experimental_ns": 162.25562250000002
+      },
+      {
+        "input": "lower_middle",
+        "hybrid_ns": 111.5975,
+        "jaeckel_ns": 109.847815,
+        "flashiv_ns": 159.5468725,
+        "experimental_ns": 125.5551025
+      },
+      {
+        "input": "upper_middle",
+        "hybrid_ns": 112.8860425,
+        "jaeckel_ns": 111.047185,
+        "flashiv_ns": 160.9789575,
+        "experimental_ns": 130.99062500000002
+      },
+      {
+        "input": "highest",
+        "hybrid_ns": 188.6050025,
+        "jaeckel_ns": 184.567395,
+        "flashiv_ns": 175.94094,
+        "experimental_ns": 91.28906
+      },
+      {
+        "input": "near_atm",
+        "hybrid_ns": 105.3114575,
+        "jaeckel_ns": 103.01073,
+        "flashiv_ns": 166.0259375,
+        "experimental_ns": 75.29396
+      },
+      {
+        "input": "near_atm_wider",
+        "hybrid_ns": 96.00375,
+        "jaeckel_ns": 94.241355,
+        "flashiv_ns": 164.9980225,
+        "experimental_ns": 128.7265625
+      },
+      {
+        "input": "mixed_normalised",
+        "hybrid_ns": 178.4335425,
+        "jaeckel_ns": 199.15020750000002,
+        "flashiv_ns": 179.0584375,
+        "experimental_ns": 128.097085
+      },
+      {
+        "input": "mixed_full",
+        "hybrid_ns": 199.31104249999999,
+        "jaeckel_ns": 220.836145,
+        "flashiv_ns": 201.1861475,
+        "experimental_ns": 144.220835
+      },
+      {
+        "input": "deep_otm_full",
+        "hybrid_ns": 129.136355,
+        "jaeckel_ns": 128.56156249999998,
+        "flashiv_ns": 187.29625,
+        "experimental_ns": 127.15479
+      },
+      {
+        "input": "near_atm_short_full",
+        "hybrid_ns": 171.0296875,
+        "jaeckel_ns": 171.73958499999998,
+        "flashiv_ns": 191.43562250000002,
+        "experimental_ns": 93.1739575
+      },
+      {
+        "input": "legacy_otm_full",
+        "hybrid_ns": 134.59396,
+        "jaeckel_ns": 136.45792,
+        "flashiv_ns": 191.8545825,
+        "experimental_ns": 150.3217725
+      }
+    ]
+  },
+  "accuracy": {
+    "measured_on": "2026-10-04",
+    "source_revision": "23379ba6723b3605a66af7ef11cb8018b6079a6b",
+    "input_rows": 49936,
+    "domain": "Exact binary64 a>=0 and positive normal b below mathematical exp(-a/2); core coordinate datasets only. No paper-adapter mixing, subnormal or noninterior rows.",
+    "metric": "eta_J=2^-52*(1+b/(s_star*V_star)); rho_J=abs(s_hat/s_star-1)/eta_J; error evaluated at Decimal140 against saved independent roots/eta.",
+    "features": "flashiv,experimental",
+    "fma_feature": false,
+    "scope": "Shared independent-reference inputs, separate from timing workloads. Maximum errors and threshold counts use finite positive outputs; non-finite outputs are counted separately.",
+    "results": [
+      {
+        "solver": "hybrid",
+        "rows": 49936,
+        "invalid_outputs": 3124,
+        "rho_at_least_1": 2586,
+        "max_rho": "8.0191771687496005422097527166043437601960177118441356769146944769023219940304011539244158829167040903340650434329576674048400872844677040858",
+        "max_relative_error": "0.00990748568553601869994155513746108740376453296046575170644372020233900316419207928992376408389693378309783870911383753724209727917252092321",
+        "worst": {
+          "dataset": "core",
+          "row": 21288,
+          "a": "0x1.367684520d86bp+10",
+          "b": "0x1.c838ec1e220f0p-900",
+          "true_s": "48.57701188092190625765019861651260754018111228068600568523517611271971736409783808551953632498766835093821380318480448680797",
+          "eta": "0.00000000000000022456427137348391928965487776749269703200547620120036185872329979934210199929053685587861005621005735664428689347958749716876",
+          "output": "0x1.849db867afb51p+5",
+          "relative_error": "1.8008206779151317457652567706935811186341160677138684371443529400769273706347004480989736409566723753354543840426012607654224E-15"
+        },
+        "invalid_classes": {
+          "infinite": 3124
+        },
+        "invalid_at_rounded_cap": 3124,
+        "rho_assessed_outputs": 46812
+      },
+      {
+        "solver": "jaeckel",
+        "rows": 49936,
+        "invalid_outputs": 3124,
+        "rho_at_least_1": 2923,
+        "max_rho": "11.430755849090451829482612266329425700046316358219381136412466665068634026842882757317897826772342747031612746171160306986323058658618749074",
+        "max_relative_error": "0.00990748568553601869994155513746108740376453296046575170644372020233900316419207928992376408389693378309783870911383753724209727917252092321",
+        "worst": {
+          "dataset": "core",
+          "row": 19369,
+          "a": "0x1.404ca27754051p+10",
+          "b": "0x1.5878eaeb65b66p-928",
+          "true_s": "49.350817866970780125086106436260264273398441650819042035486591185892547933702068730358195958521504160181287587473770816500095",
+          "eta": "0.00000000000000022451460266909154070625171710163331871330160779898081759133804609066546949882934451194250186471495428615532425271612105210092",
+          "output": "0x1.8ace79990bf0bp+5",
+          "relative_error": "2.5663716076659368970013895189692776016581482494950113965116432128935710297458439489975335776965329629188655175123428963658021E-15"
+        },
+        "invalid_classes": {
+          "infinite": 3124
+        },
+        "invalid_at_rounded_cap": 3124,
+        "rho_assessed_outputs": 46812
+      },
+      {
+        "solver": "flashiv",
+        "rows": 49936,
+        "invalid_outputs": 3124,
+        "rho_at_least_1": 8622,
+        "max_rho": "1377668.7965959538513813230433258658874374342015036323066116856943655731122077859582063684664980644782999150015354889912833729119745930469578",
+        "max_relative_error": "0.00990748568553601869994155513746108740376453296046575170644372020233900316419207928992376408389693378309783870911383753724209727917252092321",
+        "worst": {
+          "dataset": "extra",
+          "row": 940,
+          "a": "0x1.51f476a87f100p-20",
+          "b": "0x1.c4a26ead81a38p-51",
+          "true_s": "0.00000022926904013971662783990062650044258220849885952772245866824273394085556349518784130167321496277657770816662561",
+          "eta": "0.00000000000000022877517458792851336538075070774810216545176514339843884119039550690644321758174437560358272985922117952057074",
+          "output": "0x1.ec59fcdb52b70p-23",
+          "relative_error": "3.1517641946558071753826458837319830132081881213825155895820213209587736012054841421347498289159178238517065065698701886518290554763E-10"
+        },
+        "invalid_classes": {
+          "infinite": 3124
+        },
+        "invalid_at_rounded_cap": 3124,
+        "rho_assessed_outputs": 46812
+      },
+      {
+        "solver": "experimental",
+        "rows": 49936,
+        "invalid_outputs": 0,
+        "rho_at_least_1": 0,
+        "max_rho": "0.6048937019326629065402563448651616020360623038789847976664829563069454347192509101457834512661658999924803703062204248615842921592655970304",
+        "max_relative_error": "0.00018330638203150845935523895206673812784773284951759118852821690947937371234353620559638337321147800560688523516962705926933188525702009397",
+        "worst": {
+          "dataset": "extra",
+          "row": 1386,
+          "a": "0x0.0p+0",
+          "b": "0x1.297e4f1549d92p-948",
+          "true_s": "1.2243100264656460188000899123373212872784091198775898220117898408624671534462494403144598572592328827646553134e-285",
+          "eta": "0.000000000000000444089209850062616169452667236328125",
+          "output": "0x1.74da490599b3ep-947",
+          "relative_error": "2.686267661345555641984079042151208236593184181546444467454306332085713625442706265581553687421160869741500444557315784795223E-16"
+        },
+        "invalid_classes": {},
+        "invalid_at_rounded_cap": 0,
+        "rho_assessed_outputs": 49936
+      }
+    ]
+  },
+  "experimental_component_bounds": {
+    "as1_rho_upper": 0.916169,
+    "common_finish_rho_upper": {
+      "wing": 0.570720690544904,
+      "small": 0.7181757636956061,
+      "core": 0.7283775864748389
+    },
+    "primitive_assumptions": [
+      "RN-even binary64 basic ops, correctly rounded FMA and sqrt, gradual underflow, no unsafe contraction/reassociation",
+      "exp/log relative error <=u=2^-53; log1p/expm1 relative error <=2u at reached arguments; required mathematical separation and seed/Mills certificates"
+    ],
+    "scope": "Conditional component bounds under the stated primitive and seed/Mills certificate assumptions; not a whole-domain or end-to-end Lean certificate."
+  },
+  "provenance": {
+    "numerical_source_sha256": {
+      "src/builder/implied_black_volatility.rs": "142c123b6b4ebdcca000a15f4631fe39cd5049f62565837b9dc8b4e55bc6d944",
+      "src/builder/implied_black_volatility_normalised.rs": "31afccf799a339159582e44e1e81e77c6dd4138d429fec72f3e8efc87e7f5445",
+      "src/builder/implied_normal_volatility.rs": "ec786945a81575df05f83827aa9aad136acc68e7307803ffa38159ca2ea765a8",
+      "src/builder/price_bachelier.rs": "d99f9de7b00635c22bbb4b4c56274f3d6dd2a7b6debe3e547a5881c8542742f9",
+      "src/builder/price_black_scholes.rs": "22012ebbdc1bbc2ff641acd4ea2349280c45bd3581c28d91e57ed4b84a24cb5b",
+      "src/builder/price_black_scholes_normalised.rs": "70c8b089273566fe07432515a163ee5f78b73e2425be63db77f062951dd96f08",
+      "src/builder.rs": "e319c6b2d5ede822497383f78b37c351106b276b44bd4fbc090e941c92afb7d2",
+      "src/cxx.rs": "14aae4a5242e211a0a76937f71ed84c1ae8bc921ee24320090422adc915c9428",
+      "src/experimental/lanes.rs": "b0cfa174bcddf7628d5f73c6abd60fa35a6ac15a1e6973b7e169a424cf4cef85",
+      "src/experimental/large.rs": "764c19931d36626a90d229e91e34184ff3c75ece49c0cadc38538a24528e56f9",
+      "src/experimental/large_constants.rs": "a114f8123411950b1f92f3f6d3f447206dd7b3143d0a87361df03ffdf36ad02f",
+      "src/experimental/lbr_fallback.rs": "80c4eece767cb0a2958834328e8c694188d89af0b6bff71109c9603c0a80e1ca",
+      "src/experimental/math.rs": "47d3cf2e06eb8a8fb665a5c095baa70713086f5bd485d27367cce38c4e9c7423",
+      "src/experimental/small/central.rs": "61e04489aa1849afdbabe74273685f0b2062c436035c77c0d4bcae648f5a642f",
+      "src/experimental/small/constants.rs": "27803db098d55851d3c8e71357e72e8ea882e5d0c3a5a21729951edc5cd783b3",
+      "src/experimental/small/upper.rs": "087f7a562d201dd0c6e0cf7aef35b0dbbed5f7a4c775c052dd7d52ebfe191a27",
+      "src/experimental/small.rs": "e20e0546690b1acb05e00cdec547c63ec39e047963fae64ca704385d58b460aa",
+      "src/experimental.rs": "a423be1d156eac28442adf03894852cc52230fe7cc64b8a7eee3f91a039da5d5",
+      "src/explicit_black.rs": "711a69c098fb2d5803d9d40b8cc552852087bb689ae84d7f3088ccf2a86d1279",
+      "src/flashiv.rs": "6c11852ed73722aa5c5c6f72d13f56238258154cede03cb5b8cb6e186f95d80b",
+      "src/fused_multiply_add.rs": "86777de8b29f91189c2f03af18f48903f642cc3111b1969dfb62658320cb5ea2",
+      "src/lets_be_rational/bachelier_impl.rs": "1a4c302e7530cca9ae10d0d787c11bd2a7e8202a2460e78b426d93102de233e6",
+      "src/lets_be_rational/bs_option_price.rs": "7d78502339bcea61e1f72b422299dd4b16dd2734197c1f15452328332f2937d1",
+      "src/lets_be_rational/constants.rs": "f5314ba54ccf8dd5a1ef7d219bce3a7e1df63eb33493469710fab9f464fda112",
+      "src/lets_be_rational/householder.rs": "ed72effc08870bc2a401212e908dd3dee5c04199de3f29a56044cfd7f158153c",
+      "src/lets_be_rational/rational_cubic.rs": "7405e57c73357b5b0d4d1712853a54c170bc9b432a0a23d2152e7373d4b8baec",
+      "src/lets_be_rational/special_function/error_function.rs": "cec71c6d927636d299da811df5a4b558b4de12ca6fb209b4ed65e5984c36c517",
+      "src/lets_be_rational/special_function/normal_distribution.rs": "4920170896874bfdf6623562110dd71421fc5733ac500dce5a0c309a32b81379",
+      "src/lets_be_rational/special_function.rs": "e3259e4c90ac1135b59cafca7f81e146664afb20fb509572a3c0245214d835cc",
+      "src/lets_be_rational.rs": "48890360e55ca1d199e92a125c9fe89ca47b0cb662cd57439fbb2d5256457076",
+      "src/lib.rs": "647fd00117e9f6b7b27b4099d786c2e72f8de96f064ae4f1ee0d48129e017418",
+      "src/solver.rs": "ad743104ed54727c0910355f99fd9476f929148a9f025c08401a36a3730bc191"
+    },
+    "timing_harness_sha256": "02293a4e553e1f3ed6c5fcb76c5a2601fbf4be7dccfab648d8da3945cb98940b",
+    "timing_executable_sha256": "65848d1cedf8e630215b458d321d6decab3439255fc9fa2f62b77b20ef4eae06",
+    "accuracy_executable_sha256": "5adc77807653d4ad614f59a8da8030bd12c858d17aaf9daf9d0d1cc6b1f60948",
+    "accuracy_inputs_sha256": "aa62e948129ce4741da6c025d4d669fa2eaef49af4925e94843efd072e933f05",
+    "accuracy_references_sha256": "677bfc79861ac52a872b310271cb240aeb2708c7684ef62ecc3138e128726fe7",
+    "accuracy_outputs_sha256": "56104ae9a0ee10997f53f49e56f9378a649c684ca0fbbd5569e165da4037a0f7",
+    "reference_datasets": {
+      "core": {
+        "source_rows": 46688,
+        "selected_normal_rows": 46688,
+        "input_sha256": "2da371d7403b04b8120f21755e6a89d081d1239b08b192ed2a3be316dabf158d",
+        "reference_sha256": "ddab0d51371d23acc4b5a19764e6846cefeea9246ff2ee518f836fc3b7b405d4"
+      },
+      "extra": {
+        "source_rows": 2083,
+        "selected_normal_rows": 2083,
+        "input_sha256": "1d14e3c3ddc10f0fa8e2b3f7c4ac8b8dd1a2d8598d7637534ef128de2096d72c",
+        "reference_sha256": "44d09df4c2c102cdb49e531db51ee96bd41e3fc0467ac0405a88f8533e947ffd"
+      },
+      "fresh": {
+        "source_rows": 321,
+        "selected_normal_rows": 277,
+        "input_sha256": "2bc12b1531a98cfd5cae7ccb3864b198092c9495d60aba9a41b62f73c676163b",
+        "reference_sha256": "bb1b9ef11b146154e252864213fdb2d6ee4cb347455466304af8d0634612ebb8"
+      },
+      "prior_as1": {
+        "source_rows": 521,
+        "selected_normal_rows": 489,
+        "input_sha256": "3e9f1068a366d35ccd783e01d9e6114289a64c09a6ab1f520f20baa1266dbb79",
+        "reference_sha256": "ab6577692ceef8bdefbdacfae304e67709739b10f0e7d407a7b07731ed22200d"
+      },
+      "new_as1": {
+        "source_rows": 405,
+        "selected_normal_rows": 399,
+        "input_sha256": "947cbb55542cab49554b489df1080876e6e070674293be342f630380f5b95481",
+        "reference_sha256": "a775681f333162b41928978e9a8c788315511fe134e2f2976c2bb05c54aba3a1"
+      }
+    }
+  },
+  "limits": [
+    "Warm single-threaded synthetic timings on the listed host; no cold-cache, parallel-batch, tail-latency or native Windows measurement.",
+    "Finite independent-reference accuracy checks do not establish a universal precision guarantee. Core and paper-adapter metrics are different."
+  ]
+}

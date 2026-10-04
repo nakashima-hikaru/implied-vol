@@ -102,12 +102,12 @@ prepared before timing.
 | Experimental | 128.1 ns | 144.2 ns | Targets Jäckel's maximum attainable precision |
 
 These are local measurements on synthetic inputs; no solver is fastest in
-every region. Detailed comparisons and measurement records are linked below.
+every region. Detailed performance and accuracy comparisons are linked below.
 
 Jäckel's maximum attainable precision accounts for how option-price rounding
 affects implied volatility: more sensitive inputs allow a larger error. The
-accuracy column describes current results, with different test coverage for each
-solver. Detailed error definitions, test results, and numerical limits are in
+accuracy column describes each solver's precision objective. Measured accuracy,
+error definitions, and numerical limits are in
 the numerical notes below.
 
 FlashIv follows the paper's fixed iteration count and has a different accuracy
