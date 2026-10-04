@@ -14,20 +14,20 @@ cold caches, parallel batches, tail latency, and native Windows are not covered.
 
 | Input | Hybrid | Jaeckel | FlashIv | Experimental |
 |---|---:|---:|---:|---:|
-| ATM | 7.6 ns | 7.6 ns | 162.7 ns | 10.5 ns |
-| Lowest region | 182.6 ns | 263.8 ns | 147.2 ns | 162.3 ns |
-| Lower middle | 111.6 ns | 109.8 ns | 159.5 ns | 125.6 ns |
-| Upper middle | 112.9 ns | 111.0 ns | 161.0 ns | 131.0 ns |
-| Highest region | 188.6 ns | 184.6 ns | 175.9 ns | 91.3 ns |
-| Near ATM | 105.3 ns | 103.0 ns | 166.0 ns | 75.3 ns |
-| Near ATM, wider | 96.0 ns | 94.2 ns | 165.0 ns | 128.7 ns |
-| Mixed normalized | 178.4 ns | 199.2 ns | 179.1 ns | 128.1 ns |
-| Mixed full API | 199.3 ns | 220.8 ns | 201.2 ns | 144.2 ns |
-| Deep OTM, full API | 129.1 ns | 128.6 ns | 187.3 ns | 127.2 ns |
-| Near-ATM short expiry, full API | 171.0 ns | 171.7 ns | 191.4 ns | 93.2 ns |
-| OTM long expiry, full API | 134.6 ns | 136.5 ns | 191.9 ns | 150.3 ns |
+| ATM | 7.6 ns | 7.6 ns | 162.1 ns | 10.4 ns |
+| Lowest region | 181.8 ns | 262.7 ns | 146.6 ns | 106.8 ns |
+| Lower middle | 111.3 ns | 109.4 ns | 158.6 ns | 125.7 ns |
+| Upper middle | 112.4 ns | 110.6 ns | 160.5 ns | 130.7 ns |
+| Highest region | 187.9 ns | 183.6 ns | 175.4 ns | 91.0 ns |
+| Near ATM | 104.9 ns | 102.5 ns | 165.5 ns | 75.0 ns |
+| Near ATM, wider | 95.4 ns | 93.7 ns | 164.3 ns | 128.8 ns |
+| Mixed normalized | 177.3 ns | 198.2 ns | 178.2 ns | 126.2 ns |
+| Mixed full API | 197.6 ns | 219.1 ns | 200.5 ns | 141.9 ns |
+| Deep OTM, full API | 128.0 ns | 128.0 ns | 186.7 ns | 126.8 ns |
+| Near-ATM short expiry, full API | 170.1 ns | 171.1 ns | 190.8 ns | 92.8 ns |
+| OTM long expiry, full API | 134.0 ns | 135.9 ns | 191.3 ns | 151.9 ns |
 
-Experimental uses 28.2%/27.6% less time than Hybrid on the mixed normalized/full
+Experimental uses 28.8%/28.2% less time than Hybrid on the mixed normalized/full
 workloads. Middle-price, wider near-ATM, and OTM long-expiry full-API inputs favor
 Hybrid or Jaeckel. Choose a solver using both speed and accuracy for your inputs.
 

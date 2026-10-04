@@ -51,9 +51,11 @@ errors than Jäckel's attainable-precision target. Its regression allowance
 reflects this method's accuracy trade-off.
 
 **Experimental** uses fitted seeds, compensated residuals, Mills evaluation,
-and Householder corrections, with an internal LBR branch. It evaluates its
-arithmetic with explicit FMA and uses SIMD lanes where available. Its target
-is the normal-price core contract defined below.
+and Householder corrections, with an internal LBR branch. Its common finish
+uses seed coordinates `h=abs(x)/s0` and `t=s0/2`. It evaluates `D(h,t)` directly
+for `0.001<t<=1/4`, and for `1/4<t<=1/2` when `h>=2`, selecting shorter
+moment-polynomial rows at smaller `t`. It uses explicit FMA and SIMD lanes where
+available. Its target is the normal-price core contract defined below.
 
 The separate **explicit inverse-Gaussian formula**, selected with
 `calculate_explicit::<SpFn>()`, checks relative quantile changes and uses a
@@ -95,8 +97,8 @@ a universal accuracy guarantee for any solver or custom function provider.
 ## Conditional precision bounds
 
 Experimental's AS1 component has a conditional bound `rho_AS1<0.916169`.
-Its common finish paths have conditional bounds below `0.571` for wing,
-`0.719` for small-rank, and `0.729` for finite-rank. These bounds concern
+Its common finish paths have conditional bounds below `0.553` for wing,
+`0.775` for small-rank, and `0.787` for finite-rank. These bounds concern
 components under their seed/Mills certificate assumptions, not the complete
 solver domain.
 
@@ -109,10 +111,11 @@ unfinished; conditional component proofs and finite testing are distinct
 evidence.
 
 `scripts/verify_as1_atan.py` checks the represented AS1 polynomial and its
-source-order rounding bound. `scripts/verify_dpoly_degree.py --reference-root PATH`
-checks the divided-difference error budget with the required certificates in
-an `implied-black-volatility` checkout. These component checks bind the expected
-source and dependencies; they do not establish vendor math-function accuracy.
+source-order rounding bound. `scripts/verify_direct_d.py --reference-root PATH`
+checks the D0 polynomial, analytic moment tails, and source-order recurrence
+rounding with the required certificates in an `implied-black-volatility` checkout.
+These component checks bind the expected source and dependencies; they do not
+establish vendor math-function accuracy.
 [Current validation data](results.json) identifies the measured source and bounds.
 
 ## Algorithm references

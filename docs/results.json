@@ -1,7 +1,7 @@
 {
   "performance": {
     "measured_on": "2026-10-04",
-    "source_revision": "19d5eabe4aeb971574773cfa58cb7bf58be0da5e",
+    "source_revision": "99d6f53f668bb3abb576213df742b58cb33166b8",
     "cpu": "Apple M1",
     "host": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
     "compiler": "rustc 1.98.1 (48a229cea 2026-09-01)",
@@ -18,93 +18,94 @@
     "results": [
       {
         "input": "atm",
-        "hybrid_ns": 7.6048925,
-        "jaeckel_ns": 7.6137525,
-        "flashiv_ns": 162.71281249999998,
-        "experimental_ns": 10.4919775
+        "hybrid_ns": 7.6082325,
+        "jaeckel_ns": 7.5996875,
+        "flashiv_ns": 162.060415,
+        "experimental_ns": 10.4210425
       },
       {
         "input": "lowest",
-        "hybrid_ns": 182.6238525,
-        "jaeckel_ns": 263.77729250000004,
-        "flashiv_ns": 147.19791750000002,
-        "experimental_ns": 162.25562250000002
+        "hybrid_ns": 181.8211475,
+        "jaeckel_ns": 262.72573,
+        "flashiv_ns": 146.55041749999998,
+        "experimental_ns": 106.7935425
       },
       {
         "input": "lower_middle",
-        "hybrid_ns": 111.5975,
-        "jaeckel_ns": 109.847815,
-        "flashiv_ns": 159.5468725,
-        "experimental_ns": 125.5551025
+        "hybrid_ns": 111.2986475,
+        "jaeckel_ns": 109.3604175,
+        "flashiv_ns": 158.6390625,
+        "experimental_ns": 125.7494775
       },
       {
         "input": "upper_middle",
-        "hybrid_ns": 112.8860425,
-        "jaeckel_ns": 111.047185,
-        "flashiv_ns": 160.9789575,
-        "experimental_ns": 130.99062500000002
+        "hybrid_ns": 112.44177,
+        "jaeckel_ns": 110.5883325,
+        "flashiv_ns": 160.47625,
+        "experimental_ns": 130.7075
       },
       {
         "input": "highest",
-        "hybrid_ns": 188.6050025,
-        "jaeckel_ns": 184.567395,
-        "flashiv_ns": 175.94094,
-        "experimental_ns": 91.28906
+        "hybrid_ns": 187.8503125,
+        "jaeckel_ns": 183.60926999999998,
+        "flashiv_ns": 175.37198,
+        "experimental_ns": 90.95291499999999
       },
       {
         "input": "near_atm",
-        "hybrid_ns": 105.3114575,
-        "jaeckel_ns": 103.01073,
-        "flashiv_ns": 166.0259375,
-        "experimental_ns": 75.29396
+        "hybrid_ns": 104.87198000000001,
+        "jaeckel_ns": 102.529895,
+        "flashiv_ns": 165.4626025,
+        "experimental_ns": 75.036665
       },
       {
         "input": "near_atm_wider",
-        "hybrid_ns": 96.00375,
-        "jaeckel_ns": 94.241355,
-        "flashiv_ns": 164.9980225,
-        "experimental_ns": 128.7265625
+        "hybrid_ns": 95.44312500000001,
+        "jaeckel_ns": 93.74020999999999,
+        "flashiv_ns": 164.26687500000003,
+        "experimental_ns": 128.7725
       },
       {
         "input": "mixed_normalised",
-        "hybrid_ns": 178.4335425,
-        "jaeckel_ns": 199.15020750000002,
-        "flashiv_ns": 179.0584375,
-        "experimental_ns": 128.097085
+        "hybrid_ns": 177.2557275,
+        "jaeckel_ns": 198.15218750000003,
+        "flashiv_ns": 178.22166750000002,
+        "experimental_ns": 126.203645
       },
       {
         "input": "mixed_full",
-        "hybrid_ns": 199.31104249999999,
-        "jaeckel_ns": 220.836145,
-        "flashiv_ns": 201.1861475,
-        "experimental_ns": 144.220835
+        "hybrid_ns": 197.556665,
+        "jaeckel_ns": 219.055,
+        "flashiv_ns": 200.458855,
+        "experimental_ns": 141.8991675
       },
       {
         "input": "deep_otm_full",
-        "hybrid_ns": 129.136355,
-        "jaeckel_ns": 128.56156249999998,
-        "flashiv_ns": 187.29625,
-        "experimental_ns": 127.15479
+        "hybrid_ns": 127.9556225,
+        "jaeckel_ns": 127.99145999999999,
+        "flashiv_ns": 186.6845825,
+        "experimental_ns": 126.7710425
       },
       {
         "input": "near_atm_short_full",
-        "hybrid_ns": 171.0296875,
-        "jaeckel_ns": 171.73958499999998,
-        "flashiv_ns": 191.43562250000002,
-        "experimental_ns": 93.1739575
+        "hybrid_ns": 170.09177,
+        "jaeckel_ns": 171.11729,
+        "flashiv_ns": 190.8041675,
+        "experimental_ns": 92.834895
       },
       {
         "input": "legacy_otm_full",
-        "hybrid_ns": 134.59396,
-        "jaeckel_ns": 136.45792,
-        "flashiv_ns": 191.8545825,
-        "experimental_ns": 150.3217725
+        "hybrid_ns": 134.040935,
+        "jaeckel_ns": 135.893645,
+        "flashiv_ns": 191.2963525,
+        "experimental_ns": 151.8546875
       }
-    ]
+    ],
+    "source_state": "working tree; exact numerical source fingerprints are listed below"
   },
   "accuracy": {
     "measured_on": "2026-10-04",
-    "source_revision": "23379ba6723b3605a66af7ef11cb8018b6079a6b",
+    "source_revision": "99d6f53f668bb3abb576213df742b58cb33166b8",
     "input_rows": 49936,
     "domain": "Exact binary64 a>=0 and positive normal b below mathematical exp(-a/2); core coordinate datasets only. No paper-adapter mixing, subnormal or noninterior rows.",
     "metric": "eta_J=2^-52*(1+b/(s_star*V_star)); rho_J=abs(s_hat/s_star-1)/eta_J; error evaluated at Decimal140 against saved independent roots/eta.",
@@ -202,20 +203,23 @@
         "invalid_at_rounded_cap": 0,
         "rho_assessed_outputs": 49936
       }
-    ]
+    ],
+    "source_state": "working tree; exact numerical source fingerprints are listed below"
   },
   "experimental_component_bounds": {
     "as1_rho_upper": 0.916169,
     "common_finish_rho_upper": {
-      "wing": 0.570720690544904,
-      "small": 0.7181757636956061,
-      "core": 0.7283775864748389
+      "wing": 0.5525743647978751,
+      "small": 0.7741869000542934,
+      "core": 0.7860516567920104
     },
     "primitive_assumptions": [
       "RN-even binary64 basic ops, correctly rounded FMA and sqrt, gradual underflow, no unsafe contraction/reassociation",
       "exp/log relative error <=u=2^-53; log1p/expm1 relative error <=2u at reached arguments; required mathematical separation and seed/Mills certificates"
     ],
-    "scope": "Conditional component bounds under the stated primitive and seed/Mills certificate assumptions; not a whole-domain or end-to-end Lean certificate."
+    "scope": "Conditional component bounds under the stated primitive and seed/Mills certificate assumptions; not a whole-domain or end-to-end Lean certificate.",
+    "direct_D_absolute_increment_in_u": 0.3333333333333333,
+    "direct_D_bound_overhead_in_rho_upper": 0.088925
   },
   "provenance": {
     "numerical_source_sha256": {
@@ -234,8 +238,9 @@
       "src/experimental/math.rs": "47d3cf2e06eb8a8fb665a5c095baa70713086f5bd485d27367cce38c4e9c7423",
       "src/experimental/small/central.rs": "61e04489aa1849afdbabe74273685f0b2062c436035c77c0d4bcae648f5a642f",
       "src/experimental/small/constants.rs": "27803db098d55851d3c8e71357e72e8ea882e5d0c3a5a21729951edc5cd783b3",
+      "src/experimental/small/direct_d.rs": "58593e6837e5a8ad4b4f914413b3708378f07897fab6de5c35509795c4fd7012",
       "src/experimental/small/upper.rs": "087f7a562d201dd0c6e0cf7aef35b0dbbed5f7a4c775c052dd7d52ebfe191a27",
-      "src/experimental/small.rs": "e20e0546690b1acb05e00cdec547c63ec39e047963fae64ca704385d58b460aa",
+      "src/experimental/small.rs": "8ec69d822d29c9f303c905d026527590bcd68bb083cbacdf60bcaa84222b5d82",
       "src/experimental.rs": "a423be1d156eac28442adf03894852cc52230fe7cc64b8a7eee3f91a039da5d5",
       "src/explicit_black.rs": "711a69c098fb2d5803d9d40b8cc552852087bb689ae84d7f3088ccf2a86d1279",
       "src/flashiv.rs": "6c11852ed73722aa5c5c6f72d13f56238258154cede03cb5b8cb6e186f95d80b",
@@ -253,8 +258,8 @@
       "src/solver.rs": "ad743104ed54727c0910355f99fd9476f929148a9f025c08401a36a3730bc191"
     },
     "timing_harness_sha256": "02293a4e553e1f3ed6c5fcb76c5a2601fbf4be7dccfab648d8da3945cb98940b",
-    "timing_executable_sha256": "65848d1cedf8e630215b458d321d6decab3439255fc9fa2f62b77b20ef4eae06",
-    "accuracy_executable_sha256": "5adc77807653d4ad614f59a8da8030bd12c858d17aaf9daf9d0d1cc6b1f60948",
+    "timing_executable_sha256": "b0488708a0b678e6cd9ce256b1ada1cc8a469777c077c7fea4bd00ccc9bb7013",
+    "accuracy_executable_sha256": "397b9d29e8f071510031b6f67ba826a21db2a66c28065b7bb52c0d0b6c8fadb7",
     "accuracy_inputs_sha256": "aa62e948129ce4741da6c025d4d669fa2eaef49af4925e94843efd072e933f05",
     "accuracy_references_sha256": "677bfc79861ac52a872b310271cb240aeb2708c7684ef62ecc3138e128726fe7",
     "accuracy_outputs_sha256": "56104ae9a0ee10997f53f49e56f9378a649c684ca0fbbd5569e165da4037a0f7",
@@ -289,6 +294,10 @@
         "input_sha256": "947cbb55542cab49554b489df1080876e6e070674293be342f630380f5b95481",
         "reference_sha256": "a775681f333162b41928978e9a8c788315511fe134e2f2976c2bb05c54aba3a1"
       }
+    },
+    "component_checker_sha256": {
+      "scripts/verify_direct_d.py": "c48c60420c3e676e6084d87d4e940c568eaecdbde220243962e784e70a190988",
+      "scripts/verify_as1_atan.py": "c2bf78d05acdb25baf2b7f3b77a599b19d6cc8b852fbf81b055aa24ff6c71748"
     }
   },
   "limits": [

@@ -2,6 +2,7 @@
 #![allow(non_snake_case)]
 mod central;
 mod constants;
+mod direct_d;
 mod upper;
 use crate::experimental::lanes::F64x2;
 use crate::experimental::math::inverse_norm_cdf;
@@ -126,31 +127,6 @@ fn dual_mills(x: Pair, y: Pair, sum: bool) -> Pair {
     if sum { add(p0, p1) } else { sub(p0, p1) }
 }
 #[inline]
-fn dpoly(h: Pair, t: Pair) -> Pair {
-    let Some(k) = mills_index(h.hi) else {
-        return Pair::new(f64::NAN, f64::NAN);
-    };
-    let c = &M_COEFF[k];
-    let x = sub(h, Pair::from((2.0 * (k as f64 - 12.0) + 1.0) * 0.25));
-    let tt = mul(t, t);
-    let n = (mills_degree[k] + 1).min(18);
-    let mut e = c[n].hi;
-    let mut o = 0.0;
-    for i in (3..n).rev() {
-        let ne = fma(e, x.hi, fma(o, tt.hi, c[i].hi));
-        o = fma(o, x.hi, e);
-        e = ne;
-    }
-    let mut E = Pair::from(e);
-    let mut O = Pair::from(o);
-    for i in (0..3).rev() {
-        let ne = add(add(mul(E, x), mul(O, tt)), c[i]);
-        O = add(E, mul(O, x));
-        E = ne;
-    }
-    scale(O, -1.0)
-}
-#[inline]
 fn forward_D(h: Pair, t: Pair) -> Pair {
     if t.hi <= 0.001 {
         let Some(k) = mills_index(h.hi) else {
@@ -163,8 +139,8 @@ fn forward_D(h: Pair, t: Pair) -> Pair {
         let i5 = fma(fma(H, H + 10.0, 15.0), d.hi, -H - 7.0);
         return add(d, Pair::from(T * fma(T, i5 / 120.0, i3 / 6.0)));
     }
-    if t.hi <= 0.0625 {
-        return dpoly(h, t);
+    if t.hi <= 0.5 && (t.hi <= 0.25 || h.hi >= 2.0) {
+        return direct_d::evaluate(h, t);
     }
     div(dual_mills(sub(h, t), add(h, t), false), scale(t, 2.0))
 }

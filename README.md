@@ -96,10 +96,10 @@ prepared before timing.
 
 | Solver | Mixed normalized | Mixed full API | Accuracy |
 |---|---:|---:|---|
-| Hybrid (default) | 178.4 ns | 199.3 ns | Targets Jäckel's maximum attainable precision; some edge cases fall short |
-| Jaeckel | 199.2 ns | 220.8 ns | Targets Jäckel's maximum attainable precision; some edge cases fall short |
-| FlashIv | 179.1 ns | 201.2 ns | Paper method; can lose accuracy near ATM |
-| Experimental | 128.1 ns | 144.2 ns | Targets Jäckel's maximum attainable precision |
+| Hybrid (default) | 177.3 ns | 197.6 ns | Targets Jäckel's maximum attainable precision; some edge cases fall short |
+| Jaeckel | 198.2 ns | 219.1 ns | Targets Jäckel's maximum attainable precision; some edge cases fall short |
+| FlashIv | 178.2 ns | 200.5 ns | Paper method; can lose accuracy near ATM |
+| Experimental | 126.2 ns | 141.9 ns | Targets Jäckel's maximum attainable precision |
 
 These are local measurements on synthetic inputs; no solver is fastest in
 every region. Detailed performance and accuracy comparisons are linked below.
