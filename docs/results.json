@@ -1,7 +1,7 @@
 {
   "performance": {
-    "measured_on": "2026-10-04",
-    "source_revision": "99d6f53f668bb3abb576213df742b58cb33166b8",
+    "measured_on": "2026-10-06",
+    "source_revision": "0a7b468a9052909abb773f20f0f8b42cb66ec4cf",
     "cpu": "Apple M1",
     "host": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
     "compiler": "rustc 1.98.1 (48a229cea 2026-09-01)",
@@ -18,208 +18,220 @@
     "results": [
       {
         "input": "atm",
-        "hybrid_ns": 7.6082325,
-        "jaeckel_ns": 7.5996875,
-        "flashiv_ns": 162.060415,
-        "experimental_ns": 10.4210425
+        "hybrid_ns": 7.604685,
+        "jaeckel_ns": 7.596982499999999,
+        "flashiv_ns": 162.05239749999998,
+        "experimental_ns": 10.4180225
       },
       {
         "input": "lowest",
-        "hybrid_ns": 181.8211475,
-        "jaeckel_ns": 262.72573,
-        "flashiv_ns": 146.55041749999998,
-        "experimental_ns": 106.7935425
+        "hybrid_ns": 181.6685425,
+        "jaeckel_ns": 262.32426999999996,
+        "flashiv_ns": 146.4369775,
+        "experimental_ns": 105.35458249999999
       },
       {
         "input": "lower_middle",
-        "hybrid_ns": 111.2986475,
-        "jaeckel_ns": 109.3604175,
-        "flashiv_ns": 158.6390625,
-        "experimental_ns": 125.7494775
+        "hybrid_ns": 111.1869825,
+        "jaeckel_ns": 109.172395,
+        "flashiv_ns": 158.46968750000002,
+        "experimental_ns": 107.5183325
       },
       {
         "input": "upper_middle",
-        "hybrid_ns": 112.44177,
-        "jaeckel_ns": 110.5883325,
-        "flashiv_ns": 160.47625,
-        "experimental_ns": 130.7075
+        "hybrid_ns": 112.29041749999999,
+        "jaeckel_ns": 110.4625,
+        "flashiv_ns": 160.34552000000002,
+        "experimental_ns": 130.4544775
       },
       {
         "input": "highest",
-        "hybrid_ns": 187.8503125,
-        "jaeckel_ns": 183.60926999999998,
-        "flashiv_ns": 175.37198,
-        "experimental_ns": 90.95291499999999
+        "hybrid_ns": 187.5356225,
+        "jaeckel_ns": 183.465625,
+        "flashiv_ns": 175.0169775,
+        "experimental_ns": 90.7944775
       },
       {
         "input": "near_atm",
-        "hybrid_ns": 104.87198000000001,
-        "jaeckel_ns": 102.529895,
-        "flashiv_ns": 165.4626025,
-        "experimental_ns": 75.036665
+        "hybrid_ns": 104.8213525,
+        "jaeckel_ns": 102.4303125,
+        "flashiv_ns": 165.251665,
+        "experimental_ns": 74.8893775
       },
       {
         "input": "near_atm_wider",
-        "hybrid_ns": 95.44312500000001,
-        "jaeckel_ns": 93.74020999999999,
-        "flashiv_ns": 164.26687500000003,
-        "experimental_ns": 128.7725
+        "hybrid_ns": 95.28260499999999,
+        "jaeckel_ns": 93.685415,
+        "flashiv_ns": 164.1920825,
+        "experimental_ns": 111.45718500000001
       },
       {
         "input": "mixed_normalised",
-        "hybrid_ns": 177.2557275,
-        "jaeckel_ns": 198.15218750000003,
-        "flashiv_ns": 178.22166750000002,
-        "experimental_ns": 126.203645
+        "hybrid_ns": 176.9439575,
+        "jaeckel_ns": 198.07489750000002,
+        "flashiv_ns": 178.0323975,
+        "experimental_ns": 123.9423975
       },
       {
         "input": "mixed_full",
-        "hybrid_ns": 197.556665,
-        "jaeckel_ns": 219.055,
-        "flashiv_ns": 200.458855,
-        "experimental_ns": 141.8991675
+        "hybrid_ns": 197.11125249999998,
+        "jaeckel_ns": 219.24031250000002,
+        "flashiv_ns": 200.2,
+        "experimental_ns": 140.574895
       },
       {
         "input": "deep_otm_full",
-        "hybrid_ns": 127.9556225,
-        "jaeckel_ns": 127.99145999999999,
-        "flashiv_ns": 186.6845825,
-        "experimental_ns": 126.7710425
+        "hybrid_ns": 127.86854249999999,
+        "jaeckel_ns": 127.73458500000001,
+        "flashiv_ns": 186.352605,
+        "experimental_ns": 126.676875
       },
       {
         "input": "near_atm_short_full",
-        "hybrid_ns": 170.09177,
-        "jaeckel_ns": 171.11729,
-        "flashiv_ns": 190.8041675,
-        "experimental_ns": 92.834895
+        "hybrid_ns": 169.91281500000002,
+        "jaeckel_ns": 171.10927,
+        "flashiv_ns": 190.6085425,
+        "experimental_ns": 92.7291675
       },
       {
         "input": "legacy_otm_full",
-        "hybrid_ns": 134.040935,
-        "jaeckel_ns": 135.893645,
-        "flashiv_ns": 191.2963525,
-        "experimental_ns": 151.8546875
+        "hybrid_ns": 133.8733325,
+        "jaeckel_ns": 135.695,
+        "flashiv_ns": 191.051355,
+        "experimental_ns": 150.696665
       }
     ],
-    "source_state": "working tree; exact numerical source fingerprints are listed below"
+    "source_state": "Working-tree implementation identified by the provenance SHA-256 values"
   },
   "accuracy": {
-    "measured_on": "2026-10-04",
-    "source_revision": "99d6f53f668bb3abb576213df742b58cb33166b8",
-    "input_rows": 49936,
+    "measured_on": "2026-10-06",
+    "source_revision": "0a7b468a9052909abb773f20f0f8b42cb66ec4cf",
+    "input_rows": 81873,
     "domain": "Exact binary64 a>=0 and positive normal b below mathematical exp(-a/2); core coordinate datasets only. No paper-adapter mixing, subnormal or noninterior rows.",
     "metric": "eta_J=2^-52*(1+b/(s_star*V_star)); rho_J=abs(s_hat/s_star-1)/eta_J; error evaluated at Decimal140 against saved independent roots/eta.",
     "features": "flashiv,experimental",
     "fma_feature": false,
-    "scope": "Shared independent-reference inputs, separate from timing workloads. Maximum errors and threshold counts use finite positive outputs; non-finite outputs are counted separately.",
+    "scope": "Deduplicated shared exact-input reference population, with dense small-domain and seed/boundary coverage plus large-moneyness and cap cases; separate from timing workloads. Finite positive errors and non-finite outputs are reported separately.",
     "results": [
       {
         "solver": "hybrid",
-        "rows": 49936,
-        "invalid_outputs": 3124,
-        "rho_at_least_1": 2586,
+        "rows": 81873,
+        "invalid_outputs": 3075,
+        "invalid_classes": {
+          "infinite": 3075
+        },
+        "invalid_at_rounded_cap": 3075,
+        "rho_assessed_outputs": 78798,
+        "rho_at_least_1": 3416,
         "max_rho": "8.0191771687496005422097527166043437601960177118441356769146944769023219940304011539244158829167040903340650434329576674048400872844677040858",
-        "max_relative_error": "0.00990748568553601869994155513746108740376453296046575170644372020233900316419207928992376408389693378309783870911383753724209727917252092321",
+        "max_relative_error": "0.00842808617079755142409737406413678583993702089052260336723623425500867585534469999567811136035284564237238915210289172928162346909323669190",
         "worst": {
-          "dataset": "core",
-          "row": 21288,
           "a": "0x1.367684520d86bp+10",
           "b": "0x1.c838ec1e220f0p-900",
           "true_s": "48.57701188092190625765019861651260754018111228068600568523517611271971736409783808551953632498766835093821380318480448680797",
           "eta": "0.00000000000000022456427137348391928965487776749269703200547620120036185872329979934210199929053685587861005621005735664428689347958749716876",
+          "row": 21288,
           "output": "0x1.849db867afb51p+5",
           "relative_error": "1.8008206779151317457652567706935811186341160677138684371443529400769273706347004480989736409566723753354543840426012607654224E-15"
-        },
-        "invalid_classes": {
-          "infinite": 3124
-        },
-        "invalid_at_rounded_cap": 3124,
-        "rho_assessed_outputs": 46812
+        }
       },
       {
         "solver": "jaeckel",
-        "rows": 49936,
-        "invalid_outputs": 3124,
-        "rho_at_least_1": 2923,
+        "rows": 81873,
+        "invalid_outputs": 3075,
+        "invalid_classes": {
+          "infinite": 3075
+        },
+        "invalid_at_rounded_cap": 3075,
+        "rho_assessed_outputs": 78798,
+        "rho_at_least_1": 3599,
         "max_rho": "11.430755849090451829482612266329425700046316358219381136412466665068634026842882757317897826772342747031612746171160306986323058658618749074",
-        "max_relative_error": "0.00990748568553601869994155513746108740376453296046575170644372020233900316419207928992376408389693378309783870911383753724209727917252092321",
+        "max_relative_error": "0.00842808617079755142409737406413678583993702089052260336723623425500867585534469999567811136035284564237238915210289172928162346909323669190",
         "worst": {
-          "dataset": "core",
-          "row": 19369,
           "a": "0x1.404ca27754051p+10",
           "b": "0x1.5878eaeb65b66p-928",
           "true_s": "49.350817866970780125086106436260264273398441650819042035486591185892547933702068730358195958521504160181287587473770816500095",
           "eta": "0.00000000000000022451460266909154070625171710163331871330160779898081759133804609066546949882934451194250186471495428615532425271612105210092",
+          "row": 19369,
           "output": "0x1.8ace79990bf0bp+5",
           "relative_error": "2.5663716076659368970013895189692776016581482494950113965116432128935710297458439489975335776965329629188655175123428963658021E-15"
-        },
-        "invalid_classes": {
-          "infinite": 3124
-        },
-        "invalid_at_rounded_cap": 3124,
-        "rho_assessed_outputs": 46812
+        }
       },
       {
         "solver": "flashiv",
-        "rows": 49936,
-        "invalid_outputs": 3124,
-        "rho_at_least_1": 8622,
-        "max_rho": "1377668.7965959538513813230433258658874374342015036323066116856943655731122077859582063684664980644782999150015354889912833729119745930469578",
-        "max_relative_error": "0.00990748568553601869994155513746108740376453296046575170644372020233900316419207928992376408389693378309783870911383753724209727917252092321",
-        "worst": {
-          "dataset": "extra",
-          "row": 940,
-          "a": "0x1.51f476a87f100p-20",
-          "b": "0x1.c4a26ead81a38p-51",
-          "true_s": "0.00000022926904013971662783990062650044258220849885952772245866824273394085556349518784130167321496277657770816662561",
-          "eta": "0.00000000000000022877517458792851336538075070774810216545176514339843884119039550690644321758174437560358272985922117952057074",
-          "output": "0x1.ec59fcdb52b70p-23",
-          "relative_error": "3.1517641946558071753826458837319830132081881213825155895820213209587736012054841421347498289159178238517065065698701886518290554763E-10"
-        },
+        "rows": 81873,
+        "invalid_outputs": 3075,
         "invalid_classes": {
-          "infinite": 3124
+          "infinite": 3075
         },
-        "invalid_at_rounded_cap": 3124,
-        "rho_assessed_outputs": 46812
+        "invalid_at_rounded_cap": 3075,
+        "rho_assessed_outputs": 78798,
+        "rho_at_least_1": 17763,
+        "max_rho": "157237924.32865077418994306485165821338670456914894432624634650981937559447104928068905168913201253924041728069529719187074134108463913979767",
+        "max_relative_error": "0.00842808617079755142409737406413678583993702089052260336723623425500867585534469999567811136035284564237238915210289172928162346909323669190",
+        "worst": {
+          "a": "0x1.93494a8231f5cp-27",
+          "b": "0x1.7844ae05f12c6p-45",
+          "group": "wing_seed",
+          "true_s": "0.00000000304802069273068658297825342633084300803604219762845004248684187244936576926594144139710105761994036265321",
+          "eta": "0.000000000000000234702014120044668601226719211472117069738494185786124957888294758834137554012346578507920063367959294228",
+          "row": 51361,
+          "output": "0x1.a2eab0b2e688ep-29",
+          "relative_error": "3.690405753598950912261650232132789748498157339852120504037976584969478481637304799519975474850374838327308801150651715922043406047559E-8"
+        }
       },
       {
         "solver": "experimental",
-        "rows": 49936,
+        "rows": 81873,
         "invalid_outputs": 0,
-        "rho_at_least_1": 0,
-        "max_rho": "0.6048937019326629065402563448651616020360623038789847976664829563069454347192509101457834512661658999924803703062204248615842921592655970304",
-        "max_relative_error": "0.00018330638203150845935523895206673812784773284951759118852821690947937371234353620559638337321147800560688523516962705926933188525702009397",
-        "worst": {
-          "dataset": "extra",
-          "row": 1386,
-          "a": "0x0.0p+0",
-          "b": "0x1.297e4f1549d92p-948",
-          "true_s": "1.2243100264656460188000899123373212872784091198775898220117898408624671534462494403144598572592328827646553134e-285",
-          "eta": "0.000000000000000444089209850062616169452667236328125",
-          "output": "0x1.74da490599b3ep-947",
-          "relative_error": "2.686267661345555641984079042151208236593184181546444467454306332085713625442706265581553687421160869741500444557315784795223E-16"
-        },
         "invalid_classes": {},
         "invalid_at_rounded_cap": 0,
-        "rho_assessed_outputs": 49936
+        "rho_assessed_outputs": 81873,
+        "rho_at_least_1": 0,
+        "max_rho": "0.49545942658274023570663359021584710985824196950316983777196699774984386576561248331560649783769757069813122818482277720980596602726931552771",
+        "max_relative_error": "0.00001138189284422288984291614975126693082039923729435649729072208232282709370767889397384500560429544392172138484103212107731362960170510369",
+        "worst": {
+          "a": "0x1.5fdf5f2388d53p+4",
+          "b": "0x1.d64c7d8fd35dfp-357",
+          "true_s": "1.00457556736508790723248356920659155411377121735320631808752867350205207762909163078098159252759586613513086351499887038695609203909170600176461698",
+          "eta": "0.000000000000000222505286749658574090633453310945127559139295807014672073717135700256071386515379963518985088084045431707863547209022197485594565971466226346973605",
+          "row": 42724,
+          "output": "0x1.012bdd4831963p+0",
+          "relative_error": "1.102423417846140260613918560070971148562681162271361162340212302938516286442611239034544803104458784506205795242203469024470E-16"
+        }
       }
     ],
-    "source_state": "working tree; exact numerical source fingerprints are listed below"
+    "source_state": "Working-tree implementation identified by the provenance SHA-256 values"
   },
   "experimental_component_bounds": {
     "as1_rho_upper": 0.916169,
     "common_finish_rho_upper": {
-      "wing": 0.5525743647978751,
-      "small": 0.7741869000542934,
-      "core": 0.7860516567920104
+      "wing": 0.604976705238934,
+      "small": 0.8155064548897512,
+      "core": 0.7976690502946979
     },
     "primitive_assumptions": [
       "RN-even binary64 basic ops, correctly rounded FMA and sqrt, gradual underflow, no unsafe contraction/reassociation",
       "exp/log relative error <=u=2^-53; log1p/expm1 relative error <=2u at reached arguments; required mathematical separation and seed/Mills certificates"
     ],
     "scope": "Conditional component bounds under the stated primitive and seed/Mills certificate assumptions; not a whole-domain or end-to-end Lean certificate.",
-    "direct_D_absolute_increment_in_u": 0.3333333333333333,
-    "direct_D_bound_overhead_in_rho_upper": 0.088925
+    "direct_D_absolute_increment_in_u": 0.8211800596659627,
+    "common_finish_transport_overhead_in_rho_upper": {
+      "wing": 0.08855491038386404,
+      "small": 0.2729288020004086,
+      "core": 0.27277927528870854
+    },
+    "direct_D_max_error_bound_in_u": 0.8211800596659627,
+    "common_finish_seed_leaves": {
+      "wing": 2103,
+      "small": 930,
+      "core": 2441
+    },
+    "maximum_rho_bound_change": {
+      "wing": 0.06550601469402986,
+      "small": 0.128580691194145,
+      "core": 0.10054146381985907
+    }
   },
   "provenance": {
     "numerical_source_sha256": {
@@ -231,16 +243,16 @@
       "src/builder/price_black_scholes_normalised.rs": "70c8b089273566fe07432515a163ee5f78b73e2425be63db77f062951dd96f08",
       "src/builder.rs": "e319c6b2d5ede822497383f78b37c351106b276b44bd4fbc090e941c92afb7d2",
       "src/cxx.rs": "14aae4a5242e211a0a76937f71ed84c1ae8bc921ee24320090422adc915c9428",
-      "src/experimental/lanes.rs": "b0cfa174bcddf7628d5f73c6abd60fa35a6ac15a1e6973b7e169a424cf4cef85",
+      "src/experimental/lanes.rs": "40502418e5f024c8a4a522b52e1a9b226e126906bf9aca14496fd56c336d6f32",
       "src/experimental/large.rs": "764c19931d36626a90d229e91e34184ff3c75ece49c0cadc38538a24528e56f9",
       "src/experimental/large_constants.rs": "a114f8123411950b1f92f3f6d3f447206dd7b3143d0a87361df03ffdf36ad02f",
       "src/experimental/lbr_fallback.rs": "80c4eece767cb0a2958834328e8c694188d89af0b6bff71109c9603c0a80e1ca",
       "src/experimental/math.rs": "47d3cf2e06eb8a8fb665a5c095baa70713086f5bd485d27367cce38c4e9c7423",
       "src/experimental/small/central.rs": "61e04489aa1849afdbabe74273685f0b2062c436035c77c0d4bcae648f5a642f",
       "src/experimental/small/constants.rs": "27803db098d55851d3c8e71357e72e8ea882e5d0c3a5a21729951edc5cd783b3",
-      "src/experimental/small/direct_d.rs": "58593e6837e5a8ad4b4f914413b3708378f07897fab6de5c35509795c4fd7012",
+      "src/experimental/small/direct_d.rs": "fafdbd44da452d8f6e347ec4106253f2dd431e24fc27b2d261762236316e52f1",
       "src/experimental/small/upper.rs": "087f7a562d201dd0c6e0cf7aef35b0dbbed5f7a4c775c052dd7d52ebfe191a27",
-      "src/experimental/small.rs": "8ec69d822d29c9f303c905d026527590bcd68bb083cbacdf60bcaa84222b5d82",
+      "src/experimental/small.rs": "d92684d6227205e627dadd2d0a9a0f0735dec34bdaf2c960228f9e676ad39286",
       "src/experimental.rs": "a423be1d156eac28442adf03894852cc52230fe7cc64b8a7eee3f91a039da5d5",
       "src/explicit_black.rs": "711a69c098fb2d5803d9d40b8cc552852087bb689ae84d7f3088ccf2a86d1279",
       "src/flashiv.rs": "6c11852ed73722aa5c5c6f72d13f56238258154cede03cb5b8cb6e186f95d80b",
@@ -258,50 +270,194 @@
       "src/solver.rs": "ad743104ed54727c0910355f99fd9476f929148a9f025c08401a36a3730bc191"
     },
     "timing_harness_sha256": "02293a4e553e1f3ed6c5fcb76c5a2601fbf4be7dccfab648d8da3945cb98940b",
-    "timing_executable_sha256": "b0488708a0b678e6cd9ce256b1ada1cc8a469777c077c7fea4bd00ccc9bb7013",
-    "accuracy_executable_sha256": "397b9d29e8f071510031b6f67ba826a21db2a66c28065b7bb52c0d0b6c8fadb7",
-    "accuracy_inputs_sha256": "aa62e948129ce4741da6c025d4d669fa2eaef49af4925e94843efd072e933f05",
-    "accuracy_references_sha256": "677bfc79861ac52a872b310271cb240aeb2708c7684ef62ecc3138e128726fe7",
-    "accuracy_outputs_sha256": "56104ae9a0ee10997f53f49e56f9378a649c684ca0fbbd5569e165da4037a0f7",
+    "timing_executable_sha256": "44ef2033cf361de85bfefb3b1023b30ed17bb234a90d6910acf4ad63059d8a97",
+    "accuracy_executable_sha256": "b09648b1181bb75e45ac9020d546fa52b96190cf782f9c57593588b8cd22495d",
+    "accuracy_inputs_sha256": "bd9a8c29bfac349627e72e65540c34057022261375cfc45a8078e4ed14795847",
+    "accuracy_references_sha256": "b4ada31e3678e5eb2c6c01d482c9cae74580e397de67840a5f759ac301d8b48b",
+    "accuracy_outputs_sha256": "e9868810f97837cdbde5b178dfa008e34c31303ca3f13d18683453c1ead83f8a",
     "reference_datasets": {
-      "core": {
-        "source_rows": 46688,
-        "selected_normal_rows": 46688,
-        "input_sha256": "2da371d7403b04b8120f21755e6a89d081d1239b08b192ed2a3be316dabf158d",
-        "reference_sha256": "ddab0d51371d23acc4b5a19764e6846cefeea9246ff2ee518f836fc3b7b405d4"
+      "all_references.json": {
+        "sha256": "ddab0d51371d23acc4b5a19764e6846cefeea9246ff2ee518f836fc3b7b405d4",
+        "source_rows": 46688
       },
-      "extra": {
-        "source_rows": 2083,
-        "selected_normal_rows": 2083,
-        "input_sha256": "1d14e3c3ddc10f0fa8e2b3f7c4ac8b8dd1a2d8598d7637534ef128de2096d72c",
-        "reference_sha256": "44d09df4c2c102cdb49e531db51ee96bd41e3fc0467ac0405a88f8533e947ffd"
+      "small_references.json": {
+        "sha256": "b4f84414e0ef622d1f21eefd217ad13a5654b7b6ed789727ee2e71996e57109a",
+        "source_rows": 5774
       },
-      "fresh": {
-        "source_rows": 321,
-        "selected_normal_rows": 277,
-        "input_sha256": "2bc12b1531a98cfd5cae7ccb3864b198092c9495d60aba9a41b62f73c676163b",
-        "reference_sha256": "bb1b9ef11b146154e252864213fdb2d6ee4cb347455466304af8d0634612ebb8"
+      "confirmation_references.json": {
+        "sha256": "80f4a0a1420db8ff0c7a5b141c1109e7adb3d472cacbc563b092f472fef15110",
+        "source_rows": 28014
       },
-      "prior_as1": {
-        "source_rows": 521,
-        "selected_normal_rows": 489,
-        "input_sha256": "3e9f1068a366d35ccd783e01d9e6114289a64c09a6ab1f520f20baa1266dbb79",
-        "reference_sha256": "ab6577692ceef8bdefbdacfae304e67709739b10f0e7d407a7b07731ed22200d"
+      "seam_references.json": {
+        "sha256": "321b4a1d1d35ae30dd91912cf7f907f186d430d079831f8186358959766eecea",
+        "source_rows": 156
       },
-      "new_as1": {
-        "source_rows": 405,
-        "selected_normal_rows": 399,
-        "input_sha256": "947cbb55542cab49554b489df1080876e6e070674293be342f630380f5b95481",
-        "reference_sha256": "a775681f333162b41928978e9a8c788315511fe134e2f2976c2bb05c54aba3a1"
+      "references.json": {
+        "sha256": "6b7accd81c5c38fe74e2b1618a5aeb97218dd9c6ab38c01a2cb1804f1a3dd645",
+        "source_rows": 1343
       }
     },
     "component_checker_sha256": {
-      "scripts/verify_direct_d.py": "c48c60420c3e676e6084d87d4e940c568eaecdbde220243962e784e70a190988",
-      "scripts/verify_as1_atan.py": "c2bf78d05acdb25baf2b7f3b77a599b19d6cc8b852fbf81b055aa24ff6c71748"
+      "scripts/verify_direct_d.py": "d0a23153ebfd43d02251569a34e223f7bddf741a91ef4b16d7692ad484af00ec",
+      "scripts/verify_as1_atan.py": "d663168f4e7713b3ba807a8a4bea3911915e9535161e780e8cd38bc1a0279837"
+    },
+    "simd_backend": {
+      "crate": "fearless_simd",
+      "version": "1.0.0",
+      "source_tree_sha256": "65450215ad42e632e66e97a0f2f8229e0934441b50b9fcca483c2cad80f5af75",
+      "rounding": "Independent binary64 lanes; mul_add_precise with a single rounding; no lane reduction. Primitive correctness is conditional."
+    },
+    "build_source_sha256": {
+      "Cargo.toml": "7771ec185117ef303ad9eae5b5b4e77c1b64ae02104c86ee7daa4405efca0fd5",
+      "Cargo.lock": "4b56a6d5bf79925ce3e08b8dc53cf7a7523146b32036966c2d42bfa77111e378",
+      "build.rs": "9114542bfc61792f11483f46df23c75c92d65fdd833c7c92dc2c7c3532a36b86"
     }
   },
   "limits": [
     "Warm single-threaded synthetic timings on the listed host; no cold-cache, parallel-batch, tail-latency or native Windows measurement.",
     "Finite independent-reference accuracy checks do not establish a universal precision guarantee. Core and paper-adapter metrics are different."
-  ]
+  ],
+  "experimental_validation": {
+    "fma_feature_policies": [
+      "off",
+      "on"
+    ],
+    "core_outputs_bitwise_equal_between_fma_policies": true,
+    "core_rows": 81873,
+    "core_max_rho": "0.49545942658274023570663359021584710985824196950316983777196699774984386576561248331560649783769757069813122818482277720980596602726931552771",
+    "core_rho_at_least_1": 0,
+    "core_invalid_outputs": 0,
+    "paper_adapter": {
+      "rows": 68273,
+      "max_rho": 0.9109344492807528,
+      "rho_at_least_1": 0,
+      "invalid_outputs": 0,
+      "scope": "Exact x,c roots, adapter beta=c*exp(x/2), annualization and re-totalization; separate from exact a,b core roots.",
+      "datasets": {
+        "CLY-3D": {
+          "rows": 51321,
+          "max_rho": "0.9109344492807528983166513165074588570187637624418603421561116551791543438148165291539760448249705549",
+          "rho_ge_1": 0,
+          "invalid": 0,
+          "worst": 3977,
+          "input_sha256": "4e66e8a28bb28668d6e83ec6067d2425b5fbe9dd1414783f0475d40f75795947",
+          "reference_sha256": "6536f018c082042964ebedc47393a77599b5ee5f99541f5896ac58576f6e8e6b"
+        },
+        "CLY-20": {
+          "rows": 1600,
+          "max_rho": "0.6709651312273062109789068657715730059982292955793651205943830715535877175405482193031882850102246247",
+          "rho_ge_1": 0,
+          "invalid": 0,
+          "worst": 710,
+          "input_sha256": "4e91267da5ee1000c04ee5c77feb4ce8c2b94eb1e6bf883505a9c2c54bb0337c",
+          "reference_sha256": "cab7c4fe4d5c747636cd65697548d672437699b4b8f19c838e403e7513423259"
+        },
+        "CLY-80": {
+          "rows": 1600,
+          "max_rho": "0.7236562700926157449276459812898849365926336161609074004702793371378244031575082726822694754619470725",
+          "rho_ge_1": 0,
+          "invalid": 0,
+          "worst": 228,
+          "input_sha256": "3685d8c200a1e18d1557ac3a035b58b544b551ccf6516749df551a0b91f46da0",
+          "reference_sha256": "f9de83b67b499b5b52d5a079f4678caa67909f7001d5c1957f6207a3e5469c09"
+        },
+        "Jaeckel": {
+          "rows": 5182,
+          "max_rho": "0.8503305263893033947112375610616257772785730037482416849907801091630916362946529826878373207390036596",
+          "rho_ge_1": 0,
+          "invalid": 0,
+          "worst": 2549,
+          "input_sha256": "f9f014366f18112a957ed3ce25363213f85b3db632f5bf21d5c8b5415ea0db10",
+          "reference_sha256": "09268440e920309989643a6ca1a85a67d5d5e6190a0bae0ace7d516a5a5ab311"
+        },
+        "Market": {
+          "rows": 7151,
+          "max_rho": "0.8230962031915655149133062622114482568601590353404230299040115684737658702745554573278398594325257539",
+          "rho_ge_1": 0,
+          "invalid": 0,
+          "worst": 1269,
+          "input_sha256": "8f74791507bbe5255ecfcfe943f8af80c505870740bacf2b8d3b9701b1c1e5b2",
+          "reference_sha256": "ca874e325175dfe81e928443eea020568e3fc87545b1878f865fbedab7b07af8"
+        },
+        "Stress": {
+          "rows": 1270,
+          "max_rho": "0.6832531170285876661607287654874256038024004642917134403064303675685205333329684921649883321097620391",
+          "rho_ge_1": 0,
+          "invalid": 0,
+          "worst": 113,
+          "input_sha256": "bea11b71a35cc628dcdd98b4bbd0a675b67feb60acff1ec0262caeff5cee7e52",
+          "reference_sha256": "6489c07d305e3b3f2d8773989e5d0adee44a3a25ee24daaab34b7e6a0728a9d2"
+        },
+        "HighVol": {
+          "rows": 149,
+          "max_rho": "0.4258061021606647484845951462007734985201120953247997069137491431128646663441671644914008924180445800",
+          "rho_ge_1": 0,
+          "invalid": 0,
+          "worst": 20,
+          "input_sha256": "d4d27177aee01638fc6e3f2d1d716c4a6aa07d548d3406ebf6ba654ee00c2006",
+          "reference_sha256": "d004ca0914c9902a4bc3acc414cc0ef4b7ad105bdcd07f20a11e595bf05bae27"
+        }
+      }
+    },
+    "full_api": {
+      "off": {
+        "rows": 96,
+        "invalid": 0,
+        "max_conditioned_error": "0.980013255192159317495849366809",
+        "rho_ge_1": 0,
+        "worst": {
+          "input": [
+            "0x1.2480000000000p+6",
+            "0x1.0e2990a979ba5p+9",
+            "0x1.0000000000000p-5",
+            "0x1.87b0c227b2a06p+0",
+            "0x1.0000000000000p+0"
+          ],
+          "true_sigma": "5.65685424949238023537449782775905394793170383098530255084632636919011606164642483952282528727197225264867851623862969967226300365337552074541784563612",
+          "eta": "0.000000000000000257916027843345591958825019377450533060895388865892942681880926520037657207767184986192711170616161261333319681149703975847800969532459530783304639357",
+          "output": "0x1.6a09e667f3bcbp+2"
+        },
+        "scope": "Exact binary64 F,K,T,price references. Includes normalization and annualization; outside the core rho_J<1 contract."
+      },
+      "on": {
+        "rows": 96,
+        "invalid": 0,
+        "max_conditioned_error": "0.980013255192159317495849366809",
+        "rho_ge_1": 0,
+        "worst": {
+          "input": [
+            "0x1.2480000000000p+6",
+            "0x1.0e2990a979ba5p+9",
+            "0x1.0000000000000p-5",
+            "0x1.87b0c227b2a06p+0",
+            "0x1.0000000000000p+0"
+          ],
+          "true_sigma": "5.65685424949238023537449782775905394793170383098530255084632636919011606164642483952282528727197225264867851623862969967226300365337552074541784563612",
+          "eta": "0.000000000000000257916027843345591958825019377450533060895388865892942681880926520037657207767184986192711170616161261333319681149703975847800969532459530783304639357",
+          "output": "0x1.6a09e667f3bcbp+2"
+        },
+        "scope": "Exact binary64 F,K,T,price references. Includes normalization and annualization; outside the core rho_J<1 contract."
+      }
+    },
+    "regression_tests": {
+      "tests_per_fma_policy": 113,
+      "common_finish_exact_input_roots": 156,
+      "new_D_component_references": 16,
+      "root_reference_decimal_digits": [
+        160,
+        240
+      ]
+    },
+    "simd_migration": {
+      "core_outputs_bitwise_unchanged_each_fma_policy": true,
+      "core_rows": 81873,
+      "native_runtime_backend": "NEON",
+      "cross_compiled_backends": [
+        "x86_64-pc-windows-msvc (SSE2)",
+        "i686-pc-windows-msvc (SSE2)",
+        "wasm32-unknown-unknown (scalar and SIMD128)"
+      ],
+      "cross_target_runtime_checked": false
+    }
+  }
 }

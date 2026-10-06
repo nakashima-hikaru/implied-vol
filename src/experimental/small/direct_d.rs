@@ -425,15 +425,20 @@ fn base(h: Pair) -> Pair {
     Pair::new(p, lo)
 }
 
-#[inline]
+// Keep the fixed term-count branches visible to the finish optimizer.
+#[inline(always)]
 pub(super) fn evaluate(h: Pair, t: Pair) -> Pair {
     let d0 = base(h);
     if t.hi <= 0.0625 {
         odd_series::<6>(h, t, d0)
     } else if t.hi <= 0.25 {
         odd_series::<9>(h, t, d0)
-    } else {
+    } else if t.hi <= 0.5 {
         odd_series::<12>(h, t, d0)
+    } else if t.hi <= 0.75 {
+        odd_series::<14>(h, t, d0)
+    } else {
+        odd_series::<16>(h, t, d0)
     }
 }
 #[inline]
@@ -508,8 +513,32 @@ fn odd_series<const TERMS: usize>(h: Pair, t: Pair, d0: Pair) -> Pair {
     }
     if TERMS > 11 {
         let next = fma(H + 43.0, cur, -420.0 * prev);
+        prev = cur;
         cur = next;
         cs[11] = cur * 3.868170170630684e-23;
+    }
+    if TERMS > 12 {
+        let next = fma(H + 47.0, cur, -506.0 * prev);
+        prev = cur;
+        cur = next;
+        cs[12] = cur * 6.446950284384474e-26;
+    }
+    if TERMS > 13 {
+        let next = fma(H + 51.0, cur, -600.0 * prev);
+        prev = cur;
+        cur = next;
+        cs[13] = cur * 9.183689863795546e-29;
+    }
+    if TERMS > 14 {
+        let next = fma(H + 55.0, cur, -702.0 * prev);
+        prev = cur;
+        cur = next;
+        cs[14] = cur * 1.1309962886447716e-31;
+    }
+    if TERMS > 15 {
+        let next = fma(H + 59.0, cur, -812.0 * prev);
+        cur = next;
+        cs[15] = cur * 1.216125041553518e-34;
     }
     let T = t.hi * t.hi;
     let mut r = 0.0;
@@ -2094,6 +2123,134 @@ mod recurrence_tests {
             let error = ((value.hi - rhi) + (value.lo - rlo)).abs();
             assert!(value.hi.is_finite() && value.hi > 0.0);
             assert!(error < 2.0_f64.powi(-57), "h={h},t={t},error={error}");
+        }
+    }
+}
+
+#[cfg(test)]
+mod extended_recurrence_tests {
+    use super::{Pair, evaluate};
+    // Independent 160/240-digit Mills differences, including nonzero h lows.
+    const REFERENCES: &[[f64; 5]] = &[
+        [
+            f64::from_bits(0x3ff0000000000000),
+            f64::from_bits(0x3c90000000000000),
+            f64::from_bits(0x3fcfffffffffffff),
+            f64::from_bits(0x3fd64a3f2f59b907),
+            f64::from_bits(0x3c7195705bf2ed3b),
+        ],
+        [
+            f64::from_bits(0x3ff0000000000000),
+            f64::from_bits(0xbc90000000000000),
+            f64::from_bits(0x3fd0000000000000),
+            f64::from_bits(0x3fd64a3f2f59b908),
+            f64::from_bits(0xbc532911ee22ff0b),
+        ],
+        [
+            f64::from_bits(0x3ff0000000000000),
+            f64::from_bits(0x3c90000000000000),
+            f64::from_bits(0x3fdfffffffffffff),
+            f64::from_bits(0x3fd7133b59bbc517),
+            f64::from_bits(0xbc721126117aedeb),
+        ],
+        [
+            f64::from_bits(0x3ff0000000000000),
+            f64::from_bits(0xbc90000000000000),
+            f64::from_bits(0x3fe0000000000000),
+            f64::from_bits(0x3fd7133b59bbc517),
+            f64::from_bits(0x3c7d2b8a3473e044),
+        ],
+        [
+            f64::from_bits(0x4000000000000000),
+            f64::from_bits(0x3ca0000000000000),
+            f64::from_bits(0x3fdfffffffffffff),
+            f64::from_bits(0x3fc4adb00ad170e2),
+            f64::from_bits(0xbc3f5c033a8c248f),
+        ],
+        [
+            f64::from_bits(0x4000000000000000),
+            f64::from_bits(0xbca0000000000000),
+            f64::from_bits(0x3fe0000000000000),
+            f64::from_bits(0x3fc4adb00ad170e3),
+            f64::from_bits(0xbc50bb119c2e69f2),
+        ],
+        [
+            f64::from_bits(0x4000000000000000),
+            f64::from_bits(0x3ca0000000000000),
+            f64::from_bits(0x3fe7ffffffffffff),
+            f64::from_bits(0x3fc565c2ff5c852a),
+            f64::from_bits(0x3c53f49672f66cb0),
+        ],
+        [
+            f64::from_bits(0x4000000000000000),
+            f64::from_bits(0xbca0000000000000),
+            f64::from_bits(0x3fe8000000000000),
+            f64::from_bits(0x3fc565c2ff5c852b),
+            f64::from_bits(0x3c5bb121ae5770c3),
+        ],
+        [
+            f64::from_bits(0x4000000000000000),
+            f64::from_bits(0x3ca0000000000000),
+            f64::from_bits(0x3fefffffffffffff),
+            f64::from_bits(0x3fc6783f04ed32b3),
+            f64::from_bits(0xbc6162169a57b355),
+        ],
+        [
+            f64::from_bits(0x4000000000000000),
+            f64::from_bits(0xbca0000000000000),
+            f64::from_bits(0x3ff0000000000000),
+            f64::from_bits(0x3fc6783f04ed32b4),
+            f64::from_bits(0xbc44903b070523c5),
+        ],
+        [
+            f64::from_bits(0x400c000000000000),
+            f64::from_bits(0x3cac000000000000),
+            f64::from_bits(0x3fe7ffffffffffff),
+            f64::from_bits(0x3fb1b22f845ea3cb),
+            f64::from_bits(0x3c5c7a9d9c3f6039),
+        ],
+        [
+            f64::from_bits(0x400c000000000000),
+            f64::from_bits(0xbcac000000000000),
+            f64::from_bits(0x3fe8000000000000),
+            f64::from_bits(0x3fb1b22f845ea3cc),
+            f64::from_bits(0x3c5c2ea624eddc68),
+        ],
+        [
+            f64::from_bits(0x4014000000000000),
+            f64::from_bits(0x3cb4000000000000),
+            f64::from_bits(0x3fefffffffffffff),
+            f64::from_bits(0x3fa303ab0dfb2f2b),
+            f64::from_bits(0xbc3ced5f285de761),
+        ],
+        [
+            f64::from_bits(0x4014000000000000),
+            f64::from_bits(0xbcb4000000000000),
+            f64::from_bits(0x3ff0000000000000),
+            f64::from_bits(0x3fa303ab0dfb2f2c),
+            f64::from_bits(0xbc24b8613cf8a8a3),
+        ],
+        [
+            f64::from_bits(0x4020000000000000),
+            f64::from_bits(0x3cc0000000000000),
+            f64::from_bits(0x3fefffffffffffff),
+            f64::from_bits(0x3f8f0b64c717a506),
+            f64::from_bits(0x3c18ad90d4098628),
+        ],
+        [
+            f64::from_bits(0x4020000000000000),
+            f64::from_bits(0xbcc0000000000000),
+            f64::from_bits(0x3ff0000000000000),
+            f64::from_bits(0x3f8f0b64c717a508),
+            f64::from_bits(0x3c0a919378c8fdfc),
+        ],
+    ];
+    #[test]
+    fn extended_moments_keep_the_certified_absolute_budget() {
+        for &[h, hl, t, hi, lo] in REFERENCES {
+            let d = evaluate(Pair::new(h, hl), Pair::from(t));
+            let error = ((d.hi - hi) + (d.lo - lo)).abs();
+            assert!(error < f64::EPSILON / 6.0, "h={h}, t={t}, error={error:e}");
         }
     }
 }

@@ -88,7 +88,7 @@ Black solver selection does not change pricing or Bachelier inversion.
 
 ## Performance and precision
 
-2026-10-04 median time per calculation on Apple M1 and Rust 1.98.1, using native
+2026-10-06 median time per calculation on Apple M1 and Rust 1.98.1, using native
 CPU optimization and LTO, the optional `fma` feature disabled, and 24 samples
 per solver from the same executable with rotating solver order. The mixed
 workloads contain 4,096 seeded synthetic OTM calls; prices and builders are
@@ -96,10 +96,10 @@ prepared before timing.
 
 | Solver | Mixed normalized | Mixed full API | Accuracy |
 |---|---:|---:|---|
-| Hybrid (default) | 177.3 ns | 197.6 ns | Targets Jäckel's maximum attainable precision; some edge cases fall short |
-| Jaeckel | 198.2 ns | 219.1 ns | Targets Jäckel's maximum attainable precision; some edge cases fall short |
-| FlashIv | 178.2 ns | 200.5 ns | Paper method; can lose accuracy near ATM |
-| Experimental | 126.2 ns | 141.9 ns | Targets Jäckel's maximum attainable precision |
+| Hybrid (default) | 176.9 ns | 197.1 ns | Targets Jäckel's maximum attainable precision; some edge cases fall short |
+| Jaeckel | 198.1 ns | 219.2 ns | Targets Jäckel's maximum attainable precision; some edge cases fall short |
+| FlashIv | 178.0 ns | 200.2 ns | Paper method; can lose accuracy near ATM |
+| Experimental | 123.9 ns | 140.6 ns | Targets Jäckel's maximum attainable precision |
 
 These are local measurements on synthetic inputs; no solver is fastest in
 every region. Detailed performance and accuracy comparisons are linked below.

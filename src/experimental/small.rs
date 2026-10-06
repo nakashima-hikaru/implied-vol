@@ -139,7 +139,8 @@ fn forward_D(h: Pair, t: Pair) -> Pair {
         let i5 = fma(fma(H, H + 10.0, 15.0), d.hi, -H - 7.0);
         return add(d, Pair::from(T * fma(T, i5 / 120.0, i3 / 6.0)));
     }
-    if t.hi <= 0.5 && (t.hi <= 0.25 || h.hi >= 2.0) {
+    // Keep the direct series inside its source-certified rounding budget.
+    if t.hi <= 1.0 && (t.hi <= 0.5 || h.hi >= 2.0) {
         return direct_d::evaluate(h, t);
     }
     div(dual_mills(sub(h, t), add(h, t), false), scale(t, 2.0))
@@ -171,8 +172,12 @@ fn finish(a: f64, b: f64, s: f64) -> f64 {
     let residual = (fma(-sv.hi, D.hi, b) - sv.hi * D.lo) - sv.lo * D.hi;
     let n = residual / sv.hi;
     let H2 = hh.hi - tt.hi;
-    let H3 = fma(H2, H2, -3.0 * hh.hi - tt.hi);
-    let ds = n * (1.0 + 0.5 * H2 * n) / (1.0 + n * (H2 + H3 * n / 6.0));
+    // Revert the local price series through n^3. The seed error is small
+    // enough for the fourth-order remainder; no iterative refinement is needed.
+    let Q = 3.0 * hh.hi + tt.hi;
+    let c2 = -0.5 * H2;
+    let c3 = (2.0 * (H2 * H2) + Q) / 6.0;
+    let ds = n * fma(n, fma(n, c3, c2), 1.0);
     fma(s, ds, s)
 }
 #[inline]

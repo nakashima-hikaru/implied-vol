@@ -51,11 +51,31 @@ errors than Jäckel's attainable-precision target. Its regression allowance
 reflects this method's accuracy trade-off.
 
 **Experimental** uses fitted seeds, compensated residuals, Mills evaluation,
-and Householder corrections, with an internal LBR branch. Its common finish
-uses seed coordinates `h=abs(x)/s0` and `t=s0/2`. It evaluates `D(h,t)` directly
-for `0.001<t<=1/4`, and for `1/4<t<=1/2` when `h>=2`, selecting shorter
-moment-polynomial rows at smaller `t`. It uses explicit FMA and SIMD lanes where
-available. Its target is the normal-price core contract defined below.
+and an internal LBR branch. Its common finish uses seed coordinates
+`h=abs(x)/s0` and `t=s0/2`, then applies a cubic inverse of the local price series:
+
+```text
+n = (b - B(abs(x),s0)) / (s0*V0)
+A = h*h - t*t; Q = 3*h*h + t*t
+s = s0 * (1 + n - A*n*n/2 + (2*A*A+Q)*n*n*n/6)
+```
+
+The implementation compensates the residual and evaluates the correction with
+explicit FMA. The seed bound controls the fourth-order remainder. Other paths
+retain their specialized corrections.
+
+All SIMD operations use `fearless_simd` binary64 lanes with the target's
+guaranteed baseline: NEON on AArch64, SSE2 on x86, WebAssembly SIMD when enabled,
+and the library's scalar backend elsewhere. `mul_add_precise` preserves the
+single-rounding FMA required by compensated evaluation on every backend.
+
+The common finish evaluates `D(h,t)` directly for `0.001<t<=1/2`, and for
+`1/2<t<=1` when `h>=2`. It reuses the D0
+coefficients and generates odd moments by recurrence, with 6/9/12/14/16 terms
+at `t<=1/16, 1/4, 1/2, 3/4, 1`. Both truncation and rounding bounds determine
+these guards together with each seed leaf's final `rho_J` error budget;
+the remaining region uses Mills differences or the tiny-t
+expansion. Its target is the normal-price core contract defined below.
 
 The separate **explicit inverse-Gaussian formula**, selected with
 `calculate_explicit::<SpFn>()`, checks relative quantile changes and uses a
@@ -97,8 +117,8 @@ a universal accuracy guarantee for any solver or custom function provider.
 ## Conditional precision bounds
 
 Experimental's AS1 component has a conditional bound `rho_AS1<0.916169`.
-Its common finish paths have conditional bounds below `0.553` for wing,
-`0.775` for small-rank, and `0.787` for finite-rank. These bounds concern
+Its common finish paths have conditional bounds below `0.605` for wing,
+`0.816` for small-rank, and `0.798` for finite-rank. These bounds concern
 components under their seed/Mills certificate assumptions, not the complete
 solver domain.
 
@@ -112,10 +132,19 @@ evidence.
 
 `scripts/verify_as1_atan.py` checks the represented AS1 polynomial and its
 source-order rounding bound. `scripts/verify_direct_d.py --reference-root PATH`
-checks the D0 polynomial, analytic moment tails, and source-order recurrence
-rounding with the required certificates in an `implied-black-volatility` checkout.
+checks the D0 polynomial, analytic moment tails, source-order recurrence
+rounding, and the cubic correction with the required certificates in an
+`implied-black-volatility` checkout. An exact rational identity relates the
+cubic correction to the certified Householder update; the checker adds the
+coefficient and evaluation rounding bounds over all 5,474 seed-cover leaves.
+It recomputes the inherited finish bound for each leaf and allocates the
+direct-D error against that leaf's remaining precision budget. The exact
+`t=s0/2` argument also limits the represented square's rounding error to `u*t*t`.
 These component checks bind the expected source and dependencies; they do not
 establish vendor math-function accuracy.
+The direct-D checker also binds the reviewed `fearless_simd` 1.0.0 sources.
+It finds them in Cargo's registry cache after fetching dependencies, or accepts
+an explicit `--simd-root PATH` for vendored sources.
 [Current validation data](results.json) identifies the measured source and bounds.
 
 ## Algorithm references
