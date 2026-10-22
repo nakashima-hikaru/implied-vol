@@ -1,7 +1,7 @@
 # Large-route direct log-residual correction
 
 `scripts/verify_large_direct.py` checks the replacement of the large-route
-final correction and the precise handoff at `2^-16`. The certificate is
+final correction and the precise handoff at `2^-14`. The certificate is
 conditional on the same primitive and real-analysis contracts as the bound
 reference proof. It is not an end-to-end Lean proof or a vendor-libm guarantee.
 Finite reference tests are separate evidence.
@@ -38,14 +38,60 @@ s''''/s = lambda*(1-7*alpha+12*alpha^2+6*beta
 ```
 
 The preserved brackets give `|lambda|<1` below and `<2/5` above,
-`-4<alpha<1`, `0<=beta<16`, and `|gamma|<64`. These bounds follow from the
-Mills integral and moment inequalities; the derivation is recorded beside
-`symbolic_and_shape`. Both the current point and the internal target root
-are inside the bracket, so the same bounds hold along the Taylor segment.
-For `r = gate + 2^-38`, a conservative relative remainder is
+`-4<alpha<1`, `0<=beta<16`, and `|gamma|<64`. These broad bounds remain
+checked. The current certificate tightens them on the actual accepted
+Taylor segment, while retaining the same cubic expression.
+
+## Accepted target and Taylor segment
+
+The source lower-route decision is `ell.hi <= -RN(.6)`, and the exact
+internal target is `ell.hi+ell.lo`. The source `add` returns a final `two`;
+its represented low satisfies
+`abs(lo) <= (u*abs(hi)+tau)/(1-u)`, where `tau=2^-1075`. Therefore
 
 ```
-(1213/24) * r^4 / (1-r)^2.
+q_target <= -RN(.6)*(1-u/(1-u)) + tau/(1-u) < -.6+4u.
+```
+
+The recomputed precise high-component error bounds the difference from
+`q(current)-q_target` by `2^-38`. With `r=gate+2^-38`, both endpoints
+and every point on the inverse-Taylor segment thus satisfy
+`q < -.6+4u+r < -.599`. The source's separate `2^-34` fast prefilter is
+unchanged. Its bound includes rounding the DD target to binary64, and the
+checker proves that its bypass also produces a precise high residual inside
+each supported handoff gate.
+
+For lower price `p=Phi(x)-phi(x)*M(sqrt(x*x+2a))`, a rational bound gives
+
+```
+p(a,.35) > 1582202077/2867200000 > .55,  a>10,
+exp(-.599) < .55.
+```
+
+The first inequality uses `sqrt(.35^2+20)>112/25`, `phi(0)>.39`,
+`M(y)<1/y`, and elementary integral/exponential Taylor bounds. The second
+uses a positive Taylor lower bound for `exp(.599)`. These are continuous
+inequalities, not sampled prices. Price increases with both `x` and `a`,
+so the entire lower segment has `x<.35`.
+
+For lower `x=-v<=0`, `lambda` is the average of the decreasing moment `I1`
+on `[v,sqrt(v*v+2a)]`, hence `lambda<M(0)/sqrt(20)<1/3`.
+For `0<=x<.35`, the Mills integral gives `M(-.35)<1288/751<7/4`;
+this implies `lambda<2/5`, `abs(alpha)<1`, and `beta<5`.
+The existing nonpositive-lower and upper inequalities complete the uniform
+accepted-segment bounds
+
+```
+abs(lambda)<2/5,  abs(alpha)<1,  0<=beta<5,  abs(gamma)<8.
+```
+
+The last bound follows from `Q=3h^2+t^2>=3h^2`, so
+`abs(gamma)<=4*beta*abs(lambda)`. Including the leading `lambda` in the
+fourth derivative gives `abs(s''''/(24*s))<33/20`. A conservative relative
+remainder is consequently
+
+```
+(33/20) * r^4 / (1-r)^2.
 ```
 
 ## Source rounding and target transfer
@@ -56,7 +102,7 @@ Final accuracy instead uses the compensated evaluator's much smaller bound
 ```
 |lambda| * |residual_pair - true_residual|
   <= mu*.376u + (u/64)/(1-u/8) + 200000u^2,
-u = 2^-53,  mu = 1 below or 2/5 above.
+u = 2^-53,  mu = 2/5 on both accepted routes.
 ```
 
 The checker recomputes the inherited source geometry and residual ledgers.
@@ -77,19 +123,24 @@ It then accounts for the actual new source operations, in their order:
 The resulting internal-root budgets are transferred to the original binary64
 price by recalculating the existing lower-price, ordinary-cap, fixed-cap and
 expm1 formulas with the new budgets. No old finalizer accuracy bound is used.
-The target logarithm ledger is also rerun.
+The target logarithm ledger is also rerun. The lower original-price transfer
+retains its older full `.376u` allowance; the new localization is not assumed
+for the segment between the internal target root and the original-price root.
 
 The exact rational checks establish these upper bounds (decimal values below
 are rounded upward):
 
 | Precise gate | Lower price | Ordinary/fixed cap | expm1 | Overall |
 | --- | ---: | ---: | ---: | ---: |
-| `2^-22` | 0.883813869 | 0.658213055 | 0.777170983 | 0.883813869 |
-| `2^-17` | 0.884627735 | 0.659001481 | 0.777703704 | 0.884627735 |
-| `2^-16` | 0.896240684 | 0.670587768 | 0.785532276 | 0.896240684 |
+| `2^-22` | 0.771012995 | 0.658212995 | 0.777170943 | 0.777170943 |
+| `2^-17` | 0.771053541 | 0.658253541 | 0.777198338 | 0.777198338 |
+| `2^-16` | 0.771447149 | 0.658647149 | 0.777464290 | 0.777464290 |
+| `2^-14` | 0.874279206 | 0.761479206 | 0.846945409 | 0.874279206 |
 
 These are bounds on the reference proof's original-input `rho_J`, not
-observed errors. The selected `2^-16` gate remains below `0.9`.
+observed errors. The selected `2^-14` gate remains below `0.9`.
+Changing a gate changes when precise evaluation hands off to the cubic;
+it does not itself establish a runtime speedup.
 
 ## Source and dependency binding
 
@@ -132,6 +183,14 @@ python3 scripts/verify_large_direct.py \
   --out target/proof/large-direct-proof.json
 ```
 
-The source-binding negative controls deliberately changed a cubic coefficient,
-the gate to `2^-15`, the lambda sign, a geometry expression, the normal-price
-log helper, and the fast certificate's maximum. All six changes were rejected.
+The component generator solves independent Gaussian-erfc roots at 160 and
+240 decimal digits and requires identical stored reference bits. It includes
+the `2^-14` handoff, both sides of its threshold, Mills seams, and the lower
+`ell.hi=-RN(.6)` routing seam with both signs of `ell.lo`.
+
+Eleven negative controls were rejected: a cubic coefficient change, the
+unproved `2^-13` gate, lambda sign, geometry, target logarithm, lower routing
+cutoff, dropped target low, fast prefilter, target-pair renormalization,
+the fast certificate's numerical bound, and Python's disabled-assertion mode.
+The finite component checks and these binding controls are separate from
+the continuous conditional proof.

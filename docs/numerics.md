@@ -64,8 +64,8 @@ The implementation compensates the residual and evaluates the correction with
 explicit FMA. The seed bound controls the fourth-order remainder. Other paths
 retain their specialized corrections.
 
-Small/core rank seeds use degree eight in the first coordinate and degree six
-in the second. Their represented factors are reduced by exact conversion to
+Small/core rank seeds use per-rectangle degrees: 6/5 for twelve tables, 6/6
+for twelve, 7/5 for one, and 7/6 for one. Their represented factors are reduced by exact conversion to
 Chebyshev coefficients, removal of higher modes, and conversion back to power
 coefficients. Evaluation remains fused Horner with the same lanes and scalar
 reduction order. A direct fourth-inverse-derivative bound permits these cheaper
@@ -103,7 +103,9 @@ volatility. With `z=-residual`, `lambda=±D/s`, `alpha=-x*y*lambda`, and
 `delta=lambda*(z+(1-alpha)*z*z/2+(1-3*alpha+2*alpha*alpha+beta)*z*z*z/6)`
 to the compensated current `s`. This avoids reconstructing volatility from a
 corrected `x` and removes that reconstruction's square-root fallback. Precise handoff uses
-`abs(residual.high)<=2^-16`; the faster residual handoff remains unchanged.
+`abs(residual.high)<=2^-14`; the faster residual handoff remains unchanged.
+The bound uses the full accepted inverse-Taylor segment: the lower target
+restricts its geometry to `x<.35`, giving `abs(lambda)<.4` on both routes.
 
 The separate **explicit inverse-Gaussian formula**, selected with
 `calculate_explicit::<SpFn>()`, checks relative quantile changes and uses a
@@ -146,9 +148,9 @@ a universal accuracy guarantee for any solver or custom function provider.
 
 Experimental's AS1 component has a conditional bound `rho_AS1<0.916169`.
 Its common finish paths have conditional bounds below `0.594` for wing,
-`0.798` for small-rank, and `0.786` for finite-rank. The large direct finalizer,
+`0.885` for small-rank, and `0.786` for finite-rank. The large direct finalizer,
 including transfer to the original price input, has a conditional bound below
-`0.896241`. These bounds concern
+`0.874280`. These bounds concern
 components under their seed/Mills certificate assumptions, not the complete
 solver domain.
 
@@ -193,6 +195,7 @@ target transfer. Both remain conditional component certificates.
 [Earlier validation data](results.json) identifies its measured source and bounds.
 [The compact-table and adaptive-evaluation report](experimental-improvements.md)
 records the preceding changes. [The inverse-series and seed-reduction report](theory-improvements.md)
+records the uniform-degree stage. [The adaptive-degree and localized-handoff report](adaptive-theory-improvements.md)
 records the current changes, with derivations for the [large finalizer](large-direct-proof.md)
 and [reduced seeds](seed-reduction.md).
 

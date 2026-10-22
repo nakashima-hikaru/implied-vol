@@ -591,7 +591,7 @@ if reduced_seed_metadata is not None:
     result['baseline_seed_route_bounds']=result['route_bounds']
     result['route_bounds']=seed_result['route_bounds']
     result['reduced_seed_proof']=seed_result
-    result['candidate']='Degree-8/6 Chebyshev rank seeds, unchanged cubic finish and H-adaptive direct D'
+    result['candidate']='Per-table degree-6/5, 6/6, 7/5 and 7/6 Chebyshev rank seeds, unchanged cubic finish and H-adaptive direct D'
     result['method']+=' Reduced seeds: exact represented-coefficient regeneration, source-order perturbation, finite vega transport, fourth inverse derivative remainder, and cubic source rounding on every transported leaf.'
     result['seed_approximation_binding']='Narrow inverse source bridge reproduces the reviewed baseline hashes; exact Chebyshev regeneration matches every actual changed coefficient. The approximation change is bounded separately, not claimed bit equivalent.'
     result['proof_module_sha256']={name:hashlib.sha256((HERE/name).read_bytes()).hexdigest() for name in ['seed_reduction.py','verify_seed_reduction.py']}

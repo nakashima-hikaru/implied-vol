@@ -500,7 +500,7 @@ pub(crate) fn solve(a: f64, b: f64) -> f64 {
         if steps >= 1 {
             pe = precise(a, x, target, upper);
             if pe.residual.hi.is_finite()
-                && pe.residual.hi.abs() <= f64::from_bits(0x3ef0000000000000)
+                && pe.residual.hi.abs() <= f64::from_bits(0x3f10000000000000)
             {
                 converged = true;
                 break;

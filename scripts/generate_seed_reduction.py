@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regenerate or check the exact degree-8/6 Chebyshev rank seeds."""
+"""Regenerate or check the exact per-table Chebyshev rank seeds."""
 import argparse
 import json
 from pathlib import Path
@@ -31,10 +31,15 @@ if args.check:
 else:
     small_path.write_text(reduced_small)
     constants_path.write_text(reduced_constants)
-report = {'method': 'Exact power-to-Chebyshev transform; truncate modes; exact inverse transform; one binary64 coefficient rounding',
-          'x_degree': 8, 'y_degree': 6, 'rank_tables': len(metadata),
+degree_counts = {}
+for item in metadata.values():
+    pair = f"{item['x_degree']}/{item['y_degree']}"
+    degree_counts[pair] = degree_counts.get(pair, 0) + 1
+report = {'method': 'Per-table degree selection; exact power-to-Chebyshev transform; truncate modes; exact inverse transform; one binary64 coefficient rounding',
+          'degrees_by_route': seeds.DEGREES, 'degree_pair_counts': degree_counts, 'rank_tables': len(metadata),
           'old_bytes': sum(v['old_bytes'] for v in metadata.values()),
           'new_bytes': sum(v['new_bytes'] for v in metadata.values()),
+          'degree_metadata_bytes': 2*len(metadata),
           'reference_constants_sha256': seeds.REFERENCE_CONSTANTS_SHA256, 'tables': metadata}
 if args.report:
     args.report.parent.mkdir(parents=True, exist_ok=True)

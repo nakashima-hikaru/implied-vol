@@ -214,35 +214,18 @@ fn tensor_seed<const NJ: usize, const NI: usize>(c: &[[f64; 12]; NJ], x: f64, y:
 }
 #[inline]
 fn rank_seed<const DEGREE: usize>(t: (&[f64], usize), x: f64, y: f64) -> f64 {
-    // The tables have four fixed shapes. Check the selected slice once so
-    // Horner stages can use constant offsets without per-coefficient checks.
-    const { assert!(DEGREE == 8 || DEGREE == 10) };
+    // The upper-gap tables retain their original degree-eight factors.
+    const { assert!(DEGREE == 8) };
     let (c, rank) = t;
     if rank <= 2 {
-        if DEGREE == 10 {
-            rank_seed_shape::<10, 4, 36>(
-                c.first_chunk::<36>().expect("rank coefficients"),
-                rank,
-                x,
-                y,
-            )
-        } else {
-            rank_seed_shape::<8, 4, 36>(
-                c.first_chunk::<36>().expect("rank coefficients"),
-                rank,
-                x,
-                y,
-            )
-        }
-    } else if DEGREE == 10 {
-        rank_seed_shape::<10, 8, 72>(
-            c.first_chunk::<72>().expect("rank coefficients"),
+        rank_seed_shape::<8, 8, 4, 36>(
+            c.first_chunk::<36>().expect("rank coefficients"),
             rank,
             x,
             y,
         )
     } else {
-        rank_seed_shape::<8, 8, 72>(
+        rank_seed_shape::<8, 8, 8, 72>(
             c.first_chunk::<72>().expect("rank coefficients"),
             rank,
             x,
@@ -251,23 +234,65 @@ fn rank_seed<const DEGREE: usize>(t: (&[f64], usize), x: f64, y: f64) -> f64 {
     }
 }
 #[inline]
-fn rank_seed_shape<const DEGREE: usize, const LANES: usize, const LENGTH: usize>(
+fn adaptive_rank_seed(t: (&[f64], usize), degrees: [u8; 2], x: f64, y: f64) -> f64 {
+    // Generated per-table degrees select fixed Horner chains and array sizes.
+    let (c, rank) = t;
+    match (rank <= 2, degrees) {
+        (true, [6, 5]) => rank_seed_shape::<6, 5, 4, 28>(
+            c.first_chunk::<28>().expect("rank coefficients"),
+            rank,
+            x,
+            y,
+        ),
+        (false, [6, 5]) => rank_seed_shape::<6, 5, 8, 56>(
+            c.first_chunk::<56>().expect("rank coefficients"),
+            rank,
+            x,
+            y,
+        ),
+        (false, [6, 6]) => rank_seed_shape::<6, 6, 8, 56>(
+            c.first_chunk::<56>().expect("rank coefficients"),
+            rank,
+            x,
+            y,
+        ),
+        (false, [7, 5]) => rank_seed_shape::<7, 5, 8, 64>(
+            c.first_chunk::<64>().expect("rank coefficients"),
+            rank,
+            x,
+            y,
+        ),
+        (false, [7, 6]) => rank_seed_shape::<7, 6, 8, 64>(
+            c.first_chunk::<64>().expect("rank coefficients"),
+            rank,
+            x,
+            y,
+        ),
+        _ => unreachable!("rank coefficient degrees"),
+    }
+}
+#[inline]
+fn rank_seed_shape<
+    const X_DEGREE: usize,
+    const Y_DEGREE: usize,
+    const LANES: usize,
+    const LENGTH: usize,
+>(
     c: &[f64; LENGTH],
     rank: usize,
     x: f64,
     y: f64,
 ) -> f64 {
+    const {
+        assert!(X_DEGREE >= Y_DEGREE);
+        assert!(LENGTH == (X_DEGREE + 1) * LANES);
+    }
     let half = LANES / 2;
     assert!(rank <= half, "rank factors");
     let mut values = [0.0; 8];
     for k in (0..LANES).step_by(2) {
         let z = F64x2::splat(if k < half { x } else { y });
-        // Small/core factors retain Chebyshev degrees eight in x and six in y.
-        let n = if DEGREE == 10 {
-            if k < half { 8 } else { 6 }
-        } else {
-            DEGREE
-        };
+        let n = if k < half { X_DEGREE } else { Y_DEGREE };
         let mut v = F64x2::new(c[n * LANES + k], c[n * LANES + k + 1]);
         for j in (0..n).rev() {
             v = v.mul_add(z, F64x2::new(c[j * LANES + k], c[j * LANES + k + 1]));
@@ -317,7 +342,12 @@ fn small_rank(a: f64, b: f64) -> f64 {
     finish(
         a,
         b,
-        q * rank_seed::<10>(small_lr[k], (w - r[0]) * r[1], fma(q, q, -r[2]) * r[3]),
+        q * adaptive_rank_seed(
+            small_lr[k],
+            SMALL_RANK_DEGREES[k],
+            (w - r[0]) * r[1],
+            fma(q, q, -r[2]) * r[3],
+        ),
     )
 }
 #[inline]
@@ -350,7 +380,12 @@ fn finite_rank(a: f64, b: f64) -> f64 {
     finish(
         a,
         b,
-        rank_seed::<10>(core_lr[k], (a - r[0]) * r[1], (z - r[2]) * r[3]),
+        adaptive_rank_seed(
+            core_lr[k],
+            CORE_RANK_DEGREES[k],
+            (a - r[0]) * r[1],
+            (z - r[2]) * r[3],
+        ),
     )
 }
 #[inline]
@@ -549,23 +584,23 @@ mod tests {
     #[test]
     fn conservative_preflight_seams_retain_certified_outputs() {
         // Frozen outputs at reject thresholds, adjacent prices and the a=1 jump.
-        // The two reduced-seed changes were checked by independent Black roots
-        // at 100/160 decimal digits: rho < 0.053 and rho < 0.348 respectively.
+        // Changed outputs were checked against independent Black roots at
+        // 160/240 decimal digits; their rho values are all below 0.363.
         let cases: &[(u64, u64, u64)] = &[
             (0x3fb999999999999a, 0x3f79999999999999, 0x3fb74aa89cb8b539),
             (0x3fb999999999999a, 0x3f7999999999999a, 0x3fb74aa89cb8b539),
             (0x3fb999999999999a, 0x3f7999999999999b, 0x3fb74aa89cb8b539),
             (0x3fb999999999999a, 0x3fc3333333333333, 0x3fdfbf7426673d98),
-            (0x3fb999999999999a, 0x3fc3333333333334, 0x3fdfbf7426673d9a),
+            (0x3fb999999999999a, 0x3fc3333333333334, 0x3fdfbf7426673d99),
             (0x3fb999999999999a, 0x3fc3333333333335, 0x3fdfbf7426673d9b),
             (0x3ff0000000000000, 0x3fcfffffffffffff, 0x3ffbc1183e525ee1),
             (0x3ff0000000000000, 0x3fd0000000000000, 0x3ffbc1183e525ee1),
-            (0x3ff0000000000000, 0x3fd0000000000001, 0x3ffbc1183e525ee2),
-            (0x3ff0000000000001, 0x3fbfffffffffffff, 0x3ff363b69fb0f1c0),
+            (0x3ff0000000000000, 0x3fd0000000000001, 0x3ffbc1183e525ee3),
+            (0x3ff0000000000001, 0x3fbfffffffffffff, 0x3ff363b69fb0f1bf),
             (0x3ff0000000000001, 0x3fc0000000000000, 0x3ff363b69fb0f1c0),
             (0x3ff0000000000001, 0x3fc0000000000001, 0x3ff363b69fb0f1c0),
-            (0x4014000000000000, 0x3f8fffffffffffff, 0x400539daf0082b99),
-            (0x4014000000000000, 0x3f90000000000000, 0x400539daf0082b99),
+            (0x4014000000000000, 0x3f8fffffffffffff, 0x400539daf0082b98),
+            (0x4014000000000000, 0x3f90000000000000, 0x400539daf0082b98),
             (0x4014000000000000, 0x3f90000000000001, 0x400539daf0082b99),
         ];
         for &(a, b, want) in cases {

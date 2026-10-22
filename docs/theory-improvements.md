@@ -6,6 +6,11 @@ hashes, exact-input reference provenance, conditional bounds, adverse cases,
 and all timing summaries. This follows the
 [compact-table changes](experimental-improvements.md).
 
+This is the historical uniform-degree / `2^-16` report. The subsequent
+[adaptive-degree and localized-handoff report](adaptive-theory-improvements.md)
+records the current implementation; the linked derivation documents track
+that implementation.
+
 ## Adopted changes
 
 The large route now maps the compensated log-price residual directly to a

@@ -307,13 +307,87 @@ def symbolic_and_shape(ex):
     return fourth
 
 
-def finish_ledger(gate_bits, mu, fourth):
+def accepted_region_shape(ex, gate_bits):
+    """Localize the WHOLE inverse-Taylor segment using the bound caller.
+
+    The source binding below fixes ell=add(log_positive_normal_price(b),dd(a/2)),
+    upper=ell.hi>-.6, target=ell on the lower route, and the final two() in
+    add(). Its exact represented target is ell.hi+ell.lo, not just ell.hi.
+    The primitive TwoSum lemma gives |lo| <= (u*|hi|+TAU)/(1-u). For hi<=-c
+    this implies target<=-c*(1-u/(1-u))+TAU/(1-u), including underflow.
+    Neither the primitive error in log(b) nor the original physical root is
+    substituted here: this segment ends at the exact internal DD target.
+    Original-input transfer keeps its older, wider lower-price allowance.
+    """
+    radius = F(1, 2**gate_bits) + F(1, 2**38)
+    switch = F(float(.6))
+    lower_target_upper = -switch*(1-U/(1-U))+TAU/(1-U)
+    assert lower_target_upper < -F(3, 5)+4*U
+    q_upper = lower_target_upper+radius
+    assert radius+4*U < F(1, 1000)
+    assert q_upper < -F(599, 1000)
+    # Both endpoints q(current), q(target), and hence every intermediate q,
+    # are <=q_upper. The precise high error is <2^-38. The fast bypass is
+    # separately proved below to enter this same precise high-component gate.
+    # exp(q_upper)<.55 follows from a positive Taylor lower bound for exp(.599).
+    from math import factorial
+    assert sum(F(599, 1000)**j/F(factorial(j)) for j in range(6)) > F(20, 11)
+
+    # At x=c=.35, y=sqrt(c²+2a)>112/25 for every a>10. With
+    # Phi(c)=1/2+phi(0)*integral_0^c exp(-t²/2)dt, M(y)<1/y,
+    # exp(-w)>=1-w and exp(-w)<=1-w+w²/2, the following is a
+    # rational lower bound for p=Phi(c)-phi(c)*M(y), not a sampled price.
+    c, y_lower = F(7, 20), F(112, 25)
+    assert y_lower*y_lower < c*c+20
+    assert ex.K[1] < F(100, 39)  # phi(0)>39/100
+    integral_lower = c-c**3/6
+    exp_upper = 1-c*c/2+c**4/8
+    bracket = integral_lower-exp_upper/y_lower
+    assert bracket > 0
+    price_lower = F(1, 2)+F(39, 100)*bracket
+    assert price_lower > F(11, 20)
+    # Lower p increases with x and a: M decreases and dp/dx=s*phi(x)/y>0.
+    # Thus all points on the accepted lower segment have x<.35.
+
+    # For lower x=-v<=0, lambda is the interval average of I1=-M' on
+    # [v,sqrt(v²+2a)]. I1 decreases because I2>0. Parametrizing that interval
+    # by theta gives argument>theta*sqrt20, so lambda<M(0)/sqrt20<1/3.
+    assert ex.K[1]/2 < F(4, 3)
+    assert 20 > 4**2
+    # For lower 0<=x<.35, M(-x)<=M(-.35)<7/4, by its integral identity.
+    assert ex.K[1]/2 < F(63, 50)
+    mills_negative_upper = (F(63, 50)+c)/(1-c*c/2)
+    assert mills_negative_upper == F(1288, 751) < F(7, 4)
+    assert F(35, 8)**2 < 20
+    assert F(7, 4)/F(35, 8) == F(2, 5)
+    # Therefore lambda=D/s<M(-.35)/sqrt20<2/5 and
+    # |alpha|=x*y*D/s<x*D<1. Q=x²+y²-xy<=s² gives beta<=D²<5.
+    assert c*F(7, 4) < 1 and F(7, 4)**2 < 5
+    # On lower x<=0, the unchanged Mills inequalities above give alpha<1,
+    # beta<3 when v>=1 and beta<112/27<5 when v<1. On upper x>=0,
+    # |lambda|<2/5, alpha<1 and beta<=D²<(4/3+1/4)²<5.
+    assert F(112, 27) < 5 and (F(4, 3)+F(1, 4))**2 < 5
+    mu, alpha, beta = F(2, 5), F(1), F(5)
+    gamma = 4*beta*mu  # Q>=3h² => |12h²*lambda³|<=4*beta*|lambda|.
+    fourth = mu*(1+7*alpha+12*alpha**2+6*beta+6*alpha**3+7*alpha*beta+gamma)/24
+    assert gamma == 8 and fourth == F(33, 20)
+    return {'lower_target_upper': lower_target_upper, 'true_residual_radius': radius,
+            'lower_segment_q_upper': q_upper, 'price_lower_at_x_0_35': price_lower,
+            'mills_upper_at_minus_0_35': mills_negative_upper,
+            'lambda_abs': mu, 'alpha_abs': alpha, 'beta': beta, 'gamma_abs': gamma,
+            'fourth_derivative_bound_over_factorial': fourth}
+
+
+def finish_ledger(gate_bits, shape):
     """Full new source rounding, stringent residual transfer, output rounding."""
     u, nu = U, NU
     gate = F(1, 2**gate_bits)
+    mu, alpha_bound, beta_bound = shape['lambda_abs'], shape['alpha_abs'], shape['beta']
+    fourth = shape['fourth_derivative_bound_over_factorial']
     # The high-component bound is used only for localization/Taylor remainder.
     # It is never substituted for the much smaller weighted residual bound.
-    radius = gate + F(1, 2**38)
+    radius = shape['true_residual_radius']
+    assert radius == gate + F(1, 2**38)
     zmag = (1 + u) * (gate + nu) / (1 - u) + nu
     assert zmag < radius
     true_s_error, true_y_error, true_d_error = 512*u*u, 64*u*u, u/8
@@ -333,25 +407,27 @@ def finish_ledger(gate_bits, mu, fourth):
     # Negation is exact; add() is also the absolute-error ledger for a
     # subtraction. Each source multiply/add/divide/FMA is modeled in order.
     xy = x.mul(yy)
-    alpha = xy.mul(lam).sharpen(4)
+    alpha = xy.mul(lam).sharpen(alpha_bound)
     q = x.mul(x).add(yy.mul(yy)).add(xy)
-    beta = q.mul(lam.mul(lam)).sharpen(16)
-    c2 = one.add(alpha).scale(F(1, 2)).sharpen(F(5, 2))
+    beta = q.mul(lam.mul(lam)).sharpen(beta_bound)
+    c2_mag = (1+alpha_bound)/2
+    c3_mag = (1+3*alpha_bound+2*alpha_bound**2+beta_bound)/6
+    c2 = one.add(alpha).scale(F(1, 2)).sharpen(c2_mag)
     two_alpha_minus_three = alpha.scale(F(2)).add(Ball(F(3)))
-    c3 = alpha.fma(two_alpha_minus_three, one).add(beta).divide_constant(F(6)).sharpen(F(61, 6))
+    c3 = alpha.fma(two_alpha_minus_three, one).add(beta).divide_constant(F(6)).sharpen(c3_mag)
     # z here denotes the actual binary64 -val(residual), so no error is
     # attached to this Ball. Its perturbation from the true residual is
     # transferred separately below, with the true |lambda| weight retained.
     z = Ball(zmag)
     delta = lam.mul(z.mul(z.fma(z.fma(c3, c2), one)))
-    delta_mag = mu*zmag*(1 + F(5, 2)*zmag + F(61, 6)*zmag*zmag)
+    delta_mag = mu*zmag*(1+c2_mag*zmag+c3_mag*zmag*zmag)
     # Ball operations outward-round their magnitude bounds. Replace only
     # that magnitude with this exact expanded polynomial bound; keep every
     # accumulated source-operation error, including outward-rounding reserve.
     delta = delta.sharpen(delta_mag)
     computed_delta_mag = delta_mag + delta.err
-    # Exact-cubic derivative/|lambda| <= 1+5r+(61/2)r^2 on this interval.
-    lipschitz = 1 + 5*radius + F(61, 2)*radius*radius
+    # Exact-cubic derivative/|lambda| <= 1+2r+(11/2)r^2 here.
+    lipschitz = 1+2*c2_mag*radius+3*c3_mag*radius*radius
     weighted_pair_error = mu*F(376, 1000)*u + (u/64)/(1-u/8) + 200000*u*u + 256*nu
     # val(residual) is one RN sum, including when its result is subnormal.
     weighted_val_error = mu * (u*(gate+nu)/(1-u) + nu)
@@ -498,7 +574,7 @@ def main():
     assert matched_gate
     gate_bits = int(matched_gate.group(1), 16)
     gate_value = F(struct.unpack('<d', struct.pack('<Q', gate_bits))[0])
-    choices = {F(1, 2**k): k for k in (22, 17, 16)}
+    choices = {F(1, 2**k): k for k in (22, 17, 16, 14)}
     assert gate_value in choices, 'unreviewed handoff gate'
     selected_gate = choices[gate_value]
     old_solve = canonical(function_body(original, 'solve'))
@@ -507,6 +583,12 @@ def main():
     prefix = replace_once(prefix, 'log_positive_normal_price(b)', 'logdd(dd(b))')
     prefix = replace_once(prefix, matched_gate.group(1), '0x3e90000000000000')
     assert prefix == old_solve.split('letyy=val(pe.y);', 1)[0], 'unreviewed target/routing/iteration source'
+    # accepted_region_shape uses precisely this lower routing predicate and
+    # normalized target construction. The whole-prefix comparison additionally
+    # binds every branch between these operations and the finalizer call.
+    assert 'letell=add(log_positive_normal_price(b),dd(a/2.0));letupper=ell.hi>-0.6;letmuttarget=ell;' in solve
+    assert canonical(function_body(current, 'add')).endswith('two(t.hi,e)}')
+    assert 'e.f.abs()<=f64::from_bits(0x3dd0000000000000)' in solve, 'fast prefilter changed'
     # Normal-positive b makes frexp's exceptional branches unreachable. Its
     # exact mantissa/exponent extraction and normalization equal this helper.
     assert canonical(function_body(current, 'log_positive_normal_price')) == canonical(NORMAL_LOG_SOURCE), 'normal-price logarithm helper changed'
@@ -592,14 +674,22 @@ def main():
     assert F(1, 2**34)+fast_error+F(1, 2**38) < gate_value
     assert len(range(3, 196, 4)) == 49 and 196 < 208
 
-    fourth = symbolic_and_shape(ex)
+    global_fourth = symbolic_and_shape(ex)
     all_bounds = {}
-    for gate in (22, 17, 16):
-        lower = finish_ledger(gate, F(1), fourth)
-        upper = finish_ledger(gate, F(2, 5), fourth)
+    for gate in (22, 17, 16, 14):
+        # A fast-filter acceptance also has precise.high inside the selected
+        # gate, so both entrances to finish_direct share the localized segment.
+        assert F(1, 2**34)+fast_error+F(1, 2**38) < F(1, 2**gate)
+        shape = accepted_region_shape(ex, gate)
+        lower = finish_ledger(gate, shape)
+        upper = finish_ledger(gate, shape)
         transferred = target_transfer(lower['raw_relative_error'], upper['raw_relative_error'], cap, ex)
         assert transferred['maximum'] < F(9, 10), ('rho budget failure', gate)
         all_bounds[str(gate)] = {
+            # Preserve exact signed values and each field's bound direction:
+            # this group contains lower price bounds as well as upper errors.
+            'accepted_region': {k: {'exact': str(v), 'preview': float(v)}
+                                for k, v in shape.items()},
             'lower': {k: pack(v) if isinstance(v, F) else v for k, v in lower.items()},
             'upper': {k: pack(v) if isinstance(v, F) else v for k, v in upper.items()},
             'original_input_rho': {k: pack(v) for k, v in transferred.items()},
@@ -613,7 +703,8 @@ def main():
         'algebra': {'lambda_lower': 'D/s', 'lambda_upper': '-D/s',
                     'alpha': '-x*y*lambda', 'beta': '(x*x+y*y-x*y)*lambda*lambda',
                     'relative_update': 'lambda*(z+(1-alpha)*z^2/2+(1-3*alpha+2*alpha^2+beta)*z^3/6)',
-                    'fourth_derivative_bound_over_factorial': pack(fourth),
+                    'global_bracket_fourth_derivative_bound_over_factorial': pack(global_fourth),
+                    'accepted_region_fourth_derivative_bound_over_factorial': pack(F(33, 20)),
                     'identities_checked_symbolically': ['s2/s=lambda*(1-alpha)', 's3/s=lambda*(1-3*alpha+2*alpha^2+beta)', 's4/s=lambda*(1-7*alpha+12*alpha^2+6*beta-6*alpha^3-7*alpha*beta-gamma)']},
         'recomputed_inherited_source_geometry': geometry,
         'recomputed_inherited_source_residual': residual,
@@ -628,6 +719,7 @@ def main():
                                 'reduced ln error <=u*abs(ln); fast ln error <=2u*abs(ln)',
                                 'expm1 relative error <=2u at reached negative arguments'],
         'inherited_analytic_dependencies': ['Mills integral/moment identities and hash-bound continuous compensated-Mills certificate',
+            'Positive decreasing I1=-M\' on nonnegative arguments; lower p increases with x and a; elementary exp Taylor inequalities',
             'Existing source-identical target/cap/routing lemmas place the internal root inside the preserved brackets',
             'Source-identical integer cap arithmetic and external Lefevre-Muller Property 1 separation theorem',
             'Target-to-original-price finite transfer via Black vega log concavity and correlated gap/condition-number bounds'],

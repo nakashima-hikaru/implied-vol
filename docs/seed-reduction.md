@@ -1,10 +1,24 @@
 # Reduced rank seeds and the cubic common finish
 
-The small/core rank factors retain Chebyshev degree 8 in their first coordinate
-and degree 6 in their second coordinate. The 26 tables occupy 14,400 bytes,
-down from 17,600 bytes. Each factor uses two fewer FMA Horner stages, or four
-fewer on the padded second-coordinate factors of rank-two tables. Upper-gap
-seeds, the rank reduction order, and the cubic common finish are unchanged.
+The small/core rank factors use per-rectangle Chebyshev degrees. The 26 tables
+occupy **11,328 bytes**, down from 14,400 bytes with uniform degree 8/6 and
+17,600 bytes in the original archive. The explicit degree arrays contain
+another 52 bytes. This counts coefficient and degree payload, not process
+memory or binary size. The tables retain the existing padded rank layout.
+
+| x/y degrees | Small rectangles | Core rectangles | Table count |
+|---|---|---|---:|
+| 6/5 | 0, 2, 3, 4, 5 | 4, 9, 14, 16, 17, 18, 19 | 12 |
+| 6/6 | — | 0, 1, 2, 5, 6, 7, 8, 10, 11, 12, 13, 15 | 12 |
+| 7/5 | 1 | — | 1 |
+| 7/6 | — | 3 | 1 |
+
+Each rank-three/four evaluation uses 22, 24 or 26 two-lane Horner stages,
+instead of 28 for uniform degree 8/6; rank-two evaluation uses 11 instead of
+14. These operation counts do not establish a runtime speedup. The compiler
+sees fixed degree and array-size specializations selected by generated
+metadata. Upper-gap factors retain degree 8/8. Lane pairing, scalar rank
+reduction, price residual and the cubic common finish remain unchanged.
 
 The generator works from the exact binary64 coefficients in the hash-bound
 reference archive. It converts each power polynomial to Chebyshev form using
@@ -17,12 +31,22 @@ python3 scripts/generate_seed_reduction.py --reference-root /path/to/implied-bla
 python3 scripts/verify_direct_d.py --reference-root /path/to/implied-black-volatility
 ```
 
-`--check` regenerates and compares every coefficient. The integrated checker
+`--check` regenerates and compares every coefficient and degree entry. The integrated checker
 recomputes the direct-D cell bounds and the reduced-seed proof. It does not use
 a previously generated JSON report as a premise. Its narrow source bridge
 reconstructs the reviewed baseline and enforces the original whole-file hashes
-before importing any unchanged kernel certificate. The approximation change
-has its own bound; it is not treated as a representation equivalence.
+before importing any unchanged kernel certificate. It binds the exact degree
+dispatch, array lengths, Horner loops and rectangle-to-degree selection. A
+changed selector cannot be admitted by updating a whole-file hash. The same
+bridge preserves the unchanged AS1/FMA-provider checks; it does not make AS1
+responsible for proving the changed seeds. The approximation change has its
+own bound and is not treated as a representation equivalence.
+
+The degree map is selected from finite candidate pairs by the final continuous
+error budget. It is not claimed globally optimal. Uniform degree 6/6 fails the
+current conservative bound on small rectangle 1 and one leaf of core rectangle
+3, so those rectangles retain degree 7 in their first coordinate. Such a failed
+bound is not an observed floating-point failure.
 
 ## Seed perturbation
 
@@ -82,8 +106,9 @@ coefficients, Horner operations, and the final FMA are then charged explicitly.
 The old root's lower attainable-accuracy denominator remains valid because
 the target root and target price did not change.
 
-The resulting proof covers all 5,474 imported wing/small/core continuous seed
-leaves conditionally on the archived seed cover, Mills models, compensated
+The checker audits all 5,474 imported wing/small/core continuous seed leaves;
+the common-finish bound covers 5,457 after the existing guard excludes 17 wing
+leaves. It is conditional on the archived seed cover, Mills models, compensated
 reserve lemmas, and floating primitive contracts. It does not regenerate those
 certificates, establish a whole-domain solver theorem, prove the compiler or
 vendor libm, or make a speed claim. Empirical replay and host timing are separate

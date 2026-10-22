@@ -183,6 +183,12 @@ def audit(seed_rows, original_source, candidate_source, coefficient_metadata, ol
  metadata=coefficient_metadata
  oldtables={name:table(original_source,name) for name in metadata}
  newtables={name:table(candidate_source,name) for name in metadata}
+ for name,item in metadata.items():
+  lanes=item['lanes'];x_degree=item['x_degree'];y_degree=item['y_degree']
+  assert len(newtables[name])==(x_degree+1)*lanes
+  assert 0<=y_degree<=x_degree<=10
+  for lane in range(lanes//2,lanes):
+   assert all(value==0 for value in newtables[name][lane::lanes][y_degree+1:])
  rects={route:[table(original_source,route+'_rects')[i:i+4] for i in range(0,len(table(original_source,route+'_rects')),4)] for route in ['small','core']}
  ranks={route:[int(v) for v in re.findall(r'\(&lr_'+route+r'_\d+, (\d+)\)',original_source)] for route in ['small','core']}
  DERROR={(r['regime'],r['cell']):F(r['exact_total']) for r in cell_bounds}
@@ -208,10 +214,15 @@ def audit(seed_rows, original_source, candidate_source, coefficient_metadata, ol
    'max_seed_relative_change':str(max(r['epsilon'] for r in records)),
    'max_root_radius':str(max(r.get('r',F(0)) for r in records)),
    'max_normalized_residual':str(max(r.get('n',F(0)) for r in records)),
-   'worst':{k:str(v) if isinstance(v,F) else v for k,v in worst.items()}}
+   'worst':{k:str(v) if isinstance(v,F) else v for k,v in worst.items()},
+   'rectangles':{str(k):{'x_degree':metadata[f'lr_{route}_{k}']['x_degree'],
+                        'y_degree':metadata[f'lr_{route}_{k}']['y_degree'],
+                        'maximum_rho_bound':str(max(r['rho'] for r in records if r['rect']==k))}
+                 for k in sorted({r['rect'] for r in records})} if route!='wing' else {}}
  return {'status':'All represented-coefficient, source-order and continuous-leaf assertions passed',
-  'method':'Exact Chebyshev mode truncation; source-order seed perturbation; finite vega/geometry transport; fourth inverse derivative remainder; cubic source rounding ledger',
+  'method':'Source-bound per-table degrees; exact Chebyshev mode truncation; source-order seed perturbation; finite vega/geometry transport; fourth inverse derivative remainder; cubic source rounding ledger',
   'route_bounds':reports,'coefficient_bytes_before':sum(v['old_bytes'] for v in metadata.values()),
   'coefficient_bytes_after':sum(v['new_bytes'] for v in metadata.values()),
+  'degree_metadata_bytes':2*len(metadata),
   'checked_reserve_domain':'0<=h<9, 0<=t<3, -1.5<h-t, h+t<9, .01<D<2, ED/D<1e-10 and seed>2^-350',
   'conditional_premises':'The hash-bound continuous old seed cover and primitive/Mills/compensated reserve contracts are inherited, not regenerated. The reduced approximation and enlarged source ledger are checked here.'}
