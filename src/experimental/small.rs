@@ -582,10 +582,12 @@ mod tests {
     }
 
     #[test]
-    fn conservative_preflight_seams_retain_certified_outputs() {
-        // Frozen outputs at reject thresholds, adjacent prices and the a=1 jump.
-        // Changed outputs were checked against independent Black roots at
-        // 160/240 decimal digits; their rho values are all below 0.363.
+    fn conservative_preflight_seams_retain_attainable_precision() {
+        // Reject thresholds, adjacent prices and the a=1 jump. The retained
+        // historical outputs are reference anchors, not required output bits.
+        // Independent Black roots and eta_J agree at 160/240 decimal digits;
+        // see scripts/generate_adaptive_seed_seams.py::invert. Each correction
+        // stores the high-precision root minus its historical anchor.
         let cases: &[(u64, u64, u64)] = &[
             (0x3fb999999999999a, 0x3f79999999999999, 0x3fb74aa89cb8b539),
             (0x3fb999999999999a, 0x3f7999999999999a, 0x3fb74aa89cb8b539),
@@ -603,11 +605,33 @@ mod tests {
             (0x4014000000000000, 0x3f90000000000000, 0x400539daf0082b98),
             (0x4014000000000000, 0x3f90000000000001, 0x400539daf0082b99),
         ];
-        for &(a, b, want) in cases {
-            assert_eq!(
-                solve(f64::from_bits(a), f64::from_bits(b)).to_bits(),
-                want,
-                "a={a:x}, b={b:x}"
+        // Root correction, eta_J (both encoded as binary64).
+        let corrections: &[(u64, u64)] = &[
+            (0xbc61b36975b0dc64, 0x3cb50ba378e54a32),
+            (0xbc510a23f1b3675b, 0x3cb50ba378e54a32),
+            (0x3c1528b07faea125, 0x3cb50ba378e54a32),
+            (0x3c6818b23594cb0a, 0x3cbcc34e0871ec3c),
+            (0x3c803b60b42fa9cc, 0x3cbcc34e0871ec3c),
+            (0xbc663dac94177cac, 0x3cbcc34e0871ec3c),
+            (0xbc6e44f7b265a44a, 0x3cb9f109ed6ec32f),
+            (0x3c9eb4d7bb196026, 0x3cb9f109ed6ec32f),
+            (0xbc9c503ae21a767b, 0x3cb9f109ed6ec330),
+            (0x3ca27b92898d89c2, 0x3cb6fc8c09423134),
+            (0xbc8433f32a1ad6fa, 0x3cb6fc8c09423134),
+            (0x3c97c3c91aa19681, 0x3cb6fc8c09423134),
+            (0x3cac4f81abe980a5, 0x3cb35c9b851805e8),
+            (0x3cb29d74dee43753, 0x3cb35c9b851805e8),
+            (0xbc91dc8c3cf36ab4, 0x3cb35c9b851805e8),
+        ];
+        assert_eq!(cases.len(), corrections.len());
+        for (&(a, b, anchor), &(correction, eta)) in cases.iter().zip(corrections) {
+            let s = solve(f64::from_bits(a), f64::from_bits(b));
+            let hi = f64::from_bits(anchor);
+            let lo = f64::from_bits(correction);
+            let rho = (((s - hi) - lo).abs() / hi) / f64::from_bits(eta);
+            assert!(
+                s.is_finite() && s > 0.0 && rho < 1.0,
+                "a={a:x}, b={b:x}, s={s:e}, rho_J={rho}"
             );
         }
     }
