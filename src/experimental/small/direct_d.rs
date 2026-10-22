@@ -399,7 +399,7 @@ static LOW: [[f64; 3]; 17] = [
     ],
 ];
 
-static DEGREE: [usize; 17] = [
+static DEGREE: [u8; 17] = [
     15, 14, 14, 13, 13, 12, 12, 12, 11, 11, 11, 11, 10, 10, 10, 10, 10,
 ];
 #[inline]
@@ -407,7 +407,7 @@ fn base(h: Pair) -> Pair {
     let k = (2.0 * h.hi).floor() as usize;
     let x = sub(h, Pair::from((2.0 * k as f64 + 1.0) * 0.25));
     let c = &COEFF[k];
-    let n = DEGREE[k];
+    let n = usize::from(DEGREE[k]);
     let mut p = c[n];
     for i in (3..n).rev() {
         p = fma(p, x.hi, c[i]);
@@ -436,6 +436,16 @@ pub(super) fn evaluate(h: Pair, t: Pair) -> Pair {
     } else if t.hi <= 0.5 {
         odd_series::<12>(h, t, d0)
     } else if t.hi <= 0.75 {
+        if h.hi >= 7.0 {
+            odd_series::<10>(h, t, d0)
+        } else if h.hi >= 6.0 {
+            odd_series::<12>(h, t, d0)
+        } else {
+            odd_series::<14>(h, t, d0)
+        }
+    } else if h.hi >= 6.0 {
+        odd_series::<12>(h, t, d0)
+    } else if h.hi >= 5.0 {
         odd_series::<14>(h, t, d0)
     } else {
         odd_series::<16>(h, t, d0)
@@ -2254,3 +2264,7 @@ mod extended_recurrence_tests {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "direct_d_adaptive_tests.rs"]
+mod adaptive_tests;

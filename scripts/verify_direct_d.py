@@ -75,10 +75,73 @@ def function_body(source,name):
         depth+=(source[i]=='{')-(source[i]=='}');i+=1
     return source[start:i]
 
+# Bind the archived table before using it to establish representation-only
+# equivalence. Restoring source notation below does not restore calculations:
+# every retained coefficient is independently compared by its exact bits.
+for key,want in EXPECTED_BINDINGS['reference'].items():
+    got=hashlib.sha256((ORIGINAL/key).read_bytes()).hexdigest()
+    assert got==want, ('inherited certificate binding mismatch',key,got,want)
+
+COMPACT_LAYOUT_HASHES = {
+    'src/experimental/small.rs': '711bde18c91e67c18645581e61ce2b3a3fce95b79794281b783537a4aa19b7af',
+    'src/experimental/small/constants.rs': '498b84a03308000fd71948ac554b4ae59cd914b9ff03e811aad735034c03e509',
+    'src/experimental/mills_constants.rs': '0fda9d58f198c692908879ead2020d62bc0b2859fb2abbab1913fa8f06ed3063',
+}
+for key,want in COMPACT_LAYOUT_HASHES.items():
+    got=hashlib.sha256((SOURCE/key).read_bytes()).hexdigest()
+    assert got==want, ('compact source binding mismatch',key,got,want)
+
+def replace_once(source,old,new):
+    assert source.count(old)==1, ('representation bridge pattern',old)
+    return source.replace(old,new,1)
+
+def restore_small_layout(source):
+    # This exact inverse of the representation change permits the historical
+    # source-order hashes to stay authoritative. No floating operation,
+    # coefficient order, lane order or reduction is removed by this bridge.
+    source=replace_once(source,'use crate::experimental::mills_constants::{M_COEFF_HI, M_COEFF_LO};\n','')
+    old=function_body(source,'single_mills');body=old
+    body=replace_once(body,'let c = &M_COEFF_HI[k];\n    let cl = &M_COEFF_LO[k];','let c = &M_COEFF[k];')
+    body=re.sub(r'c\[([ni])\]',r'c[\1].hi',body)
+    body=body.replace('cl[i]','c[i].lo')
+    source=replace_once(source,old,body)
+    old=function_body(source,'dual_mills');body=old
+    body=replace_once(body,'usize::from(mills_degree[kx].max(mills_degree[ky]))','mills_degree[kx].max(mills_degree[ky])')
+    body=replace_once(body,'let a = &M_COEFF_HI[kx];\n    let b = &M_COEFF_HI[ky];\n    let al = &M_COEFF_LO[kx];\n    let bl = &M_COEFF_LO[ky];','let a = &M_COEFF[kx];\n    let b = &M_COEFF[ky];')
+    body=re.sub(r'([ab])\[([ni])\]',r'\1[\2].hi',body)
+    body=body.replace('al[i]','a[i].lo').replace('bl[i]','b[i].lo')
+    source=replace_once(source,old,body)
+    source=replace_once(source,"""let d = sub(
+            Pair::from(1.0),
+            mul(h, single_mills(h, usize::from(mills_degree[k]))),
+        );""",'let d = sub(Pair::from(1.0), mul(h, single_mills(h, mills_degree[k])));')
+    return source
+
 small_bytes=(SOURCE/'src/experimental/small.rs').read_bytes()
-assert hashlib.sha256(small_bytes).hexdigest()=='d92684d6227205e627dadd2d0a9a0f0735dec34bdaf2c960228f9e676ad39286', 'whole small source binding mismatch'
-small_source=small_bytes.decode()
-source_variant='direct_D_cubic_inverse'
+small_source=restore_small_layout(small_bytes.decode())
+assert hashlib.sha256(small_source.encode()).hexdigest()=='d92684d6227205e627dadd2d0a9a0f0735dec34bdaf2c960228f9e676ad39286', 'representation-preserving small source binding mismatch'
+reference_constants=(ORIGINAL/'src/small/constants.rs').read_text()
+start=reference_constants.index('pub(super) static M_COEFF:')
+end=reference_constants.index('\n];',start)+4
+reference_mills_declaration=reference_constants[start:end]
+constants_source=(SOURCE/'src/experimental/small/constants.rs').read_text()
+restored_constants=replace_once(constants_source,'mills_degree: [u8; 44]','mills_degree: [usize; 44]')
+restored_constants=replace_once(restored_constants,'upper_degrees: [[u8; 32]; 6]','upper_degrees: [[usize; 32]; 6]')
+restored_constants=replace_once(restored_constants,'pub(super) static ATM_SERIES:',reference_mills_declaration+'pub(super) static ATM_SERIES:')
+BASELINE_DIRECT_D_SELECTOR = 'fn evaluate(h: Pair, t: Pair) -> Pair {\n    let d0 = base(h);\n    if t.hi <= 0.0625 {\n        odd_series::<6>(h, t, d0)\n    } else if t.hi <= 0.25 {\n        odd_series::<9>(h, t, d0)\n    } else if t.hi <= 0.5 {\n        odd_series::<12>(h, t, d0)\n    } else if t.hi <= 0.75 {\n        odd_series::<14>(h, t, d0)\n    } else {\n        odd_series::<16>(h, t, d0)\n    }\n}'
+ADAPTIVE_DIRECT_D_SELECTOR = 'fn evaluate(h: Pair, t: Pair) -> Pair {\n    let d0 = base(h);\n    if t.hi <= 0.0625 {\n        odd_series::<6>(h, t, d0)\n    } else if t.hi <= 0.25 {\n        odd_series::<9>(h, t, d0)\n    } else if t.hi <= 0.5 {\n        odd_series::<12>(h, t, d0)\n    } else if t.hi <= 0.75 {\n        if h.hi >= 7.0 {\n            odd_series::<10>(h, t, d0)\n        } else if h.hi >= 6.0 {\n            odd_series::<12>(h, t, d0)\n        } else {\n            odd_series::<14>(h, t, d0)\n        }\n    } else if h.hi >= 6.0 {\n        odd_series::<12>(h, t, d0)\n    } else if h.hi >= 5.0 {\n        odd_series::<14>(h, t, d0)\n    } else {\n        odd_series::<16>(h, t, d0)\n    }\n}'
+adaptive_direct_d=(SOURCE/'src/experimental/small/direct_d.rs').read_text()
+assert function_body(adaptive_direct_d,'evaluate')==ADAPTIVE_DIRECT_D_SELECTOR.rstrip(), 'adaptive selector mismatch'
+ADAPTIVE_DIRECT_D_TEST_MODULE = '\n#[cfg(test)]\n#[path = "direct_d_adaptive_tests.rs"]\nmod adaptive_tests;\n'
+assert adaptive_direct_d.endswith(ADAPTIVE_DIRECT_D_TEST_MODULE), 'adaptive component-test module missing'
+restored_direct_d=adaptive_direct_d.removesuffix(ADAPTIVE_DIRECT_D_TEST_MODULE)
+restored_direct_d=replace_once(restored_direct_d,ADAPTIVE_DIRECT_D_SELECTOR,BASELINE_DIRECT_D_SELECTOR)
+restored_direct_d=replace_once(restored_direct_d,'DEGREE: [u8; 17]','DEGREE: [usize; 17]')
+restored_direct_d=replace_once(restored_direct_d,'let n = usize::from(DEGREE[k]);','let n = DEGREE[k];')
+assert hashlib.sha256(restored_direct_d.encode()).hexdigest()==EXPECTED_BINDINGS['source']['src/experimental/small/direct_d.rs'], 'non-selector/non-layout direct-D change requires separate review'
+# The restored table source hashes bind every degree value and every other
+# represented constant. u8->usize is exact for every possible u8 value.
+source_variant='direct_D_cubic_inverse_compact_mills'
 assert 'let t = Pair::from(s * 0.5);' in function_body(small_source,'finish')
 assert 't.hi <= 1.0 && (t.hi <= 0.5 || h.hi >= 2.0)' in function_body(small_source,'forward_D')
 source_bindings=EXPECTED_BINDINGS['source']
@@ -87,13 +150,14 @@ for key,want in source_bindings.items():
         value=function_body(small_source,key[3:]).encode()
     elif key=='type:Pair':
         value=small_source[:small_source.index('fn fma(')].encode()
+    elif key=='src/experimental/small/constants.rs':
+        value=restored_constants.encode()
+    elif key=='src/experimental/small/direct_d.rs':
+        value=restored_direct_d.encode()
     else:
         value=(SOURCE/key).read_bytes()
     got=hashlib.sha256(value).hexdigest()
     assert got==want, ('source binding mismatch',key,got,want)
-for key,want in EXPECTED_BINDINGS['reference'].items():
-    got=hashlib.sha256((ORIGINAL/key).read_bytes()).hexdigest()
-    assert got==want, ('inherited certificate binding mismatch',key,got,want)
 
 # The adapter changes representation only: binary ops and negation delegate to
 # lane-wise fearless_simd operations, with no reductions or reassociation.
@@ -136,8 +200,26 @@ def coeffs(path):
     s=source.split('mills_degree:',1)[1].split('=',1)[1].split('];',1)[0]
     degrees=list(map(int,re.findall(r'\d+',s))); assert len(degrees)==44
     return rows,degrees
-ROWS,DEG=coeffs(SOURCE/'src/experimental/small/constants.rs')
-assert (ROWS,DEG)==coeffs(ORIGINAL/'src/small/constants.rs')
+ROWS,DEG=coeffs(ORIGINAL/'src/small/constants.rs')
+compact_mills=(SOURCE/'src/experimental/mills_constants.rs').read_text()
+def represented_bits(source,name):
+    block=source.split('static '+name+':',1)[1].split('=',1)[1].split('];',1)[0]
+    return [int(v,16) for v in re.findall(r'f64::from_bits\((0x[0-9a-f]+)\)',block)]
+reference_bits=represented_bits(reference_constants,'M_COEFF')
+hi_bits=represented_bits(compact_mills,'M_COEFF_HI')
+lo_bits=represented_bits(compact_mills,'M_COEFF_LO')
+assert len(reference_bits)==2200 and len(hi_bits)==1100 and len(lo_bits)==132
+assert hi_bits==reference_bits[::2], 'retained Mills high coefficient mismatch'
+assert lo_bits==[reference_bits[2*(25*k+j)+1] for k in range(44) for j in range(3)], 'retained Mills low coefficient mismatch'
+# The historical source hashes above establish that lows j>=3 are never
+# consumed: single_mills/dual_mills only load them inside (0..3).rev().
+# Thus the inherited evaluation and rounding proof applies unchanged.
+compact_degrees=list(map(int,re.findall(r'\d+',constants_source.split('mills_degree:',1)[1].split('=',1)[1].split('];',1)[0])))
+assert compact_degrees==DEG
+layout_equivalence={'status':'bit_exact_retained_coefficients_and_historical_source_order',
+    'high_coefficients':len(hi_bits),'low_coefficients':len(lo_bits),'mills_degree_entries':len(DEG),
+    'source_sha256':COMPACT_LAYOUT_HASHES,
+    'method':'Exact reverse of reviewed load/type notation matches historical source hashes; all retained coefficient bits match the hash-bound archived table. Low components at indices 3..24 are never evaluated.'}
 
 # Decode represented D0 coefficients. No fitting estimates enter this proof.
 d0_source=(SOURCE/'src/experimental/small/direct_d.rs').read_text()
@@ -203,59 +285,73 @@ for j,text in re.findall(r'cs\[(\d+)\]\s*=\s*cur\s*\*\s*([0-9.e+-]+);',series):r
 assert set(reciprocals)==set(range(1,16))
 for j,value in reciprocals.items():assert abs(value-F(1,factorial(2*j+1)))<=u/factorial(2*j+1)
 
+def selected_terms(regime,k,baseline_count):
+    if regime=='three_quarter':return 10 if k>=14 else 12 if k>=12 else baseline_count
+    if regime=='one':return 12 if k>=12 else 14 if k>=10 else baseline_count
+    return baseline_count
+
+def bound_series(regime,k,count,t_squared):
+    D0=d0_records[k];ED0=D0['model']+D0['native']
+    hhi=F(k+1,2)+128*u;hlo=max(F(0),F(k,2)-128*u)
+    Hmax=hhi*hhi
+    assert Hmax<80
+    assert ED0<u/3, ('D0 model/rounding budget exceeded',regime,k,float(ED0/u))
+    ms=moment_intervals(max(F(0),F(k,2)-F(1,1000)),2*count+1)
+    I=[v[1] for v in ms]
+    # H is the rounded h.high square. Hlow restores the exact square
+    # up to O(u^2), including the input low. The ordinary H+3 correction
+    # is a FastTwoSum when H>=3. Otherwise an explicit 4u bound covers
+    # both operations, on low-h cells where FastTwoSum cannot be used.
+    # QL bounds the RENORMALIZED centered argument in base(), not
+    # the low of the raw h=a/s pair. Bound that division residual
+    # separately: |h.low| <= (1+u)*u*|h.high|/(1-u) + nu.
+    h_low=up((1+u)*u*hhi/(1-u)+nu)
+    EH=up(u*Hmax+2*hhi*h_low+h_low*h_low+nu)
+    beta_error=4*u if (1-u)*hlo*hlo-nu<3 else F(0)
+    Eprev=ED0+D0['raw_low']
+    Ecur=up((Hmax+3)*ED0+beta_error*I[1]+2*u*I[3]+S)
+    reciprocal=reciprocals[1]
+    cs_errors={1:up(reciprocal*Ecur+abs(reciprocal-F(1,6))*I[3]+u*reciprocal*(I[3]+Ecur)+nu)}
+    for j in range(2,count):
+        n=2*j-1;C=2*n+1;B=n*(n-1)
+        EA=up(EH+u*((1+u)*Hmax+C+nu)+nu)
+        A=up((1+u)*((1+u)*Hmax+C+nu)+nu)
+        # Integer-times-previous is rounded before the fused update.
+        Eproduct=up(u*B*(I[2*j-3]+Eprev)+nu)
+        inside=up(A*Ecur+B*Eprev+EA*I[2*j-1]+Eproduct)
+        Enext=up((1+u)*inside+u*I[2*j+1]+nu)
+        assert I[2*j+1]+Enext<2**100
+        Eprev,Ecur=Ecur,Enext
+        reciprocal=reciprocals[j];true=F(1,factorial(2*j+1))
+        cs_errors[j]=up(reciprocal*Ecur+abs(reciprocal-true)*I[2*j+1]+u*reciprocal*(I[2*j+1]+Ecur)+nu)
+    # Tail uses positivity and C_(j+1)/C_j<=1/(2j+3) for h>=0.
+    tail=up(I[2*count+1]*t_squared**count/factorial(2*count+1)/(1-t_squared/F(2*count+3)))
+    # The source receives Pair::from(s/2), with exactly zero low. Every
+    # direct-D call has t>0.001, hence scaling s by .5 is exact and
+    # normal; the sole represented-square rounding has error <=u*T.
+    local_TH=(1+u)*t_squared+nu;local_TL=u*t_squared+nu
+    rest=Erest=F(0)
+    for j in range(count-1,0,-1):
+        coefficient=I[2*j+1]/factorial(2*j+1);ec=cs_errors[j]
+        mag=rest*local_TH+coefficient+ec
+        Erest=up(local_TH*Erest+rest*local_TL+ec+u*mag+nu)
+        rest=up((1+u)*mag+nu)
+    assert rest*local_TH<1
+    total=up(ED0+tail+local_TH*Erest+rest*local_TL+u*local_TH*rest+nu+S)
+    record={'regime':regime,'cell':k,'terms':count,'d0_model_in_u':float(D0['model']/u),'d0_native_in_u':float(D0['native']/u),'raw_low_in_u':float(D0['raw_low']/u),'tail_in_u':float(tail/u),'total_extra_in_u':float(total/u),'exact_total':str(total)}
+    assert total<u, ('active direct D budget exceeded',regime,k,float(total/u))
+    return record
+
 extended_records=[]
-for regime,cells,count,t_squared in [('middle',range(17),6,F(1,256)),('quarter',range(17),9,F(1,16)),('half',range(17),12,F(1,4)),('three_quarter',range(4,17),14,F(9,16)),('one',range(4,17),16,F(1))]:
+for regime,cells,baseline_count,t_squared in [('middle',range(17),6,F(1,256)),('quarter',range(17),9,F(1,16)),('half',range(17),12,F(1,4)),('three_quarter',range(4,17),14,F(9,16)),('one',range(4,17),16,F(1))]:
     for k in cells:
-        D0=d0_records[k];ED0=D0['model']+D0['native']
-        hhi=F(k+1,2)+128*u;hlo=max(F(0),F(k,2)-128*u)
-        Hmax=hhi*hhi
-        assert Hmax<80
-        assert ED0<u/3, ('D0 model/rounding budget exceeded',regime,k,float(ED0/u))
-        ms=moment_intervals(max(F(0),F(k,2)-F(1,1000)),2*count+1)
-        I=[v[1] for v in ms]
-        # H is the rounded h.high square. Hlow restores the exact square
-        # up to O(u^2), including the input low. The ordinary H+3 correction
-        # is a FastTwoSum when H>=3. Otherwise an explicit 4u bound covers
-        # both operations, on low-h cells where FastTwoSum cannot be used.
-        # QL bounds the RENORMALIZED centered argument in base(), not
-        # the low of the raw h=a/s pair. Bound that division residual
-        # separately: |h.low| <= (1+u)*u*|h.high|/(1-u) + nu.
-        h_low=up((1+u)*u*hhi/(1-u)+nu)
-        EH=up(u*Hmax+2*hhi*h_low+h_low*h_low+nu)
-        beta_error=4*u if (1-u)*hlo*hlo-nu<3 else F(0)
-        Eprev=ED0+D0['raw_low']
-        Ecur=up((Hmax+3)*ED0+beta_error*I[1]+2*u*I[3]+S)
-        reciprocal=reciprocals[1]
-        cs_errors={1:up(reciprocal*Ecur+abs(reciprocal-F(1,6))*I[3]+u*reciprocal*(I[3]+Ecur)+nu)}
-        for j in range(2,count):
-            n=2*j-1;C=2*n+1;B=n*(n-1)
-            EA=up(EH+u*((1+u)*Hmax+C+nu)+nu)
-            A=up((1+u)*((1+u)*Hmax+C+nu)+nu)
-            # Integer-times-previous is rounded before the fused update.
-            Eproduct=up(u*B*(I[2*j-3]+Eprev)+nu)
-            inside=up(A*Ecur+B*Eprev+EA*I[2*j-1]+Eproduct)
-            Enext=up((1+u)*inside+u*I[2*j+1]+nu)
-            assert I[2*j+1]+Enext<2**100
-            Eprev,Ecur=Ecur,Enext
-            reciprocal=reciprocals[j];true=F(1,factorial(2*j+1))
-            cs_errors[j]=up(reciprocal*Ecur+abs(reciprocal-true)*I[2*j+1]+u*reciprocal*(I[2*j+1]+Ecur)+nu)
-        # Tail uses positivity and C_(j+1)/C_j<=1/(2j+3) for h>=0.
-        tail=up(I[2*count+1]*t_squared**count/factorial(2*count+1)/(1-t_squared/F(2*count+3)))
-        # The source receives Pair::from(s/2), with exactly zero low. Every
-        # direct-D call has t>0.001, hence scaling s by .5 is exact and
-        # normal; the sole represented-square rounding has error <=u*T.
-        local_TH=(1+u)*t_squared+nu;local_TL=u*t_squared+nu
-        rest=Erest=F(0)
-        for j in range(count-1,0,-1):
-            coefficient=I[2*j+1]/factorial(2*j+1);ec=cs_errors[j]
-            mag=rest*local_TH+coefficient+ec
-            Erest=up(local_TH*Erest+rest*local_TL+ec+u*mag+nu)
-            rest=up((1+u)*mag+nu)
-        assert rest*local_TH<1
-        total=up(ED0+tail+local_TH*Erest+rest*local_TL+u*local_TH*rest+nu+S)
-        record={'regime':regime,'cell':k,'terms':count,'d0_model_in_u':float(D0['model']/u),'d0_native_in_u':float(D0['native']/u),'raw_low_in_u':float(D0['raw_low']/u),'tail_in_u':float(tail/u),'total_extra_in_u':float(total/u),'exact_total':str(total)}
+        baseline_record=bound_series(regime,k,baseline_count,t_squared)
+        count=selected_terms(regime,k,baseline_count)
+        record=bound_series(regime,k,count,t_squared) if count!=baseline_count else dict(baseline_record)
+        assert F(record['exact_total'])<=F(baseline_record['exact_total']), ('adaptive count worsens a cell budget',regime,k,count)
+        record['baseline_terms']=baseline_count
+        record['baseline_exact_total']=baseline_record['exact_total']
         extended_records.append(record)
-        assert total<u, ('active direct D budget exceeded',regime,k,float(total/u))
 extended_by_cell={(row['regime'],row['cell']):F(row['exact_total']) for row in extended_records}
 DELTA=max(F(row['exact_total']) for row in extended_records)
 
@@ -453,10 +549,12 @@ for route in ['wing','small','core']:
                          'candidate_rho_bound':str(new),'candidate_display':float(new)}
 
 
-paths=[SOURCE/'src/experimental/small.rs',SOURCE/'src/experimental/small/constants.rs',SOURCE/'src/experimental/small/direct_d.rs',Path(__file__)]
-result={'status':'All exact rational assertions passed','candidate':'Leaf-conditioned direct-D error allocation with exact half-volatility argument and cubic inverse',
+paths=[SOURCE/'src/experimental/small.rs',SOURCE/'src/experimental/small/constants.rs',SOURCE/'src/experimental/mills_constants.rs',SOURCE/'src/experimental/small/direct_d.rs',Path(__file__)]
+result={'status':'All exact rational assertions passed','candidate':'H-adaptive direct-D counts with non-increasing cell error bounds and cubic inverse',
  'scope':'Common finish: cubic inverse on all accepted leaves; direct D for .001<t<=.5, and .5<t<=1 with h.hi>=2; all transported wing/small/core seed leaves. Conditional inherited seed/Mills/primitive contracts.',
  'method':'Rigorous moment intervals, Bernstein D0 model enclosures, source-order rounding bounds for compensated D0, initial I3, odd recurrence, reciprocal factorials, and t-square Horner with exact t=s/2 so |RN(t^2)-t^2|<=u*t^2+nu. Recomputed leaf-wise complete rational-update bounds plus finite-HH transport and exact rational cubic-update difference.',
+ 'adaptive_selector_binding':'Exact source selector; restoring the baseline selector matches the reviewed direct-D hash',
+ 'all_cell_budgets_non_increasing':True,
  'max_extra_D_error_in_u':max(r['total_extra_in_u'] for r in extended_records),'cell_bounds':extended_records,
  'route_bounds':route_bounds,'seed_rows':rows_by_route,'D_absolute_increment':str(DELTA),'leaf_baseline_method':'Recomputed independently from source-bound archived prove_small_finish.py and prove_global_mills.py; each route maximum matches the bound archived finish.json exactly',
  'source_sha256':{str(p.relative_to(SOURCE)):hashlib.sha256(p.read_bytes()).hexdigest()for p in paths[:-1]},
@@ -466,6 +564,7 @@ result={'status':'All exact rational assertions passed','candidate':'Leaf-condit
  'conditional_inherited_premises':['The continuous seed cover, true-Mills model, residual ledger and final-three compensated reserve are imported certificates; this checker binds their reviewed hashes and audits all prerequisite endpoints, but does not regenerate those certificates.',
                                   'The D0 high suffix and three compensated stages satisfy the inherited coefficient, argument, high/low and centering bounds. The first-moment rounding reserve covers low cross products and recovery errors; all subsequent recurrence steps are bounded explicitly.'],
  'intended_source_bindings':source_bindings,
+ 'compact_layout_equivalence':layout_equivalence,
  'simd_backend':{'crate':'fearless_simd','version':'1.0.0','source_tree_sha256':SIMD_SOURCE_HASH,
                  'rounding':'Independent binary64 lanes; mul_add_precise with a single rounding; no lane reduction. Primitive correctness is conditional.'},
  'dependency_sha256':EXPECTED_BINDINGS['reference'],

@@ -71,11 +71,24 @@ single-rounding FMA required by compensated evaluation on every backend.
 
 The common finish evaluates `D(h,t)` directly for `0.001<t<=1/2`, and for
 `1/2<t<=1` when `h>=2`. It reuses the D0
-coefficients and generates odd moments by recurrence, with 6/9/12/14/16 terms
-at `t<=1/16, 1/4, 1/2, 3/4, 1`. Both truncation and rounding bounds determine
-these guards together with each seed leaf's final `rho_J` error budget;
+coefficients and generates odd moments by recurrence, with 6/9/12 terms
+at `t<=1/16, 1/4, 1/2`. For `1/2<t<=3/4`, it uses 14 terms below
+`h.high=6`, 12 terms from 6 to 7, and 10 terms from 7. For `3/4<t<=1`,
+it uses 16 terms below `h.high=5`, 14 terms from 5 to 6, and 12 terms from 6.
+The larger-h moments are smaller, so the shorter series reduces recurrence
+work while retaining a non-increasing truncation-plus-rounding bound on every
+D0 cell. `scripts/verify_direct_d.py` verifies that comparison with exact
+rational bounds and transports the result through each seed leaf's final
+`rho_J` error budget;
 the remaining region uses Mills differences or the tiny-t
 expansion. Its target is the normal-price core contract defined below.
+
+The large-region solver uses degree 16 in its inexpensive table-based Mills
+evaluation, then retains degree 24 in the compensated final evaluation.
+The fast residual's error bound controls both sign updates and the handoff
+to precise evaluation. Small and large paths share the same 44 coefficient
+rows: 25 high parts and only the three low parts consumed by compensated
+Horner evaluation. Degree tables use `u8`, widened at indexing sites.
 
 The separate **explicit inverse-Gaussian formula**, selected with
 `calculate_explicit::<SpFn>()`, checks relative quantile changes and uses a
@@ -136,7 +149,9 @@ checks the D0 polynomial, analytic moment tails, source-order recurrence
 rounding, and the cubic correction with the required certificates in an
 `implied-black-volatility` checkout. An exact rational identity relates the
 cubic correction to the certified Householder update; the checker adds the
-coefficient and evaluation rounding bounds over all 5,474 seed-cover leaves.
+coefficient and evaluation rounding bounds over the accepted seed-cover leaves.
+It audits all 5,474 seed rows and transports 5,457; the existing `h<=8` guard
+excludes 17 wing rows from this common-finish bound.
 It recomputes the inherited finish bound for each leaf and allocates the
 direct-D error against that leaf's remaining precision budget. The exact
 `t=s0/2` argument also limits the represented square's rounding error to `u*t*t`.
@@ -145,7 +160,15 @@ establish vendor math-function accuracy.
 The direct-D checker also binds the reviewed `fearless_simd` 1.0.0 sources.
 It finds them in Cargo's registry cache after fetching dependencies, or accepts
 an explicit `--simd-root PATH` for vendored sources.
-[Current validation data](results.json) identifies the measured source and bounds.
+`scripts/verify_large_fast.py --reference-root PATH` bounds the fast large-region
+residual over 34 continuous table cells and 114 residual boxes. It verifies
+sign and stopping margins under the existing target/bracket, precise-residual,
+derivative and final-correction assumptions. This is a conditional component
+bound, not a complete large-region solver proof.
+
+[Earlier validation data](results.json) identifies its measured source and bounds.
+[The compact-table and adaptive-evaluation report](experimental-improvements.md)
+records validation and paired measurements for the current changes.
 
 ## Algorithm references
 

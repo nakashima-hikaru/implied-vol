@@ -6,6 +6,7 @@ mod direct_d;
 mod upper;
 use crate::experimental::lanes::F64x2;
 use crate::experimental::math::inverse_norm_cdf;
+use crate::experimental::mills_constants::{M_COEFF_HI, M_COEFF_LO};
 use constants::*;
 
 #[derive(Clone, Copy, Debug)]
@@ -74,19 +75,20 @@ fn single_mills(xx: Pair, n: usize) -> Pair {
     let Some(k) = mills_index(xx.hi) else {
         return Pair::new(f64::NAN, f64::NAN);
     };
-    let c = &M_COEFF[k];
+    let c = &M_COEFF_HI[k];
+    let cl = &M_COEFF_LO[k];
     let x = sub(xx, Pair::from((2.0 * (k as f64 - 12.0) + 1.0) * 0.25));
-    let mut p = c[n].hi;
+    let mut p = c[n];
     for i in (3..n).rev() {
-        p = fma(p, x.hi, c[i].hi);
+        p = fma(p, x.hi, c[i]);
     }
     let mut lo = 0.0;
     for i in (0..3).rev() {
         let prod = p * x.hi;
         let mut err = fma(p, x.hi, -prod) + p * x.lo;
-        let sm = prod + c[i].hi;
+        let sm = prod + c[i];
         let z = sm - prod;
-        err += ((prod - (sm - z)) + (c[i].hi - z)) + c[i].lo;
+        err += ((prod - (sm - z)) + (c[i] - z)) + cl[i];
         lo = fma(lo, x.hi, err);
         p = sm;
     }
@@ -97,21 +99,23 @@ fn dual_mills(x: Pair, y: Pair, sum: bool) -> Pair {
     let (Some(kx), Some(ky)) = (mills_index(x.hi), mills_index(y.hi)) else {
         return Pair::new(f64::NAN, f64::NAN);
     };
-    let n = mills_degree[kx].max(mills_degree[ky]);
-    let a = &M_COEFF[kx];
-    let b = &M_COEFF[ky];
+    let n = usize::from(mills_degree[kx].max(mills_degree[ky]));
+    let a = &M_COEFF_HI[kx];
+    let b = &M_COEFF_HI[ky];
+    let al = &M_COEFF_LO[kx];
+    let bl = &M_COEFF_LO[ky];
     let x = sub(x, Pair::from((2.0 * (kx as f64 - 12.0) + 1.0) * 0.25));
     let y = sub(y, Pair::from((2.0 * (ky as f64 - 12.0) + 1.0) * 0.25));
     let h = F64x2::new(x.hi, y.hi);
     let l = F64x2::new(x.lo, y.lo);
-    let mut p = F64x2::new(a[n].hi, b[n].hi);
+    let mut p = F64x2::new(a[n], b[n]);
     for i in (3..n).rev() {
-        p = p.mul_add(h, F64x2::new(a[i].hi, b[i].hi));
+        p = p.mul_add(h, F64x2::new(a[i], b[i]));
     }
     let mut lo = F64x2::splat(0.0);
     for i in (0..3).rev() {
-        let c = F64x2::new(a[i].hi, b[i].hi);
-        let cl = F64x2::new(a[i].lo, b[i].lo);
+        let c = F64x2::new(a[i], b[i]);
+        let cl = F64x2::new(al[i], bl[i]);
         let prod = p * h;
         let err = p.mul_add(h, -prod) + p * l;
         let sm = prod + c;
@@ -132,7 +136,10 @@ fn forward_D(h: Pair, t: Pair) -> Pair {
         let Some(k) = mills_index(h.hi) else {
             return Pair::new(f64::NAN, f64::NAN);
         };
-        let d = sub(Pair::from(1.0), mul(h, single_mills(h, mills_degree[k])));
+        let d = sub(
+            Pair::from(1.0),
+            mul(h, single_mills(h, usize::from(mills_degree[k]))),
+        );
         let H = h.hi * h.hi;
         let T = t.hi * t.hi;
         let i3 = fma(H + 3.0, d.hi, -1.0);

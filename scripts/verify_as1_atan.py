@@ -27,10 +27,14 @@ ARITHMETIC_HASHES = {
     'balanced': 'f80ca28bc60d08471384b78ae8bf928b2c36d7747b1e02a4dba69deda93975d2',
 }
 FMA_BODY_HASH = '0594d16475d930580c8097c79c0cb1dc819b28dd3bdb21e325d2e212ef2cb1b6'
-CONSTANTS_HASH = '27803db098d55851d3c8e71357e72e8ea882e5d0c3a5a21729951edc5cd783b3'
+CONSTANTS_HASH = '498b84a03308000fd71948ac554b4ae59cd914b9ff03e811aad735034c03e509'
+# Hash of the previous constants source with only its M_COEFF declaration
+# removed. Restoring the two degree types below proves all other bytes,
+# including all RULE1/2/3 quadrature atoms and weights, remain unchanged.
+PRE_COMPACTION_CONSTANTS_WITHOUT_MILLS_HASH = '1e22d4bec88503d4cf604f5d7665e2b781d4cb4ac56a59cf8cea5c52c4010ad4'
 CENTRAL_FILE_HASH = '61e04489aa1849afdbabe74273685f0b2062c436035c77c0d4bcae648f5a642f'
 SMALL_FILE_HASHES = {
-    'd0_cubic_inverse': 'd92684d6227205e627dadd2d0a9a0f0735dec34bdaf2c960228f9e676ad39286',
+    'd0_cubic_inverse_compact_mills': '711bde18c91e67c18645581e61ce2b3a3fce95b79794281b783537a4aa19b7af',
 }
 
 
@@ -149,6 +153,14 @@ def verify_source(path):
     # below2^30, keep every intermediate in the q formula finite and normal;
     # the smallest q exceeds2^-800, including the elementary roundings.
     constants=constants.decode()
+    # This structural check supplements the new whole-file binding. It uses
+    # the old source as authority rather than accepting regenerated constants.
+    assert constants.count('mills_degree: [u8; 44]')==1
+    assert constants.count('upper_degrees: [[u8; 32]; 6]')==1
+    restored=constants.replace('mills_degree: [u8; 44]','mills_degree: [usize; 44]')
+    restored=restored.replace('upper_degrees: [[u8; 32]; 6]','upper_degrees: [[usize; 32]; 6]')
+    got=hashlib.sha256(restored.encode()).hexdigest()
+    assert got==PRE_COMPACTION_CONSTANTS_WITHOUT_MILLS_HASH,('unchanged non-Mills constants',got)
     for name in ['RULE1','RULE2','RULE3']:
         section=constants.split('static '+name+':',1)[1].split('=',1)[1].split('];',1)[0]
         bits=re.findall(r'f64::from_bits\((0x[0-9a-f]+)\)',section)
@@ -180,6 +192,7 @@ def main():
         'arithmetic_body_sha256':ARITHMETIC_HASHES,
         'source_fma_body_sha256':FMA_BODY_HASH,
         'source_constants_sha256':CONSTANTS_HASH,
+        'pre_compaction_non_mills_constants_sha256':PRE_COMPACTION_CONSTANTS_WITHOUT_MILLS_HASH,
         'required_central_file_sha256':CENTRAL_FILE_HASH,
         'supported_small_file_sha256':SMALL_FILE_HASHES,
         'central_sha256':verify_source(args.central)}

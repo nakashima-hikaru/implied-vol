@@ -1,8 +1,9 @@
 //! experimental large-moneyness route (10 < a < 1417), with two independent SIMD lanes.
 //! Compensated rounding points are preserved; inverse-normal seeds use fused Horner.
 use crate::experimental::lanes::F64x2;
-use crate::experimental::large_constants::{ASYM, CAP_TABLE, EXP_C, LN2, LOGK, M_COEFF};
+use crate::experimental::large_constants::{ASYM, CAP_TABLE, EXP_C, LN2, LOGK};
 use crate::experimental::math::inverse_log_probability;
+use crate::experimental::mills_constants::{M_COEFF_HI, M_COEFF_LO};
 
 #[derive(Clone, Copy, Default)]
 pub(super) struct DD {
@@ -161,11 +162,11 @@ fn mills_fast(z: f64) -> f64 {
         if k < -12 {
             return f64::NAN;
         }
-        let c = &M_COEFF[(k + 12) as usize];
+        let c = &M_COEFF_HI[(k + 12) as usize];
         let x = z - (2 * k + 1) as f64 * 0.25;
-        let mut p = c[24].hi;
-        for i in (0..24).rev() {
-            p = p.mul_add(x, c[i].hi);
+        let mut p = c[16];
+        for i in (0..16).rev() {
+            p = p.mul_add(x, c[i]);
         }
         p
     } else {
@@ -182,8 +183,8 @@ fn mills_fast(z: f64) -> f64 {
 fn fast_pair_impl<const A: bool, const B: bool>(a: f64, b: f64) -> [f64; 2] {
     let ka = if A { (2.0 * a).floor() as i32 } else { 0 };
     let kb = if B { (2.0 * b).floor() as i32 } else { 0 };
-    let ca = &M_COEFF[(ka + 12) as usize];
-    let cb = &M_COEFF[(kb + 12) as usize];
+    let ca = &M_COEFF_HI[(ka + 12) as usize];
+    let cb = &M_COEFF_HI[(kb + 12) as usize];
     let x = F64x2::new(
         if A {
             a - (2 * ka + 1) as f64 * 0.25
@@ -199,14 +200,14 @@ fn fast_pair_impl<const A: bool, const B: bool>(a: f64, b: f64) -> [f64; 2] {
     let coef = |i: usize| {
         F64x2::new(
             if A {
-                ca[i].hi
+                ca[i]
             } else if i <= 13 {
                 ASYM[i]
             } else {
                 0.0
             },
             if B {
-                cb[i].hi
+                cb[i]
             } else if i <= 13 {
                 ASYM[i]
             } else {
@@ -214,7 +215,7 @@ fn fast_pair_impl<const A: bool, const B: bool>(a: f64, b: f64) -> [f64; 2] {
             },
         )
     };
-    let n = if A || B { 24 } else { 13 };
+    let n = if A || B { 16 } else { 13 };
     let mut p = coef(n);
     for i in (0..n).rev() {
         p = p.mul_add(x, coef(i));
@@ -261,23 +262,27 @@ fn precise_pair_impl<const A: bool, const B: bool>(a: DD, b: DD) -> [DD; 2] {
             z.lo += local.lo;
             q = dd(local.hi);
         }
-        (z, q, iv, &M_COEFF[(k + 12) as usize])
+        (z, q, iv, (k + 12) as usize)
     };
-    let (za, qa, ia, ca) = prepare(a, A);
-    let (zb, qb, ib, cb) = prepare(b, B);
+    let (za, qa, ia, ka) = prepare(a, A);
+    let (zb, qb, ib, kb) = prepare(b, B);
+    let ca = &M_COEFF_HI[ka];
+    let cb = &M_COEFF_HI[kb];
+    let la = &M_COEFF_LO[ka];
+    let lb = &M_COEFF_LO[kb];
     let qh = F64x2::new(qa.hi, qb.hi);
     let ql = F64x2::new(qa.lo, qb.lo);
     let coef_hi = |i: usize| {
         F64x2::new(
             if A {
-                ca[i].hi
+                ca[i]
             } else if i <= 18 {
                 ASYM[i]
             } else {
                 0.0
             },
             if B {
-                cb[i].hi
+                cb[i]
             } else if i <= 18 {
                 ASYM[i]
             } else {
@@ -285,12 +290,7 @@ fn precise_pair_impl<const A: bool, const B: bool>(a: DD, b: DD) -> [DD; 2] {
             },
         )
     };
-    let coef_lo = |i: usize| {
-        F64x2::new(
-            if A { ca[i].lo } else { 0.0 },
-            if B { cb[i].lo } else { 0.0 },
-        )
-    };
+    let coef_lo = |i: usize| F64x2::new(if A { la[i] } else { 0.0 }, if B { lb[i] } else { 0.0 });
     let n = if A || B { 24 } else { 18 };
     let mut h = coef_hi(n);
     for i in (3..n).rev() {

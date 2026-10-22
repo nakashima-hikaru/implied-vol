@@ -225,15 +225,15 @@ fn mills_sum_fast(mut x: f64, mut y: f64, band: usize) -> f64 {
     if !(0..32).contains(&kx) || !(0..32).contains(&ky) {
         return f64::NAN;
     }
-    let a = &M_COEFF[(kx + 12) as usize];
-    let b = &M_COEFF[(ky + 12) as usize];
+    let a = &M_COEFF_HI[(kx + 12) as usize];
+    let b = &M_COEFF_HI[(ky + 12) as usize];
     x -= (2 * kx + 1) as f64 * 0.25;
     y -= (2 * ky + 1) as f64 * 0.25;
-    let n = upper_degrees[band][kx as usize].max(upper_degrees[band][ky as usize]);
+    let n = usize::from(upper_degrees[band][kx as usize].max(upper_degrees[band][ky as usize]));
     let h = F64x2::new(x, y);
-    let mut p = F64x2::new(a[n].hi, b[n].hi);
+    let mut p = F64x2::new(a[n], b[n]);
     for j in (0..n).rev() {
-        p = p.mul_add(h, F64x2::new(a[j].hi, b[j].hi));
+        p = p.mul_add(h, F64x2::new(a[j], b[j]));
     }
     let p = p.to_array();
     p[0] + p[1]
@@ -245,20 +245,23 @@ fn compact_mills_sum(x: f64, xl: f64, y: f64, yl: f64, band: usize) -> Pair {
     if !(0..32).contains(&kx) || !(0..32).contains(&ky) {
         return Pair::new(f64::NAN, f64::NAN);
     }
-    let a = &M_COEFF[(kx + 12) as usize];
-    let b = &M_COEFF[(ky + 12) as usize];
+    let a = &M_COEFF_HI[(kx + 12) as usize];
+    let b = &M_COEFF_HI[(ky + 12) as usize];
     let xr = x - (2 * kx + 1) as f64 * 0.25;
     let yr = y - (2 * ky + 1) as f64 * 0.25;
-    let n = upper_degrees[band][kx as usize].max(upper_degrees[band][ky as usize]);
+    let n = usize::from(upper_degrees[band][kx as usize].max(upper_degrees[band][ky as usize]));
     let h = F64x2::new(xr, yr);
-    let mut p = F64x2::new(a[n].hi, b[n].hi);
+    let mut p = F64x2::new(a[n], b[n]);
     for j in (1..n).rev() {
-        p = p.mul_add(h, F64x2::new(a[j].hi, b[j].hi));
+        p = p.mul_add(h, F64x2::new(a[j], b[j]));
     }
     let prod = p * h;
     let er = p.mul_add(h, -prod);
-    let c = F64x2::new(a[0].hi, b[0].hi);
-    let cl = F64x2::new(a[0].lo, b[0].lo);
+    let c = F64x2::new(a[0], b[0]);
+    let cl = F64x2::new(
+        M_COEFF_LO[(kx + 12) as usize][0],
+        M_COEFF_LO[(ky + 12) as usize][0],
+    );
     let sm = prod + c;
     let v = sm - prod;
     // Keep coefficient low inside the sum residual, before product error.

@@ -52,6 +52,7 @@ mod large;
 mod large_constants;
 mod lbr_fallback;
 mod math;
+mod mills_constants;
 mod small;
 
 /// Invert the normalized out-of-the-money Black price to total volatility.
