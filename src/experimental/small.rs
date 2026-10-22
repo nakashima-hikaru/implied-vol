@@ -220,8 +220,8 @@ fn rank_seed<const DEGREE: usize>(t: (&[f64], usize), x: f64, y: f64) -> f64 {
     let (c, rank) = t;
     if rank <= 2 {
         if DEGREE == 10 {
-            rank_seed_shape::<10, 4, 44>(
-                c.first_chunk::<44>().expect("rank coefficients"),
+            rank_seed_shape::<10, 4, 36>(
+                c.first_chunk::<36>().expect("rank coefficients"),
                 rank,
                 x,
                 y,
@@ -235,8 +235,8 @@ fn rank_seed<const DEGREE: usize>(t: (&[f64], usize), x: f64, y: f64) -> f64 {
             )
         }
     } else if DEGREE == 10 {
-        rank_seed_shape::<10, 8, 88>(
-            c.first_chunk::<88>().expect("rank coefficients"),
+        rank_seed_shape::<10, 8, 72>(
+            c.first_chunk::<72>().expect("rank coefficients"),
             rank,
             x,
             y,
@@ -262,9 +262,9 @@ fn rank_seed_shape<const DEGREE: usize, const LANES: usize, const LENGTH: usize>
     let mut values = [0.0; 8];
     for k in (0..LANES).step_by(2) {
         let z = F64x2::splat(if k < half { x } else { y });
-        // Preserve the original degree-eight y factors in wider degree-ten seeds.
-        let n = if DEGREE == 10 && LANES == 8 && k >= half {
-            8
+        // Small/core factors retain Chebyshev degrees eight in x and six in y.
+        let n = if DEGREE == 10 {
+            if k < half { 8 } else { 6 }
         } else {
             DEGREE
         };
@@ -547,14 +547,15 @@ mod tests {
     }
 
     #[test]
-    fn conservative_preflight_seams_preserve_original_results() {
-        // Frozen original experimental outputs at the new reject thresholds,
-        // including adjacent prices and the dyadic jump just above a=1.
+    fn conservative_preflight_seams_retain_certified_outputs() {
+        // Frozen outputs at reject thresholds, adjacent prices and the a=1 jump.
+        // The two reduced-seed changes were checked by independent Black roots
+        // at 100/160 decimal digits: rho < 0.053 and rho < 0.348 respectively.
         let cases: &[(u64, u64, u64)] = &[
             (0x3fb999999999999a, 0x3f79999999999999, 0x3fb74aa89cb8b539),
             (0x3fb999999999999a, 0x3f7999999999999a, 0x3fb74aa89cb8b539),
             (0x3fb999999999999a, 0x3f7999999999999b, 0x3fb74aa89cb8b539),
-            (0x3fb999999999999a, 0x3fc3333333333333, 0x3fdfbf7426673d99),
+            (0x3fb999999999999a, 0x3fc3333333333333, 0x3fdfbf7426673d98),
             (0x3fb999999999999a, 0x3fc3333333333334, 0x3fdfbf7426673d9a),
             (0x3fb999999999999a, 0x3fc3333333333335, 0x3fdfbf7426673d9b),
             (0x3ff0000000000000, 0x3fcfffffffffffff, 0x3ffbc1183e525ee1),
@@ -563,7 +564,7 @@ mod tests {
             (0x3ff0000000000001, 0x3fbfffffffffffff, 0x3ff363b69fb0f1c0),
             (0x3ff0000000000001, 0x3fc0000000000000, 0x3ff363b69fb0f1c0),
             (0x3ff0000000000001, 0x3fc0000000000001, 0x3ff363b69fb0f1c0),
-            (0x4014000000000000, 0x3f8fffffffffffff, 0x400539daf0082b98),
+            (0x4014000000000000, 0x3f8fffffffffffff, 0x400539daf0082b99),
             (0x4014000000000000, 0x3f90000000000000, 0x400539daf0082b99),
             (0x4014000000000000, 0x3f90000000000001, 0x400539daf0082b99),
         ];

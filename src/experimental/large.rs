@@ -61,12 +61,6 @@ fn divide(a: DD, b: DD) -> DD {
     two(q, (r.hi + r.lo) / b.hi)
 }
 #[inline(always)]
-fn sqrtdd(a: DD) -> DD {
-    let q = a.hi.sqrt();
-    let r = sub(a, mul(dd(q), dd(q)));
-    two(q, (r.hi + r.lo) / (2.0 * q))
-}
-#[inline(always)]
 fn val(a: DD) -> f64 {
     a.hi + a.lo
 }
@@ -352,7 +346,7 @@ struct Precise {
     residual: DD,
     y: DD,
     s: DD,
-    derivative: f64,
+    lambda: f64,
 }
 
 #[inline]
@@ -412,12 +406,12 @@ fn precise(a: f64, x: f64, target: DD, upper: bool) -> Precise {
         sub(mm[0], mm[1])
     };
     let r = residual(xh, xl, d, target);
-    let derivative = (if upper { -1.0 } else { 1.0 }) * val(s) / val(y) / val(d);
+    let lambda = (if upper { -1.0 } else { 1.0 }) * val(d) / val(s);
     Precise {
         residual: r,
         y,
         s,
-        derivative,
+        lambda,
     }
 }
 
@@ -506,7 +500,7 @@ pub(crate) fn solve(a: f64, b: f64) -> f64 {
         if steps >= 1 {
             pe = precise(a, x, target, upper);
             if pe.residual.hi.is_finite()
-                && pe.residual.hi.abs() <= f64::from_bits(0x3e90000000000000)
+                && pe.residual.hi.abs() <= f64::from_bits(0x3ef0000000000000)
             {
                 converged = true;
                 break;
@@ -536,36 +530,23 @@ pub(crate) fn solve(a: f64, b: f64) -> f64 {
     if !converged {
         return f64::NAN;
     }
+    finish_direct(x, pe)
+}
+
+#[inline]
+fn finish_direct(x: f64, pe: Precise) -> f64 {
+    // Compose the inverse price series with expm1(-residual) through z^3.
+    // This maps the log residual directly to the relative volatility change.
     let yy = val(pe.y);
-    let d = pe.derivative;
-    let iy = 1.0 / yy;
-    let iysq = iy * iy;
-    let h = -x + iy - x * iysq;
-    let hp = -1.0 - x * iy * iysq + (x * x - 2.0 * a) * (iysq * iysq);
-    let aa = h - d;
-    let bb = hp + aa * (h - 2.0 * d);
-    let n = -val(pe.residual) / d;
-    let numerator = (0.5 * aa).mul_add(n, 1.0);
-    let denominator = n.mul_add((bb / 6.0).mul_add(n, aa), 1.0);
-    let final_step = dd(n * (numerator / denominator));
-    let corrected = add(dd(x), final_step);
-    let dx = val(final_step);
-    if dx.is_finite() && dx.abs() <= f64::from_bits(0x3ed0000000000000) {
-        let invy = 1.0 / val(pe.y);
-        let z = dx * invy;
-        let k = x * invy;
-        let c = 0.5 * (1.0 - k);
-        let inc = z.mul_add((c * z).mul_add((-k).mul_add(z, 1.0), 1.0), 0.0);
-        let low = pe.s.hi.mul_add(inc, pe.s.lo);
-        return pe.s.hi + low;
-    }
-    let yf = sqrtdd(add(mul(corrected, corrected), dd(2.0 * a)));
-    let sf = if corrected.hi < 0.0 {
-        divide(dd(2.0 * a), sub(yf, corrected))
-    } else {
-        add(yf, corrected)
-    };
-    val(sf)
+    let xy = x * yy;
+    let alpha = -xy * pe.lambda;
+    let beta = (x * x + yy * yy - xy) * (pe.lambda * pe.lambda);
+    let c2 = 0.5 * (1.0 - alpha);
+    let c3 = (alpha.mul_add(2.0 * alpha - 3.0, 1.0) + beta) / 6.0;
+    let z = -val(pe.residual);
+    let delta = pe.lambda * (z * z.mul_add(z.mul_add(c3, c2), 1.0));
+    let low = pe.s.hi.mul_add(delta, pe.s.lo);
+    pe.s.hi + low
 }
 
 // Integer interval refinement on the original 2^-248 fixed grid.
@@ -1094,3 +1075,7 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "large_direct_tests.rs"]
+mod direct_tests;

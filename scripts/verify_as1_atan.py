@@ -119,7 +119,7 @@ def horner_rounding_bound(qmax=FIT_MAX):
     return error,stages
 
 
-def verify_source(path):
+def verify_source(path, reference_root=None):
     # Fail closed on the whole arithmetic bodies, including slope's rounding
     # sequence and balanced's h/t construction and range guards. Only comments
     # and whitespace are ignored; matching coefficients alone is insufficient.
@@ -127,6 +127,29 @@ def verify_source(path):
     got=hashlib.sha256(central_bytes).hexdigest()
     assert got==CENTRAL_FILE_HASH,('whole central source binding',got,CENTRAL_FILE_HASH)
     small_bytes=(path.parent.parent/'small.rs').read_bytes()
+    constants_bytes=(path.parent/'constants.rs').read_bytes()
+    actual_source_hashes={
+        'src/experimental/small/central.rs':hashlib.sha256(central_bytes).hexdigest(),
+        'src/experimental/small.rs':hashlib.sha256(small_bytes).hexdigest(),
+        'src/experimental/small/constants.rs':hashlib.sha256(constants_bytes).hexdigest(),
+    }
+    seed_bridge=None
+    if hashlib.sha256(small_bytes).hexdigest() not in SMALL_FILE_HASHES.values():
+        # This bridge establishes unchanged AS1 arithmetic, quadrature atoms,
+        # FMA provider and dispatch assumptions. It makes no accuracy claim
+        # for the changed rank approximation; verify_direct_d.py proves that.
+        import seed_reduction
+        assert reference_root is not None, 'Reduced seeds require --reference-root PATH'
+        canonical_small,canonical_constants,_=seed_reduction.restore_and_validate(
+            small_bytes.decode(),constants_bytes.decode(),
+            (reference_root/'src/small/constants.rs').read_text())
+        small_bytes,constants_bytes=canonical_small.encode(),canonical_constants.encode()
+        seed_bridge={
+            'status':'exact_regeneration_and_reviewed_baseline_source_bridge',
+            'scope':'Unchanged AS1 helper, quadrature, FMA provider and dispatcher assumptions only; reduced seed accuracy is verified separately by verify_direct_d.py.',
+            'reference_constants_sha256':seed_reduction.REFERENCE_CONSTANTS_SHA256,
+            'bridge_module_sha256':hashlib.sha256(Path(seed_reduction.__file__).read_bytes()).hexdigest(),
+        }
     got=hashlib.sha256(small_bytes).hexdigest()
     assert got in SMALL_FILE_HASHES.values(),('whole FMA-provider source binding',got)
     text=re.sub(r'/\*.*?\*/|//[^\n]*','',central_bytes.decode(),flags=re.S)
@@ -145,7 +168,7 @@ def verify_source(path):
         depth+=(helpers[end]=='{')-(helpers[end]=='}');end+=1
     got=hashlib.sha256(re.sub(r'\s+','',helpers[start:end]).encode()).hexdigest()
     assert got==FMA_BODY_HASH,('fma helper',got,FMA_BODY_HASH)
-    constants=(path.parent/'constants.rs').read_bytes()
+    constants=constants_bytes
     got=hashlib.sha256(constants).hexdigest()
     assert got==CONSTANTS_HASH,('quadrature constants',got,CONSTANTS_HASH)
     # Close the declared atom-normality premise as well as binding its bits.
@@ -167,12 +190,16 @@ def verify_source(path):
         assert len(bits)%4==0 and bits,('quadrature layout',name)
         atoms=[F.from_float(struct.unpack('>d',struct.pack('>Q',int(v,16)))[0]) for v in bits[::4]]
         assert all(F(1,2**50)<z<F(2**30) for z in atoms),('quadrature normality',name)
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    return {'central_sha256':hashlib.sha256(path.read_bytes()).hexdigest(),
+            'actual_source_sha256':actual_source_hashes,'seed_approximation_source_bridge':seed_bridge}
 
 
 def main():
-    ap=argparse.ArgumentParser();ap.add_argument('--output',type=Path);ap.add_argument('--central',type=Path,default=Path(__file__).resolve().parents[1]/'src/experimental/small/central.rs');ap.add_argument('--cells',type=int,default=256);args=ap.parse_args()
+    ap=argparse.ArgumentParser();ap.add_argument('--output',type=Path);ap.add_argument('--central',type=Path,default=Path(__file__).resolve().parents[1]/'src/experimental/small/central.rs');ap.add_argument('--cells',type=int,default=256)
+    ap.add_argument('--reference-root',type=Path,help='Archived implied-black-volatility repository; required for reduced seed source bridging')
+    args=ap.parse_args()
     if not args.central.is_file():ap.error('central source not found; pass --central PATH')
+    source_binding=verify_source(args.central,args.reference_root)
     table=approximation_table(args.cells);fit_error=polynomial_error_bound(FIT_MAX,table)
     rounding,stages=horner_rounding_bound();result={
         'status':'exact_rational_uniform_polynomial_and_five_FMA_certificate',
@@ -195,7 +222,7 @@ def main():
         'pre_compaction_non_mills_constants_sha256':PRE_COMPACTION_CONSTANTS_WITHOUT_MILLS_HASH,
         'required_central_file_sha256':CENTRAL_FILE_HASH,
         'supported_small_file_sha256':SMALL_FILE_HASHES,
-        'central_sha256':verify_source(args.central)}
+        **source_binding}
     if args.output:args.output.write_text(json.dumps(result,indent=2)+'\n')
     print(json.dumps({k:v for k,v in result.items() if k not in ['rounded_coefficients_exact','rounded_Horner_stages','approximation_prefix_table','source_q_bound']},indent=2))
 if __name__=='__main__':main()

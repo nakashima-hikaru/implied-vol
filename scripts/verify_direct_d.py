@@ -82,13 +82,28 @@ for key,want in EXPECTED_BINDINGS['reference'].items():
     got=hashlib.sha256((ORIGINAL/key).read_bytes()).hexdigest()
     assert got==want, ('inherited certificate binding mismatch',key,got,want)
 
+# The degree reduction is an approximation change with its own finite
+# perturbation/remainder proof below. Reconstruct only its reviewed baseline
+# representation here so every unchanged kernel keeps its original hashes.
+import seed_reduction
+actual_small_source=(SOURCE/'src/experimental/small.rs').read_text()
+actual_constants_source=(SOURCE/'src/experimental/small/constants.rs').read_text()
+reduced_seed_metadata=None
+if hashlib.sha256(actual_small_source.encode()).hexdigest()!=seed_reduction.BASELINE_SMALL_SHA256:
+    canonical_small_source,canonical_constants_source,reduced_seed_metadata=seed_reduction.restore_and_validate(
+        actual_small_source,actual_constants_source,(ORIGINAL/'src/small/constants.rs').read_text())
+else:
+    canonical_small_source,canonical_constants_source=actual_small_source,actual_constants_source
+
 COMPACT_LAYOUT_HASHES = {
     'src/experimental/small.rs': '711bde18c91e67c18645581e61ce2b3a3fce95b79794281b783537a4aa19b7af',
     'src/experimental/small/constants.rs': '498b84a03308000fd71948ac554b4ae59cd914b9ff03e811aad735034c03e509',
     'src/experimental/mills_constants.rs': '0fda9d58f198c692908879ead2020d62bc0b2859fb2abbab1913fa8f06ed3063',
 }
 for key,want in COMPACT_LAYOUT_HASHES.items():
-    got=hashlib.sha256((SOURCE/key).read_bytes()).hexdigest()
+    value={'src/experimental/small.rs':canonical_small_source,
+           'src/experimental/small/constants.rs':canonical_constants_source}.get(key)
+    got=hashlib.sha256(value.encode() if value is not None else (SOURCE/key).read_bytes()).hexdigest()
     assert got==want, ('compact source binding mismatch',key,got,want)
 
 def replace_once(source,old,new):
@@ -118,13 +133,13 @@ def restore_small_layout(source):
     return source
 
 small_bytes=(SOURCE/'src/experimental/small.rs').read_bytes()
-small_source=restore_small_layout(small_bytes.decode())
+small_source=restore_small_layout(canonical_small_source)
 assert hashlib.sha256(small_source.encode()).hexdigest()=='d92684d6227205e627dadd2d0a9a0f0735dec34bdaf2c960228f9e676ad39286', 'representation-preserving small source binding mismatch'
 reference_constants=(ORIGINAL/'src/small/constants.rs').read_text()
 start=reference_constants.index('pub(super) static M_COEFF:')
 end=reference_constants.index('\n];',start)+4
 reference_mills_declaration=reference_constants[start:end]
-constants_source=(SOURCE/'src/experimental/small/constants.rs').read_text()
+constants_source=canonical_constants_source
 restored_constants=replace_once(constants_source,'mills_degree: [u8; 44]','mills_degree: [usize; 44]')
 restored_constants=replace_once(restored_constants,'upper_degrees: [[u8; 32]; 6]','upper_degrees: [[usize; 32]; 6]')
 restored_constants=replace_once(restored_constants,'pub(super) static ATM_SERIES:',reference_mills_declaration+'pub(super) static ATM_SERIES:')
@@ -569,7 +584,18 @@ result={'status':'All exact rational assertions passed','candidate':'H-adaptive 
                  'rounding':'Independent binary64 lanes; mul_add_precise with a single rounding; no lane reduction. Primitive correctness is conditional.'},
  'dependency_sha256':EXPECTED_BINDINGS['reference'],
  'limits':'Conditional continuous source-component proof, not a whole-domain solver certificate, end-to-end Lean proof, vendor-libm guarantee or speed claim.'}
+if reduced_seed_metadata is not None:
+    import verify_seed_reduction
+    seed_result=verify_seed_reduction.audit(seed_rows_by_route,canonical_constants_source,
+        actual_constants_source,reduced_seed_metadata,old_finish,extended_records)
+    result['baseline_seed_route_bounds']=result['route_bounds']
+    result['route_bounds']=seed_result['route_bounds']
+    result['reduced_seed_proof']=seed_result
+    result['candidate']='Degree-8/6 Chebyshev rank seeds, unchanged cubic finish and H-adaptive direct D'
+    result['method']+=' Reduced seeds: exact represented-coefficient regeneration, source-order perturbation, finite vega transport, fourth inverse derivative remainder, and cubic source rounding on every transported leaf.'
+    result['seed_approximation_binding']='Narrow inverse source bridge reproduces the reviewed baseline hashes; exact Chebyshev regeneration matches every actual changed coefficient. The approximation change is bounded separately, not claimed bit equivalent.'
+    result['proof_module_sha256']={name:hashlib.sha256((HERE/name).read_bytes()).hexdigest() for name in ['seed_reduction.py','verify_seed_reduction.py']}
 OUT.parent.mkdir(parents=True,exist_ok=True);OUT.write_text(json.dumps(result,indent=2)+'\n')
 print(json.dumps({'status':result['status'],'max_extra_D_error_in_u':result['max_extra_D_error_in_u'],
-                  'common_finish_rho_upper':{route:row['candidate_display'] for route,row in route_bounds.items()},
+                  'common_finish_rho_upper':{route:row['candidate_display'] for route,row in result['route_bounds'].items()},
                   'seed_rows':rows_by_route,'output':str(OUT)},indent=2))

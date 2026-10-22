@@ -2,8 +2,10 @@
 """Verify shortened large-route fast Mills tables with exact rational bounds.
 
 Recomputes continuous table/source-order rounding and 114 residual boxes.
-The final compensated arithmetic is unchanged; only its coefficient layout changed. This is a conditional local source
-certificate, not a whole-domain solver or platform-libm correctness theorem.
+The caller's argument bracket and target bounds are explicit premises. This
+component certificate does not bind or certify the solver's finalizer or
+routing; verify_large_direct.py independently checks that integration. It is
+not a whole-domain solver or platform-libm correctness theorem.
 """
 from fractions import Fraction as F
 from pathlib import Path
@@ -30,13 +32,10 @@ SOURCE_FUNCTIONS = {
     'mills_precise_pair': '90981c1c1e96ce6b95ddf85878b5b532cbbc564edf22ec30019bb9fd7c2ab960',
     'geometry': 'e525b7b6cc2ac1af38c9a6be0979d6f1d132388b3225f6bc40315028b1a3694a',
     'residual': 'f56a99511350b50d415cd759e4d0dc229a037fedd3c8068d3556abd6943b6af0',
-    'precise': 'a3835258201fe947c32acaadaffd7e021b98c2630da7ce1e04085210336029b8',
     'eval_fast': '8873a86ffc761a8a1372b33da7c0555301f848597dd53bc02fd7935d6eed210a',
-    'solve': '2879acc1c5896c69c1ccc32f64a40787cfac97c8e997ca4b93d400eca8b9e29a',
 }
 SOURCE_FILES = {
     'src/experimental/mills_constants.rs': '0fda9d58f198c692908879ead2020d62bc0b2859fb2abbab1913fa8f06ed3063',
-    'src/experimental/large.rs': 'fc8e8cfb49481800aff398fc7268ea7714c578413a644c4fd551d5dd5b42ff29',
     'src/experimental/large_constants.rs': '9f4f8dc26f8c1313e60e7e2817a24438a609d73ab4ba130a7962902c35be3efd',
     'src/experimental/lanes.rs': '40502418e5f024c8a4a522b52e1a9b226e126906bf9aca14496fd56c336d6f32',
 }
@@ -210,11 +209,13 @@ def main():
     assert (1 + u/2) * (1 + u) < 1 + 2*u
     assert (1 - u)**2 > 1 - 2*u
 
-    # The unchanged solve() only updates a sign after |fast|>2^-34. Thus
-    # epsilon<2^-34 preserves its correct sign. A fast gate also implies
-    # |precise.hi|<=2^-34+epsilon+epsilon<2^-22, the precise finish gate.
-    # Import the existing target/root bracket and |F'|<=128 contracts. With
-    # midpoint error <=40u, 49 forced bisections give the following width.
+    # Conditional caller corollaries: a sign update made only after
+    # |fast|>2^-34 is reliable. If a precise residual has error<=2^-38,
+    # a fast handoff implies |precise.hi|<2^-22. This is stronger than the
+    # new direct gate, but does not certify which gate a caller selects.
+    # Given a preserved root bracket, |F'|<=128 and midpoint error<=40u,
+    # 49 forced bisections give the following width. The direct checker
+    # independently binds and validates the actual caller's source.
     fast_gate, precise_gate = F(1, 2**34), F(1, 2**22)
     width = F(41, 2**49) + 80*u
     assert epsilon < fast_gate
@@ -224,7 +225,7 @@ def main():
 
     out = {
         'status': 'All exact rational assertions passed',
-        'scope': 'Large fast Mills degree 16, unchanged degree-13 asymptotic and compensated final kernel; 34 continuous table cells and 114 continuous residual boxes',
+        'scope': 'Large fast Mills degree 16 and unchanged degree-13 asymptotic; 34 continuous table cells and 114 continuous residual boxes, conditional on caller bracket/target bounds; no finalizer or routing certificate',
         'maximum_residual_error': ex.pack(maximum),
         'maximum_residual_error_in_u': ex.pack(up(maximum/u)),
         'fits_2m38': maximum < epsilon,
@@ -232,14 +233,14 @@ def main():
         'table_errors': table_records, 'asymptotic_error': ex.pack(asym_error), 'boxes': boxes,
         'stopping': {'fast_sign_margin': ex.pack(fast_gate-maximum),
                      'fast_handoff_precise_bound': ex.pack(fast_gate+maximum+epsilon),
-                     'precise_gate': ex.pack(precise_gate),
+                     'reference_compatible_precise_gate': ex.pack(precise_gate),
                      'width_after_49_bisections': ex.pack(width),
                      'fast_after_49_bisections': ex.pack(128*width+maximum)},
         'primitive_contracts': ['RN-even binary64 basic/FMA/sqrt, gradual underflow, source order, one-rounding lane-wise FMA',
                                 'abs(ln_impl(Dhat)-ln(Dhat))<=2u*abs(ln(Dhat)) on reached normal Dhat'],
         'conditional_imports': ['Mills integral, moment recurrence, CF/Gaussian series and degree-24 Taylor remainder lemmas from the bound reference; their rational enclosures are recomputed',
-                                'Unchanged target formation produces normalized DD with abs(target.hi)<=705 and a root inside the initial bracket',
-                                'Unchanged precise high residual error <=2^-38, |F derivative|<=128 on bracket, and precise final-correction contract'],
+                                'Caller supplies 10<a<1417, lower x in [-40,1] or upper x in [0,16], and normalized DD target with abs(target.hi)<=705',
+                                'Stopping corollaries additionally assume a preserved internal-root bracket, |F derivative|<=128, precise high residual error<=2^-38, and a rounded midpoint every fourth update; caller integration is checked separately'],
         'source_functions': SOURCE_FUNCTIONS, 'source_file_bindings': SOURCE_FILES,
         'reference_bindings': REFERENCE_FILES, 'simd_source_tree_sha256': SIMD_HASH,
         'actual_source_sha256': {'src/experimental/large.rs': digest(text.encode()), **{p: digest((source/p).read_bytes()) for p in SOURCE_FILES}},

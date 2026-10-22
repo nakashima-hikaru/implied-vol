@@ -135,6 +135,7 @@ fn main() {
     }
     let mut args = args.iter().filter(|arg| *arg != "--bench");
     let mut solver = "hybrid";
+    let mut selected_case = None;
     let mut experimental_paths = false;
     let mut as1_paths = false;
     let mut dpoly_paths = false;
@@ -142,6 +143,8 @@ fn main() {
     while let Some(arg) = args.next() {
         if arg == "--solver" {
             solver = args.next().expect("--solver requires a solver name");
+        } else if arg == "--case" {
+            selected_case = Some(args.next().expect("--case requires a case name").as_str());
         } else if arg == "--experimental-paths" {
             experimental_paths = true;
         } else if arg == "--as1-paths" {
@@ -160,6 +163,12 @@ fn main() {
         arg.parse().expect("second argument must be a round count")
     });
     assert!(n > 0 && rounds > 0 && numbers.len() <= 2);
+
+    // A process can time one population, so paired runs stay close in time.
+    // Input construction and preflight retain the complete selected suite.
+    if let Some(name) = selected_case {
+        CASE_FILTER.set(name.to_owned()).unwrap();
+    }
 
     // Select one monomorphized runner before constructing or timing inputs.
     match solver {
@@ -208,6 +217,12 @@ fn main() {
 fn usage_error(message: &str) -> ! {
     eprintln!("{message}");
     std::process::exit(2);
+}
+
+static CASE_FILTER: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+
+fn selected(name: &str) -> bool {
+    CASE_FILTER.get().is_none_or(|filter| filter == name)
 }
 
 fn run<S: BenchmarkSolver>(
@@ -377,11 +392,27 @@ fn run<S: BenchmarkSolver>(
         }
     }
 
+    if let Some(name) = CASE_FILTER.get() {
+        assert!(
+            name == "mixed_normalised"
+                || name == "mixed_full"
+                || fixed.iter().any(|(case, _)| case == name)
+                || fixed_full.iter().any(|(case, _)| case == name),
+            "unknown case {name}; enable its workload suite if necessary"
+        );
+    }
+    fixed.retain(|(name, _)| selected(name));
+    fixed_full.retain(|(name, _)| selected(name));
+
     for (_, cases) in &fixed {
         black_box(time_normalised::<S>(cases, 10_000));
     }
-    black_box(time_normalised::<S>(&normalised, 10_000));
-    black_box(time_full::<S>(&full, 10_000));
+    if selected("mixed_normalised") {
+        black_box(time_normalised::<S>(&normalised, 10_000));
+    }
+    if selected("mixed_full") {
+        black_box(time_full::<S>(&full, 10_000));
+    }
     for (_, cases) in &fixed_full {
         black_box(time_full::<S>(cases, 10_000));
     }
@@ -392,10 +423,14 @@ fn run<S: BenchmarkSolver>(
             let (ns, sum) = time_normalised::<S>(cases, n);
             println!("{name},{round},{ns:.6},{sum:.16e}");
         }
-        let (ns, sum) = time_normalised::<S>(&normalised, n);
-        println!("mixed_normalised,{round},{ns:.6},{sum:.16e}");
-        let (ns, sum) = time_full::<S>(&full, n);
-        println!("mixed_full,{round},{ns:.6},{sum:.16e}");
+        if selected("mixed_normalised") {
+            let (ns, sum) = time_normalised::<S>(&normalised, n);
+            println!("mixed_normalised,{round},{ns:.6},{sum:.16e}");
+        }
+        if selected("mixed_full") {
+            let (ns, sum) = time_full::<S>(&full, n);
+            println!("mixed_full,{round},{ns:.6},{sum:.16e}");
+        }
         for (name, cases) in &fixed_full {
             let (ns, sum) = time_full::<S>(cases, n);
             println!("{name},{round},{ns:.6},{sum:.16e}");

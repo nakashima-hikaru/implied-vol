@@ -1,5 +1,9 @@
 # Experimental: compact tables and shorter evaluations
 
+This records the preceding implementation. See the
+[inverse-series and seed-reduction report](theory-improvements.md) for the
+current source, verification commands and additional changes.
+
 Implemented and checked on 2026-10-22/23 against baseline
 `c0ecb7c45d144ccebf5b411fef6568030cebd04a`.
 [Machine-readable results](experimental-improvements.json) retain source and
