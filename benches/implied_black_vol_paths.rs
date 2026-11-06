@@ -262,6 +262,12 @@ fn run<S: BenchmarkSolver>(
             ("finite_seed", 5.0, 0.005),
             ("large_lower", 20.0, (-10.0_f64).exp() * 0.1),
             ("large_upper", 20.0, (-10.0_f64).exp() * 0.9),
+            ("large_upper_small_step", 1000.0, (-500.0_f64).exp() * 0.9),
+            (
+                "large_upper_full_step",
+                10.5,
+                (-5.25_f64).exp() * (1.0 - 1e-12),
+            ),
             ("large_asymptotic", 100.0, f64::MIN_POSITIVE),
             ("large_near_cap", 300.0, (-150.0_f64).exp() * (1.0 - 1e-12)),
             ("microscopic", 1e-200, 1e-201),

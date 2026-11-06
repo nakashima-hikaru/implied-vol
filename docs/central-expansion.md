@@ -30,13 +30,14 @@ Black-conversion polynomial's complete residual and finite analytic tails on
 that rectangle. It then recomputes native pair operations, both shortened
 Horner calculations, coefficient/coordinate rounding, the sinhc tail and final
 binary64 rounding. The resulting continuous helper bound is
-**`rho_J<.570599`**.
+**`rho_J<.668277`**.
 
 ## Lower normal-shape degrees
 
-The four normal-shape intervals now evaluate degrees **18, 20, 20, 25**,
-instead of 25 throughout. Constant-degree specializations remove 7, 5 and 5
-two-lane Horner stages in the first three intervals. Both compensated final
+The four normal-shape intervals now evaluate degrees **16, 18, 18, 24**,
+instead of 25 throughout. Constant-degree specializations remove 9, 7, 7 and 1
+two-lane Horner stages, respectively. Compared with the previous 18/20/20/25
+choice, this removes another 2, 2, 2 and 1 stages. Both compensated final
 stages and the derivative correction for the coordinate low part remain.
 Coefficient storage is unchanged.
 
@@ -52,15 +53,17 @@ where `R` bounds the computed high coordinate and `S` also includes its low
 part and error. Both cover the archived padded cells, including values just
 outside `[-1,1]`. Thus the bound includes the omitted derivative times the
 coordinate low part. The suffix bounds in units of `u=2^-53` are below
-`0.003164`, `0.002370`, `0.002828` and zero. The checker separately recomputes
+`0.177446`, `0.091231`, `0.105882` and `0.109107`. The explicit component
+reserve is now `0.2u`; the former `0.01u` reserve was more restrictive than the
+available final-output budget. This reserve is not a replacement for the
+complete `rho_J<1` check in each interval. The checker separately recomputes
 the shortened source-order arithmetic, derivative-coefficient rounding and
 the domination required by the compensated final additions.
 
 Combined with the shorter conversion below, the branch bounds are below
-`0.567129`, `0.567769`, `0.566887` and `0.570599`. The maximum remains set by
-the degree-25 normal interval. This preserves the conditional precision budget;
-it does not assert that every result is more accurate. The degree-25 normal
-arithmetic ledger is checked for exact equality with its archived counterpart.
+`0.668277`, `0.624618`, `0.639250` and `0.658499`. The first interval now sets
+the maximum. This preserves the conditional precision budget; it does not
+assert that every result is more accurate.
 
 ## Shorter Black-conversion polynomial
 
@@ -128,7 +131,7 @@ unique exact binary64 inputs beside old/new `q`, `a`, preflight and `b` guards,
 and throughout all four normal-shape intervals and their seams. Independent
 Black roots and `eta_J` agree at
 160 and 240 decimal digits. Both FMA feature policies pass these final-output
-checks. Nineteen deliberate mutations, including changed source/proof degrees
+checks. Twenty deliberate mutations, including changed source/proof degrees
 and conversion row lengths,
 a doubled `Pair::from` constructor, an enlarged `q` cap and a changed
 conversion FMA, are rejected, alongside one positive binding test.

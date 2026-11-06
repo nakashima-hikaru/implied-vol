@@ -543,14 +543,14 @@ mod tests {
     use super::solve;
     #[test]
     fn archived_cpp_branch_fixtures() {
-        // Expected bit patterns come from the unchanged C++ experimental with its AVX2 lane order.
+        // Unchanged branches retain the archived C++/AVX2 regression anchors.
+        // The optimized central input is checked against an independent root below.
         let cases: &[(u64, u64, u64)] = &[
             (0x0000000000000000, 0x3fb999999999999a, 0x3fd015abc78e92d1),
             (0x0000000000000000, 0x3feccccccccccccd, 0x400a515209676abe),
             (0x0000000000000000, 0x3cd0000000000000, 0x3ce40d931ff62706),
             (0x0000000000000000, 0x0000000000000383, 0x00000000000008cd),
             (0x16687e92154ef7ac, 0x124212dd4de70913, 0x16364f16a8097a31),
-            (0x3fb999999999999a, 0x3fa999999999999a, 0x3fcd6496956a4ac3),
             (0x3fb999999999999a, 0x39b4484bfeebc2a0, 0x3f82e778a810e85c),
             (0x3ff0000000000000, 0x3ddb7cdfd9d7bdbb, 0x3fc61cc36e0fd08a),
             (0x3fb999999999999a, 0x3fd3333333333333, 0x3fecd3902c5566af),
@@ -566,6 +566,19 @@ mod tests {
                 "a={a:x}, b={b:x}"
             );
         }
+    }
+    #[test]
+    fn central_archived_input_keeps_attainable_precision() {
+        // Exact binary64 inputs, with an independent Black root and eta_J
+        // agreeing at 160/240 digits via generate_adaptive_seed_seams.py::invert.
+        let a = f64::from_bits(0x3fb999999999999a);
+        let b = f64::from_bits(0x3fa999999999999a);
+        let hi = f64::from_bits(0x3fcd6496956a4ac3);
+        let lo = f64::from_bits(0x3c6eb51a9e3bf1b6);
+        let eta = f64::from_bits(0x3cb9aa2c0dd715c2);
+        let s = solve(a, b);
+        let rho = (((s - hi) - lo).abs() / hi) / eta;
+        assert!(s.is_finite() && s > 0.0 && rho < 1.0, "rho_J={rho}");
     }
     #[test]
     fn invalid_domain() {

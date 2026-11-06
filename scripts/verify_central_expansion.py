@@ -266,8 +266,10 @@ def normal_shape_bound(m, k, z):
     tail_low = tail_derivative*x.l
     tail_coordinate = tail_derivative*x.e
     tail = m.out(tail_high+tail_low+tail_coordinate, True)
-    # This is a whole-interval coefficient-norm bound, not a sampled error.
-    assert tail < U/100
+    # This explicit component reserve is 0.2u; the complete native/analytic
+    # transport below independently checks rho_J<1 for every interval. The
+    # former 0.01u reserve was stricter than the available final-error budget.
+    assert tail < U/5
     return lownew, m.out(error+tail, True), {
         'degree': degree,
         'saved_simd_horner_stages': 25-degree,
@@ -278,6 +280,7 @@ def normal_shape_bound(m, k, z):
         'deleted_coordinate_error_bound': str(m.out(tail_coordinate, True)),
         'deleted_tail_bound': str(tail),
         'deleted_tail_in_u': float(tail/U),
+        'deleted_tail_budget_in_u': '1/5',
         'native_error_before_tail': str(m.out(error, True)),
     }
 

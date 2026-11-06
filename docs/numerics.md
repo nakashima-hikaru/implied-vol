@@ -74,14 +74,14 @@ source-rounding bounds transport this change to the cubic finish. Other tables
 retain their lanes and scalar reduction order.
 
 The deferred central expansion accepts `a<=0.45` and a compensated central
-coordinate `q.high<=0.625`, widened from `0.36` and `0.5`. Its coefficients and
-arithmetic are unchanged. A recomputed continuous conversion remainder and
+coordinate `q.high<=0.625`, widened from `0.36` and `0.5`. Its stored coefficients
+are unchanged. A recomputed continuous conversion remainder and
 native rounding ledger certify the larger domain with conditional
-`rho_J<0.571` with the shortened conversion described below; see
+`rho_J<0.669` with the shortened polynomials described below; see
 `scripts/verify_central_expansion.py`.
-The four normal-shape intervals use degrees 18/20/20/25. Exact deleted-tail
+The four normal-shape intervals use degrees 16/18/18/24. Exact deleted-tail
 bounds on the padded cells, including the derivative times the low coordinate,
-allow the first three intervals to omit 7/5/5 SIMD Horner stages. Recomputed
+allow the four intervals to omit 9/7/7/1 SIMD Horner stages. Recomputed
 source rounding is included in the conditional bound. The subsequent
 Black-conversion polynomial evaluates 48 of its 98 stored coefficients,
 retaining 12/11/9/7/5/3/1 coefficients in rows 0 through 6 and omitting rows
@@ -111,8 +111,10 @@ expansion. Its target is the normal-price core contract defined below.
 The large-region solver uses degree 13 in its inexpensive table-based Mills
 evaluation and degree 16 in its compensated evaluation. The final evaluation retains its three
 compensated Horner stages and degree-18 asymptotic lanes. The upper predictor
-uses the same physical recurrence truncated at order five instead of seven;
-the precise residual gate and bracket safeguards control its handoff.
+uses the same physical recurrence with reciprocal-derivative index 3, 4 or 5.
+It chooses index 3 at `abs(x*n)<=1/8`, index 4 at `abs(x*n)<=3/8`, and index 5
+otherwise, where `n` is its physical Newton proposal. These thresholds select evaluation
+cost; the precise residual gate and bracket safeguards control its handoff.
 The fast residual's error bound controls both sign updates and the handoff
 to precise evaluation. Small and large paths share the same 44 coefficient
 rows: 25 high parts and only the three low parts consumed by compensated
@@ -180,7 +182,7 @@ Its common finish paths have conditional bounds below `0.594` for wing,
 `0.885` for small-rank, and `0.786` for finite-rank. The large direct finalizer,
 including transfer to the original price input, has a conditional bound below
 `0.873762`. The expanded central path with shortened conversion has a
-conditional bound below `0.571`.
+conditional bound below `0.669`.
 These bounds concern
 components under their seed/Mills certificate assumptions, not the complete
 solver domain.
@@ -234,6 +236,8 @@ The [2026-11-06 theoretical cost-reduction report](theoretical-cost-reduction.md
 records the later normal-shape degree reduction and shorter log-price update.
 The [follow-up report](further-theory-improvements.md) records the shortened
 central conversion and degree-13 fast Mills evaluation.
+The [adaptive-predictor report](adaptive-physical-improvements.md) records the
+3/4/5 physical predictor and further normal-shape degree reduction.
 
 ## Algorithm references
 

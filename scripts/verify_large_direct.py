@@ -309,6 +309,71 @@ def symbolic_log_step3():
             'global_one_step_bound_claimed': False}
 
 
+def symbolic_physical_predictor():
+    """Exact reciprocal-series basis for every adaptive predictor branch.
+
+    With n=-f/f' and q_j=f^(j)*n^(j-1)/(j!*f'),
+    f(x+n*t)/f(x)=1-t-q_2*t²-q_3*t³-... . The reciprocal
+    coefficients c_j obey the source recurrence. Householder's d-th
+    reciprocal derivative therefore gives n*c_(d-1)/c_d.
+    """
+    q2, q3, q4, q5 = [Poly({tuple(int(i == j) for i in range(4)): F(1)})
+                      for j in range(4)]
+    one = Poly.constant(1)
+    q = [Poly(), one, q2, q3, q4, q5]
+    c = [one, one]
+    c.append(q2*c[0]+c[1])
+    c.append(q3*c[0]+q2*c[1]+c[2])
+    c.append(q4*c[0]+q3*c[1]+q2*c[2]+c[3])
+    c.append(q5*c[0]+q4*c[1]+q3*c[2]+q2*c[3]+c[4])
+    assert c[2] == 1+q2
+    assert c[3] == 1+2*q2+q3
+    assert c[4] == 1+3*q2+q2**2+2*q3+q4
+    assert c[5] == 1+4*q2+3*q2**2+3*q3+2*q2*q3+2*q4+q5
+    for degree in (3, 4, 5):
+        # Coefficients through t^degree of the series times its reciprocal
+        # must be exactly (1,0,...,0). No finite numerical samples enter.
+        assert c[0] == one
+        for k in range(1, degree+1):
+            assert c[k]-sum((q[j]*c[k-j] for j in range(1, k+1)), Poly()) == Poly()
+    return {'method': 'Adaptive Householder reciprocal derivatives d=3/4/5',
+            'ideal_updates': ['n*c2/c3', 'n*c3/c4', 'n*c4/c5'],
+            'selection': ['abs(x*n)<=1/8', '1/8<abs(x*n)<=3/8', 'otherwise'],
+            'ideal_local_orders_given_exact_newton_ratio': [4, 5, 6],
+            'reciprocal_polynomial_identities_checked_exactly': True,
+            'global_one_step_bound_claimed': False}
+
+
+def adaptive_physical_source(original):
+    """Retain exact source expressions, staging only independent arithmetic.
+
+    The original physical recurrence is file-hash bound. Each retained let
+    expression is copied unchanged, so the operation/rounding order within
+    it is preserved. The reordered expressions are pure scalar arithmetic;
+    the only function call, mills_fast(y), still runs first and exactly once.
+    """
+    body = function_body(original, 'physical_step7')
+
+    def statement(name):
+        matches = re.findall(r'    let '+name+r' = .*?;\n', body, flags=re.S)
+        assert len(matches) == 1, ('physical recurrence expression', name)
+        return matches[0]
+
+    stages = [
+        ('n', 'iy', 'k', 'v', 'nn', 'xn', 'g0', 'g1', 'w0', 'g2',
+         'v1', 'w1', 'v2', 'w2', 'q2', 'q3', 'c0', 'c1', 'c2', 'c3'),
+        ('g3', 'v3', 'w3', 'q4', 'c4'),
+        ('g4', 'v4', 'w4', 'q5', 'c5'),
+    ]
+    return ('fn physical_step_adaptive(x: f64, y: f64, s: f64) -> f64 {\n'
+            + ''.join(map(statement, stages[0]))
+            + '    if xn.abs() <= 0.125 {\n        return n * c2 / c3;\n    }\n'
+            + ''.join(map(statement, stages[1]))
+            + '    if xn.abs() <= 0.375 {\n        return n * c3 / c4;\n    }\n'
+            + ''.join(map(statement, stages[2]))
+            + '    n * c4 / c5\n}')
+
+
 def symbolic_and_shape(ex):
     # Write h=a/s, t=s/2. Then x=t-h, y=t+h,
     # A=-xy=h^2-t^2 and Q=x^2+y^2-xy=3h^2+t^2.
@@ -684,18 +749,15 @@ def main():
     unchanged = ('dd', 'two', 'neg', 'add', 'sub', 'mul', 'scale', 'divide', 'val',
                  'frexp', 'scalbn', 'logdd', 'raw_stage', 'reduced_cap',
                  'mills_precise_pair', 'geometry', 'residual', 'reduced_grid',
-                 'grid_dd', 'fixed_scaled_cap', 'resolve_cap')
+                 'grid_dd', 'fixed_scaled_cap', 'resolve_cap', 'fma')
     for name in unchanged:
         assert canonical(function_body(current, name)) == canonical(function_body(original, name)), ('inherited source order', name)
-    # The shortened physical predictor is exactly the existing recurrence
-    # stopped at order five. Its accuracy is not a premise: guarded precise
-    # handoff and the preserved bracket/bisection fallback certify completion.
-    predictor = function_body(original, 'physical_step7').replace('physical_step7(', 'physical_step5(')
-    for name in ('g5', 'g6', 'v5', 'w5', 'v6', 'w6', 'q6', 'q7', 'c6', 'c7'):
-        predictor, count = re.subn(r'    let '+name+r' = .*?;\n', '', predictor, flags=re.S)
-        assert count == 1, ('physical recurrence reduction', name)
-    predictor = predictor.replace('n * c6 / c7', 'n * c4 / c5')
-    assert canonical(function_body(current, 'physical_step5')) == canonical(predictor), 'unmodeled physical predictor'
+    # Every adaptive branch stops the same physical recurrence at d=3/4/5.
+    # Accuracy is not a premise: the preserved bracket/bisection fallback and
+    # guarded precise handoff certify completion regardless of the proposal.
+    predictor = adaptive_physical_source(original)
+    assert canonical(function_body(current, 'physical_step_adaptive')) == canonical(predictor), 'unmodeled physical predictor'
+    physical_predictor = symbolic_physical_predictor()
     # Changing the proposal cannot weaken the bracket or precise handoff. Its
     # exact source/formula is still bound to make the reviewed algorithm explicit.
     assert canonical(function_body(current, 'log_step3')) == canonical(LOG_STEP3_SOURCE), 'unmodeled log iteration'
@@ -751,7 +813,7 @@ def main():
     prefix = solve.removesuffix('finish_direct(x,pe)}')
     assert prefix != solve, 'unreviewed finish call'
     prefix = replace_once(prefix, 'log_positive_normal_price(b)', 'logdd(dd(b))')
-    prefix = replace_once(prefix, 'physical_step5(', 'physical_step7(')
+    prefix = replace_once(prefix, 'physical_step_adaptive(', 'physical_step7(')
     prefix = replace_once(prefix, 'log_step3(', 'log_step5(')
     prefix = replace_once(prefix, matched_gate.group(1), '0x3e90000000000000')
     assert prefix == old_solve.split('letyy=val(pe.y);', 1)[0], 'unreviewed target/routing/iteration source'
@@ -889,7 +951,7 @@ def main():
                     'identities_checked_symbolically': ['s2/s=lambda*(1-alpha)', 's3/s=lambda*(1-3*alpha+2*alpha^2+beta)', 's4/s=lambda*(1-7*alpha+12*alpha^2+6*beta-6*alpha^3-7*alpha*beta-gamma)']},
         'recomputed_reduced_precise_mills': {k: pack(v) if isinstance(v, F) else v for k, v in mills.items()},
         'recomputed_precise_high_error': pack(precise_high),
-        'physical_predictor': 'Source-identical physical recurrence truncated at order five; no one-step residual premise, preserved safeguards and forced bisections establish stopping',
+        'physical_predictor': {**physical_predictor, 'termination': 'Exact preserved bracket/gate guards and forced bisections; no proposal accuracy premise'},
         'log_iteration': {**log_iteration, 'termination': 'Preserved finite/in-bracket guards, reliable residual signs and forced bisections; no proposal accuracy premise'},
         'recomputed_inherited_source_reciprocal': reciprocal,
         'recomputed_inherited_source_geometry': geometry,
@@ -909,7 +971,7 @@ def main():
             'Existing source-identical target/cap/routing lemmas place the internal root inside the preserved brackets',
             'Source-identical integer cap arithmetic and external Lefevre-Muller Property 1 separation theorem',
             'Target-to-original-price finite transfer via Black vega log concavity and correlated gap/condition-number bounds'],
-        'limits': 'No end-to-end Lean or vendor-libm proof; source hashes and finite tests are not themselves mathematical guarantees. Degree-16 compensated-Mills, finalizer source rounding and target budgets are recomputed, not inferred from old finalizer rho. Order-five predictor has no universal one-step handoff guarantee; safeguarded stopping is preserved.',
+        'limits': 'No end-to-end Lean or vendor-libm proof; source hashes and finite tests are not themselves mathematical guarantees. Degree-16 compensated-Mills, finalizer source rounding and target budgets are recomputed, not inferred from old finalizer rho. Adaptive predictor has no universal one-step handoff guarantee; safeguarded stopping is preserved.',
     }
     path = args.out or source/'target/proof/large-direct-proof.json'
     path.parent.mkdir(parents=True, exist_ok=True)

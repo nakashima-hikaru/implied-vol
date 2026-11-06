@@ -479,7 +479,7 @@ pub(crate) fn solve(a: f64, b: f64) -> f64 {
     if upper {
         let yy = x.mul_add(x, 2.0 * a).sqrt();
         let ss = x + yy;
-        let next = x + physical_step5(x, yy, ss);
+        let next = x + physical_step_adaptive(x, yy, ss);
         if next.is_finite() && next > left && next < right {
             x = next;
         }
@@ -819,7 +819,7 @@ fn fma(a: f64, b: f64, c: f64) -> f64 {
 
 #[inline]
 #[allow(non_snake_case, unused_variables)]
-fn physical_step5(x: f64, y: f64, s: f64) -> f64 {
+fn physical_step_adaptive(x: f64, y: f64, s: f64) -> f64 {
     let n = mills_fast(y) * (y / s);
     let iy = f64::from_bits(0x3ff0000000000000) / y;
     let k = x * iy;
@@ -830,8 +830,6 @@ fn physical_step5(x: f64, y: f64, s: f64) -> f64 {
     let g1 = xn;
     let w0 = f64::from_bits(0x3ff0000000000000);
     let g2 = fma(xn, g1, -nn * g0) / f64::from_bits(0x4000000000000000);
-    let g3 = fma(xn, g2, -nn * g1) / f64::from_bits(0x4008000000000000);
-    let g4 = fma(xn, g3, -nn * g2) / f64::from_bits(0x4010000000000000);
     let v1 = v;
     let w1 = (f64::from_bits(0x3ff0000000000000) - k) * (f64::from_bits(0x3ff0000000000000)) * v1;
     let v2 = v1 * v / f64::from_bits(0x4000000000000000);
@@ -842,6 +840,18 @@ fn physical_step5(x: f64, y: f64, s: f64) -> f64 {
             f64::from_bits(0x0000000000000000),
         ))
         * v2;
+    let q2 = (fma(g0, w1, g1)) / f64::from_bits(0x4000000000000000);
+    let q3 = (fma(g0, w2, fma(g1, w1, g2))) / f64::from_bits(0x4008000000000000);
+    let c0 = f64::from_bits(0x3ff0000000000000);
+    let c1 = f64::from_bits(0x3ff0000000000000);
+    let c2 = fma(q2, c0, c1);
+    let c3 = fma(q3, c0, fma(q2, c1, c2));
+    // |x*n| measures the leading Gaussian exponent change at the Newton step.
+    // These are cost choices; the guarded caller verifies the precise residual.
+    if xn.abs() <= 0.125 {
+        return n * c2 / c3;
+    }
+    let g3 = fma(xn, g2, -nn * g1) / f64::from_bits(0x4008000000000000);
     let v3 = v2 * v / f64::from_bits(0x4008000000000000);
     let w3 = (f64::from_bits(0x3ff0000000000000) - k)
         * (fma(
@@ -854,6 +864,12 @@ fn physical_step5(x: f64, y: f64, s: f64) -> f64 {
             -f64::from_bits(0x4008000000000000),
         ))
         * v3;
+    let q4 = (fma(g0, w3, fma(g1, w2, fma(g2, w1, g3)))) / f64::from_bits(0x4010000000000000);
+    let c4 = fma(q4, c0, fma(q3, c1, fma(q2, c2, c3)));
+    if xn.abs() <= 0.375 {
+        return n * c3 / c4;
+    }
+    let g4 = fma(xn, g3, -nn * g2) / f64::from_bits(0x4010000000000000);
     let v4 = v3 * v / f64::from_bits(0x4010000000000000);
     let w4 = (f64::from_bits(0x3ff0000000000000) - k)
         * (fma(
@@ -870,16 +886,8 @@ fn physical_step5(x: f64, y: f64, s: f64) -> f64 {
             f64::from_bits(0x0000000000000000),
         ))
         * v4;
-    let q2 = (fma(g0, w1, g1)) / f64::from_bits(0x4000000000000000);
-    let q3 = (fma(g0, w2, fma(g1, w1, g2))) / f64::from_bits(0x4008000000000000);
-    let q4 = (fma(g0, w3, fma(g1, w2, fma(g2, w1, g3)))) / f64::from_bits(0x4010000000000000);
     let q5 = (fma(g0, w4, fma(g1, w3, fma(g2, w2, fma(g3, w1, g4)))))
         / f64::from_bits(0x4014000000000000);
-    let c0 = f64::from_bits(0x3ff0000000000000);
-    let c1 = f64::from_bits(0x3ff0000000000000);
-    let c2 = fma(q2, c0, c1);
-    let c3 = fma(q3, c0, fma(q2, c1, c2));
-    let c4 = fma(q4, c0, fma(q3, c1, fma(q2, c2, c3)));
     let c5 = fma(q5, c0, fma(q4, c1, fma(q3, c2, fma(q2, c3, c4))));
     n * c4 / c5
 }

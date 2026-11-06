@@ -25,7 +25,7 @@ CASES = (
 )
 EXPERIMENTAL_CASES = (
     "central_deferred", "central_shape1", "central_shape2", "central_extended", "rank_small2", "wing_seed", "finite_seed", "large_lower", "large_upper",
-    "large_asymptotic", "large_near_cap", "microscopic", "mixed_large", "mixed_near_atm",
+    "large_upper_small_step", "large_upper_full_step", "large_asymptotic", "large_near_cap", "microscopic", "mixed_large", "mixed_near_atm",
 )
 AS1_CASES = ("as1_high_a_guard", "as1_central", "as1_deep_tail", "as1_scaled", "as1_mixed")
 FIELDS = ["case", "round", "ns_per_call", "checksum"]

@@ -105,11 +105,11 @@ fn normal_deferred(z: Pair) -> Pair {
     ];
     let t = rawmul(rawsum(z, Pair::new(-MID[k].hi, -MID[k].lo)), SCALE[k]);
     // The represented coefficient tails are bounded on the padded cells in
-    // verify_central_expansion.py. The last cell keeps its full degree.
+    // verify_central_expansion.py, including the final solver error budget.
     match k {
-        0 => normal_polynomial::<18>(k, t),
-        1 | 2 => normal_polynomial::<20>(k, t),
-        _ => normal_polynomial::<25>(k, t),
+        0 => normal_polynomial::<16>(k, t),
+        1 | 2 => normal_polynomial::<18>(k, t),
+        _ => normal_polynomial::<24>(k, t),
     }
 }
 #[inline]

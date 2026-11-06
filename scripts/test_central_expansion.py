@@ -87,8 +87,8 @@ class SourceMutationControls(unittest.TestCase):
                     'let right_start = RIGHT - RIGHT_KEEP - 1;')
 
     def test_changed_normal_degree_rejected(self):
-        self.reject(FILES[1], '0 => normal_polynomial::<18>(k, t),',
-                    '0 => normal_polynomial::<17>(k, t),')
+        self.reject(FILES[1], '0 => normal_polynomial::<16>(k, t),',
+                    '0 => normal_polynomial::<15>(k, t),')
 
     def test_changed_proof_degree_rejected(self):
         with patch('verify_central_expansion.NORMAL_DEGREES', (25, 25, 25, 25)):
@@ -96,8 +96,12 @@ class SourceMutationControls(unittest.TestCase):
                 source_binding(self.root, self.root)
 
     def test_changed_normal_branch_rejected(self):
-        self.reject(FILES[1], '1 | 2 => normal_polynomial::<20>(k, t),',
-                    '1 | 2 => normal_polynomial::<18>(k, t),')
+        self.reject(FILES[1], '1 | 2 => normal_polynomial::<18>(k, t),',
+                    '1 | 2 => normal_polynomial::<17>(k, t),')
+
+    def test_changed_last_normal_degree_rejected(self):
+        self.reject(FILES[1], '_ => normal_polynomial::<24>(k, t),',
+                    '_ => normal_polynomial::<23>(k, t),')
 
     def test_changed_normal_horner_order_rejected(self):
         self.reject(FILES[1], 'for i in (2..DEGREE).rev() {',

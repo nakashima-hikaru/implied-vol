@@ -1,7 +1,7 @@
 # Large-route direct log-residual correction
 
 `scripts/verify_large_direct.py` checks the replacement of the large-route
-final correction, degree-16 compensated Mills table evaluation, order-five
+final correction, degree-16 compensated Mills table evaluation, adaptive
 upper predictor, third-reciprocal-derivative log iteration, and the precise
 handoff at `2^-14`. The certificate is
 conditional on the same primitive and real-analysis contracts as the bound
@@ -219,22 +219,58 @@ Degree 12 also passed an isolated error-budget probe, but it uses almost all
 of the `2^-38` allowance and would require separate mixed-lane padding because
 the asymptotic polynomial remains degree 13. Degree 11 failed that allowance.
 Degree 13 therefore gives the selected simple reduction without spending more
-of the worst-case residual budget. Shorter order-three/four upper physical
-predictors missed the precise gate on some saved inputs; they remain probes.
+of the worst-case residual budget. Unconditional order-three/four upper physical
+predictors missed the precise gate on some saved inputs; the adaptive selection
+below retains order five for the larger steps.
 
-## Order-five upper predictor
+## Adaptive upper physical predictor
 
-`physical_step5` stops the existing recurrence at `n*c4/c5`, removing the
-order-six and order-seven intermediate polynomials. Every retained arithmetic
-operation has the old source order and one-rounding FMA semantics.
+At the inverse-normal upper seed, write `y=sqrt(x*x+2*a)`, `s=x+y` and
+`n=M(y)*y/s`. With an exact inverse-normal seed this is the Newton step for
+the physical complement-price residual. For a general exact Newton ratio
+`n=-f/f'` and `q_j=f^(j)*n^(j-1)/(j!*f')`,
+
+```
+f(x+n*t)/f(x) = 1-t-q2*t²-q3*t³-...,
+f(x)/f(x+n*t) = c0+c1*t+c2*t²+c3*t³+...,
+c0=c1=1,   c_k=c_(k-1)+sum(j=2..k, q_j*c_(k-j)).
+```
+
+Householder's `d`-th reciprocal derivative gives `n*c_(d-1)/c_d`. The checker
+verifies the reciprocal polynomial identities through degree five exactly.
+The source retains the original represented `g`, `w`, `q` and `c` recurrence
+expressions, with their original arithmetic order and one-rounding FMAs.
+It evaluates later expressions only when the selected order needs them:
+
+| Computed measure | Reciprocal derivative `d` | Proposal |
+| --- | ---: | --- |
+| `abs(x*n) <= 1/8` | 3 | `n*c2/c3` |
+| `1/8 < abs(x*n) <= 3/8` | 4 | `n*c3/c4` |
+| otherwise | 5 | `n*c4/c5` |
+
+The measure is the magnitude of the **linear term** in the Gaussian exponent
+change, `-x*n-n²/2`. These thresholds are heuristic choices of computational
+work, not proved one-step error thresholds. Individual ideal Householder
+formulas with exact derivatives and Newton ratios have local orders 4, 5 and
+6. Those are not convergence-rate claims for this single, rounded adaptive
+predictor or for the complete solver.
 
 The predictor is accepted only when finite and strictly inside the original
 bracket. Its precise residual must still satisfy `2^-14`; otherwise the
 guarded fast update and forced midpoint every fourth update run.
 The continuous correctness and stopping argument therefore does not assume
-that order five always reaches the precise handoff in one step. A universal
-one-step residual bound for inverse-normal plus this predictor is not claimed;
-finite one-step residual/count checks are performance evidence only.
+that any selected order reaches the precise handoff in one step. Invalid
+proposals or zero rational denominators remain covered by these same guards.
+No universal one-step residual bound for inverse-normal plus this predictor is
+claimed; finite one-step residual/count checks are performance evidence only.
+
+`scripts/generate_large_predictor_seams.py` locates the two ideal thresholds,
+then rounds the corresponding physical prices to binary64 and includes adjacent
+quotes and offsets on both sides. It also covers representative order-three
+and order-five benchmark inputs. All 95 final-output references independently
+agree at 160 and 240 decimal digits using direct Gaussian-erfc inversion of
+the original represented input. Runtime branch coverage is checked separately;
+ideal threshold locations are not assumed to equal rounded source boundaries.
 
 ## Shortened logarithmic iteration
 
@@ -283,8 +319,12 @@ It compares unchanged geometry, compensated Mills tail stages, residual,
 target, integer cap and safeguarded iteration functions with the bound reference
 source. Explicit reverse bridges cover the compact Mills coefficient layout,
 degree-16 table truncation, the new signed `lambda`, the normal-price logarithm
-helper, and truncation of the physical predictor recurrence at order five. All consumed constant bits
+helper, and staging the physical predictor recurrence at orders three through five. All consumed constant bits
 are checked, and the SIMD implementation is pinned by version and source hash.
+The adaptive predictor bridge copies every retained expression from the bound
+reference and requires the exact two guards and three return formulas. It also
+binds the one-rounding `fma` helper. Only independent pure arithmetic is moved
+between stages; no reached expression's rounding order is changed.
 The new `log_step3` body is bound explicitly and its algebra is checked exactly;
 only its call name is reversed when comparing the safeguarded caller with the
 reference. Removing forced bisections or modifying the rational coefficients

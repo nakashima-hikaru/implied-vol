@@ -9,7 +9,7 @@ equivalence to the original kernel.
 import hashlib
 
 BASELINE_SHA256 = '61e04489aa1849afdbabe74273685f0b2062c436035c77c0d4bcae648f5a642f'
-NORMAL_DEGREES = (18, 20, 20, 25)
+NORMAL_DEGREES = (16, 18, 18, 24)
 CONVERSION_LENGTHS = (12, 11, 9, 7, 5, 3, 1, 0, 0, 0)
 EDITS = (
     (
@@ -28,11 +28,11 @@ EDITS = (
         '    let arg = F64x2::splat(t.hi);\n'
         '    for i in (2..25).rev() {',
         '    // The represented coefficient tails are bounded on the padded cells in\n'
-        '    // verify_central_expansion.py. The last cell keeps its full degree.\n'
+        '    // verify_central_expansion.py, including the final solver error budget.\n'
         '    match k {\n'
-        '        0 => normal_polynomial::<18>(k, t),\n'
-        '        1 | 2 => normal_polynomial::<20>(k, t),\n'
-        '        _ => normal_polynomial::<25>(k, t),\n'
+        '        0 => normal_polynomial::<16>(k, t),\n'
+        '        1 | 2 => normal_polynomial::<18>(k, t),\n'
+        '        _ => normal_polynomial::<24>(k, t),\n'
         '    }\n'
         '}\n'
         '#[inline]\n'
