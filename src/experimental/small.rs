@@ -441,7 +441,7 @@ pub(crate) fn solve(a: f64, b: f64) -> f64 {
             return s;
         }
     }
-    if a <= 0.36 && b < 0.21 {
+    if a <= 0.45 && b < 0.26 {
         let s = central::deferred(a, b);
         if positive(s) {
             return s;

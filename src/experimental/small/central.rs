@@ -104,11 +104,22 @@ fn normal_deferred(z: Pair) -> Pair {
         Pair::from(20.0),
     ];
     let t = rawmul(rawsum(z, Pair::new(-MID[k].hi, -MID[k].lo)), SCALE[k]);
-    // Independent Horner chains share the argument; keep each chain's degree
-    // and every original rounding point while evaluating in two NEON lanes.
-    let mut value_derivative = F64x2::new(fma(0.0, t.hi, NC[k][25]), 25.0 * NC[k][25]);
+    // The represented coefficient tails are bounded on the padded cells in
+    // verify_central_expansion.py. The last cell keeps its full degree.
+    match k {
+        0 => normal_polynomial::<18>(k, t),
+        1 | 2 => normal_polynomial::<20>(k, t),
+        _ => normal_polynomial::<25>(k, t),
+    }
+}
+#[inline]
+fn normal_polynomial<const DEGREE: usize>(k: usize, t: Pair) -> Pair {
+    const { assert!(DEGREE >= 2 && DEGREE <= 25) };
+    // Retain both compensated final stages and the low-argument correction.
+    let mut value_derivative =
+        F64x2::new(fma(0.0, t.hi, NC[k][DEGREE]), DEGREE as f64 * NC[k][DEGREE]);
     let arg = F64x2::splat(t.hi);
-    for i in (2..25).rev() {
+    for i in (2..DEGREE).rev() {
         value_derivative = value_derivative.mul_add(arg, F64x2::new(NC[k][i], i as f64 * NC[k][i]));
     }
     let value_derivative = value_derivative.to_array();
@@ -124,31 +135,45 @@ fn normal_deferred(z: Pair) -> Pair {
     Pair::new(p.hi, fma(dp, t.lo, p.lo))
 }
 #[inline]
-fn conversion_pair<const LEFT: usize, const RIGHT: usize>(
+fn conversion_pair<
+    const LEFT: usize,
+    const RIGHT: usize,
+    const LEFT_KEEP: usize,
+    const RIGHT_KEEP: usize,
+>(
     a: &[f64; LEFT],
     b: &[f64; RIGHT],
     x: f64,
 ) -> [f64; 2] {
-    // The rows have different degrees. Evaluate the longer row's leading
-    // stages first, then pair the remaining stages without padding either row.
-    const { assert!(LEFT >= RIGHT && RIGHT > 0) };
-    let head = LEFT - RIGHT;
-    let mut p = a[0];
-    for c in &a[1..=head] {
+    // Drop only the source-certified highest powers of each polynomial.
+    // Pair the retained Horner stages without padding either row.
+    const {
+        assert!(LEFT >= LEFT_KEEP && RIGHT >= RIGHT_KEEP);
+        assert!(LEFT_KEEP >= RIGHT_KEEP && RIGHT_KEEP > 0);
+    };
+    let left_start = LEFT - LEFT_KEEP;
+    let right_start = RIGHT - RIGHT_KEEP;
+    let head = LEFT_KEEP - RIGHT_KEEP;
+    let mut p = a[left_start];
+    for c in &a[left_start + 1..=left_start + head] {
         p = fma(p, x, *c);
     }
-    let mut p = F64x2::new(p, b[0]);
+    let mut p = F64x2::new(p, b[right_start]);
     let arg = F64x2::splat(x);
-    for i in 1..RIGHT {
-        p = p.mul_add(arg, F64x2::new(a[head + i], b[i]));
+    for i in 1..RIGHT_KEEP {
+        p = p.mul_add(
+            arg,
+            F64x2::new(a[left_start + head + i], b[right_start + i]),
+        );
     }
     p.to_array()
 }
 
 pub(super) fn deferred(a: f64, b: f64) -> f64 {
     // These margins necessarily fail the q or z range guard below:
-    // b<a/16 gives z>0.503; b+a/2>=0.2 gives q>0.5013.
-    if b < a / 16.0 || b + 0.5 * a >= 0.2 {
+    // b<a/16 gives z>0.503; b+a/2>=0.25 gives q>0.6266.
+    // The wider q cap is covered by verify_central_expansion.py.
+    if b < a / 16.0 || b + 0.5 * a >= 0.25 {
         return f64::NAN;
     }
     let sc = sinhc_half(a);
@@ -160,7 +185,7 @@ pub(super) fn deferred(a: f64, b: f64) -> f64 {
         ),
         rawsum(Pair::from(b), Pair::new(0.5 * d.hi, 0.5 * d.lo)),
     );
-    if !(q.hi >= 1e-12 && q.hi <= 0.5) {
+    if !(q.hi >= 1e-12 && q.hi <= 0.625) {
         return f64::NAN;
     }
     let r = rawdiv(d, q);
@@ -171,14 +196,12 @@ pub(super) fn deferred(a: f64, b: f64) -> f64 {
     let u = rawdiv(rawmul(q, normal_deferred(z)), sc);
     let w = rawmul(u, u);
     let a2 = rawmul(Pair::from(a), Pair::from(a));
-    let [p0, p1] = conversion_pair(&conversion_0, &conversion_1, w.hi);
-    let [p2, p3] = conversion_pair(&conversion_2, &conversion_3, w.hi);
-    let [p4, p5] = conversion_pair(&conversion_4, &conversion_5, w.hi);
-    let [p6, p7] = conversion_pair(&conversion_6, &conversion_7, w.hi);
-    let [p8, p9] = conversion_pair(&conversion_8, &conversion_9, w.hi);
-    let rows = [p0, p1, p2, p3, p4, p5, p6, p7, p8, p9];
-    let mut y = rows[9];
-    for i in (0..9).rev() {
+    let [p0, p1] = conversion_pair::<16, 15, 12, 11>(&conversion_0, &conversion_1, w.hi);
+    let [p2, p3] = conversion_pair::<14, 13, 9, 7>(&conversion_2, &conversion_3, w.hi);
+    let [p4, p5] = conversion_pair::<11, 10, 5, 3>(&conversion_4, &conversion_5, w.hi);
+    let rows = [p0, p1, p2, p3, p4, p5];
+    let mut y = conversion_6[7];
+    for i in (0..6).rev() {
         y = fma(y, a2.hi, rows[i]);
     }
     let c = rawsum(Pair::from(1.0), rawmul(w, Pair::from(y)));

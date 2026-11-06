@@ -9,6 +9,7 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--source-root', type=Path, default=Path(__file__).resolve().parents[1])
 parser.add_argument('--reference-root', type=Path, required=True)
 parser.add_argument('--check', action='store_true')
+parser.add_argument('--check-svd', action='store_true', help='reproduce the frozen candidate search at 90/130 digits; requires mpmath, not a proof premise')
 parser.add_argument('--report', type=Path)
 args = parser.parse_args()
 if not __debug__:
@@ -35,12 +36,16 @@ degree_counts = {}
 for item in metadata.values():
     pair = f"{item['x_degree']}/{item['y_degree']}"
     degree_counts[pair] = degree_counts.get(pair, 0) + 1
-report = {'method': 'Per-table degree selection; exact power-to-Chebyshev transform; truncate modes; exact inverse transform; one binary64 coefficient rounding',
+report = {'method': 'Per-table degree selection and frozen small-2 rank-two Chebyshev factors; exact power/Chebyshev transforms; one binary64 coefficient rounding; exact represented bivariate difference bound',
           'degrees_by_route': seeds.DEGREES, 'degree_pair_counts': degree_counts, 'rank_tables': len(metadata),
           'old_bytes': sum(v['old_bytes'] for v in metadata.values()),
           'new_bytes': sum(v['new_bytes'] for v in metadata.values()),
           'degree_metadata_bytes': 2*len(metadata),
+          'compressed_tables': {name:{key:item[key] for key in ('old_rank','rank','chebyshev_difference')}
+                                for name,item in metadata.items() if 'old_rank' in item},
           'reference_constants_sha256': seeds.REFERENCE_CONSTANTS_SHA256, 'tables': metadata}
+if args.check_svd:
+    report['rank_two_search_provenance'] = seeds.check_rank_two_search(constants)
 if args.report:
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(report, indent=2)+'\n')

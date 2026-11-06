@@ -67,9 +67,27 @@ retain their specialized corrections.
 Small/core rank seeds use per-rectangle degrees: 6/5 for twelve tables, 6/6
 for twelve, 7/5 for one, and 7/6 for one. Their represented factors are reduced by exact conversion to
 Chebyshev coefficients, removal of higher modes, and conversion back to power
-coefficients. Evaluation remains fused Horner with the same lanes and scalar
-reduction order. A direct fourth-inverse-derivative bound permits these cheaper
-seeds with the existing cubic finish; a quartic finish is unnecessary.
+coefficients. Small rectangle 2 additionally compresses rank three to rank two,
+using four lanes and 11 two-lane Horner stages instead of eight lanes and 22
+stages. Exact bivariate Chebyshev coefficient differences and separate old/new
+source-rounding bounds transport this change to the cubic finish. Other tables
+retain their lanes and scalar reduction order.
+
+The deferred central expansion accepts `a<=0.45` and a compensated central
+coordinate `q.high<=0.625`, widened from `0.36` and `0.5`. Its coefficients and
+arithmetic are unchanged. A recomputed continuous conversion remainder and
+native rounding ledger certify the larger domain with conditional
+`rho_J<0.571` with the shortened conversion described below; see
+`scripts/verify_central_expansion.py`.
+The four normal-shape intervals use degrees 18/20/20/25. Exact deleted-tail
+bounds on the padded cells, including the derivative times the low coordinate,
+allow the first three intervals to omit 7/5/5 SIMD Horner stages. Recomputed
+source rounding is included in the conditional bound. The subsequent
+Black-conversion polynomial evaluates 48 of its 98 stored coefficients,
+retaining 12/11/9/7/5/3/1 coefficients in rows 0 through 6 and omitting rows
+7 through 9. The checker recomputes the shortened polynomial's continuous
+residual, analytic tails and native rounding, saving 22 SIMD and six scalar
+Horner FMAs per accepted central call.
 
 All SIMD operations use `fearless_simd` binary64 lanes with the target's
 guaranteed baseline: NEON on AArch64, SSE2 on x86, WebAssembly SIMD when enabled,
@@ -90,12 +108,23 @@ rational bounds and transports the result through each seed leaf's final
 the remaining region uses Mills differences or the tiny-t
 expansion. Its target is the normal-price core contract defined below.
 
-The large-region solver uses degree 16 in its inexpensive table-based Mills
-evaluation, then retains degree 24 in the compensated final evaluation.
+The large-region solver uses degree 13 in its inexpensive table-based Mills
+evaluation and degree 16 in its compensated evaluation. The final evaluation retains its three
+compensated Horner stages and degree-18 asymptotic lanes. The upper predictor
+uses the same physical recurrence truncated at order five instead of seven;
+the precise residual gate and bracket safeguards control its handoff.
 The fast residual's error bound controls both sign updates and the handoff
 to precise evaluation. Small and large paths share the same 44 coefficient
 rows: 25 high parts and only the three low parts consumed by compensated
 Horner evaluation. Degree tables use `u8`, widened at indexing sites.
+
+The large solver's iterative log-price update uses Householder's third
+reciprocal derivative, with fourth-order local convergence. For
+`n=-f/f'`, `A=f''/f'`, and `B=f'''/f'`, its step is
+`n*(1+A*n/2)/(1+A*n+B*n*n/6)`. This replaces the longer order-five update and
+removes two higher-derivative recurrences. The precise residual gate,
+finite/in-bracket checks and forced bisection every fourth update are retained;
+correctness and stopping do not require one-step convergence.
 
 The large finalizer maps the compensated log residual directly to relative
 volatility. With `z=-residual`, `lambda=±D/s`, `alpha=-x*y*lambda`, and
@@ -150,7 +179,9 @@ Experimental's AS1 component has a conditional bound `rho_AS1<0.916169`.
 Its common finish paths have conditional bounds below `0.594` for wing,
 `0.885` for small-rank, and `0.786` for finite-rank. The large direct finalizer,
 including transfer to the original price input, has a conditional bound below
-`0.874280`. These bounds concern
+`0.873762`. The expanded central path with shortened conversion has a
+conditional bound below `0.571`.
+These bounds concern
 components under their seed/Mills certificate assumptions, not the complete
 solver domain.
 
@@ -174,7 +205,7 @@ excludes 17 wing rows from this common-finish bound.
 It recomputes the inherited finish bound for each leaf and allocates the
 direct-D error against that leaf's remaining precision budget. The exact
 `t=s0/2` argument also limits the represented square's rounding error to `u*t*t`.
-For reduced rank seeds, it additionally regenerates every changed coefficient,
+For reduced degree and rank seeds, it additionally regenerates every changed coefficient,
 bounds the seed perturbation and enlarged geometry on all 5,474 leaves, and
 recomputes the final cubic error using the fourth derivative of the inverse
 price. The original Householder comparison remains evidence for the original
@@ -196,8 +227,13 @@ target transfer. Both remain conditional component certificates.
 [The compact-table and adaptive-evaluation report](experimental-improvements.md)
 records the preceding changes. [The inverse-series and seed-reduction report](theory-improvements.md)
 records the uniform-degree stage. [The adaptive-degree and localized-handoff report](adaptive-theory-improvements.md)
-records the current changes, with derivations for the [large finalizer](large-direct-proof.md)
-and [reduced seeds](seed-reduction.md).
+records the adaptive-degree stage, with derivations for the [large finalizer](large-direct-proof.md)
+and [reduced seeds](seed-reduction.md). The [rank, Mills and central expansion report](rank-mills-central-improvements.md)
+records the subsequent compression and wider central domain.
+The [2026-11-06 theoretical cost-reduction report](theoretical-cost-reduction.md)
+records the later normal-shape degree reduction and shorter log-price update.
+The [follow-up report](further-theory-improvements.md) records the shortened
+central conversion and degree-13 fast Mills evaluation.
 
 ## Algorithm references
 

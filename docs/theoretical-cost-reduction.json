@@ -1,0 +1,1844 @@
+{
+  "date": "2026-11-06",
+  "baseline": {
+    "head": "d51a2631019695887468d23d9b6c988ba0a3bc10",
+    "description": "Initial working tree, including existing uncommitted rank/Mills/central improvements; baseline benchmark harness updated to the same final case definitions as candidate.",
+    "initial_manifest_sha256": "c5724675f9fe5dc7af76176f3b4ccf7ebe2629c3d4b8bf782a9218671bcab0c8",
+    "initial_status_sha256": "8775427e9869ce6832dcc29de97942c9a9439dd688cb764a5c40d007f04c2710"
+  },
+  "changes": {
+    "central_degrees_before": [
+      25,
+      25,
+      25,
+      25
+    ],
+    "central_degrees_after": [
+      18,
+      20,
+      20,
+      25
+    ],
+    "central_saved_two_lane_horner_stages": [
+      7,
+      5,
+      5,
+      0
+    ],
+    "large_householder_index_before": 5,
+    "large_householder_index_after": 3,
+    "large_local_order_before": 6,
+    "large_local_order_after": 4,
+    "precise_handoff_gate_unchanged": "2^-14",
+    "final_cubic_unchanged": true,
+    "coefficient_storage_unchanged": true
+  },
+  "changed_files": {
+    "benches/compare_experimental.py": {
+      "baseline_sha256": "001bfaf42a67d12d42f59973e7680eb4f998ac86a9d6db1956313e1b6863240e",
+      "candidate_sha256": "fb2cf0066457ecb40ad4270a3fcd269c89e8a415fc3bf4a6949433de1d420012"
+    },
+    "benches/implied_black_vol_paths.rs": {
+      "baseline_sha256": "add34b6a33959e6b60d57d97b14c3c8af22ba7ff214ba37010817a76ffcabaa4",
+      "candidate_sha256": "f7aecaad29215527838917bfbc991d9a7747abf987f8a98e0b3ed5fdab719247"
+    },
+    "benches/test_compare_experimental.py": {
+      "baseline_sha256": "6e07eee3539ddba39c9dd7d0bd952bd56a3457bafd664c8f37c4c206dc990565",
+      "candidate_sha256": "d92d11a99cba30d555174199f13dc5e6fec40a875532ca0d18e211f24386184c"
+    },
+    "docs/central-expansion.md": {
+      "baseline_sha256": "445e349565efc5977b03c2b5066e6810d5b7ac9870dfe133fbb8eafa6e3064d6",
+      "candidate_sha256": "40dbd26d496cd5db715567175df0df251cfb6449fdb7535a593bb655d9afd70b"
+    },
+    "docs/large-direct-proof.md": {
+      "baseline_sha256": "5a917943f6987f37c95d5d7f57330139afa1aa276eb169205a2d27d785de15c7",
+      "candidate_sha256": "e6ead054fef5f1368067a91eb9986fda9a5ae673854693883a3522d7556ff9ef"
+    },
+    "docs/numerics.md": {
+      "baseline_sha256": "69cbf511bf316c356dc17c35c45aa756b473f8ca931839a0c37c612b56173c8a",
+      "candidate_sha256": "9620c367a14ca28dfdd8b45a0f3b8b81a4756aca2da8f186e44fb9e4e3fb5de9"
+    },
+    "scripts/central_expansion.py": {
+      "baseline_sha256": "37be7cb5f04a512a0134587b2e86acd3f2c00f5cec3ef7339b7ed81acfbd38df",
+      "candidate_sha256": "59286e9f961654367bd4ee18a2257f2812a88e4a6672099972e8f85e78dfe230"
+    },
+    "scripts/generate_central_expansion_seams.py": {
+      "baseline_sha256": "fd2ef799d22c38ca772f3ab99f629b56c3bea78a12349b53e37d8082e78c2da2",
+      "candidate_sha256": "6ab99c7c77223e674ffe7d7607f91a6d103908a73c4397727518fe701485562a"
+    },
+    "scripts/test_central_expansion.py": {
+      "baseline_sha256": "5fbe68aa247dcdfb023c9f39bd94e221e492d11b2023d7ca533219aa70edd36a",
+      "candidate_sha256": "d767f4c297eeed5b172b61c0b36cbed5305a1fac1ab107dad79c423714ab72d7"
+    },
+    "scripts/test_large_reduction_binding.py": {
+      "baseline_sha256": "19fce9aad6fc1faf0eb9f4b58d7ecbc054a99ee197b7033bc6baeb46afd7e809",
+      "candidate_sha256": "380c52c13242b536ad1b2b0db49736b7babe2025a73338d5c5e699580b79b8d2"
+    },
+    "scripts/verify_as1_atan.py": {
+      "baseline_sha256": "a1870a6498ad99bdbc576645ac178392f690c32ea3d1ffcf61406609ae8d3b97",
+      "candidate_sha256": "72f4929f7784895d09da1ca1bc4912bf62c3c22f36498f99f8fc365249afc7cc"
+    },
+    "scripts/verify_central_expansion.py": {
+      "baseline_sha256": "b1943b0649badc32b6314b1e55e062b84c48ea74adf54ed7849079cafdca70be",
+      "candidate_sha256": "3115ce771dfddccd0c5bd14fb9a4bc5efa0c21d3aa20d7680f11c830980edf2d"
+    },
+    "scripts/verify_large_direct.py": {
+      "baseline_sha256": "d3f43726bf1e70480b823b0d8defbd9b8034e4d20ab61a453766c26f8cf1cc67",
+      "candidate_sha256": "03cffb693fd761ed6e181fbb32492ecfd7c966fb4a728cf687837786a3b42a64"
+    },
+    "src/experimental/large.rs": {
+      "baseline_sha256": "812abd71a3e4b5085f3d00d282a6447212b9eab93519ed0d25606571fbf1e8a3",
+      "candidate_sha256": "e39b3b256ee71c32ac16e1f9e92d9d1db20a43c7972340339141401dc3bc12cf"
+    },
+    "src/experimental/small/central.rs": {
+      "baseline_sha256": "2cbb043ce14283f7fce3364c4b422aebc3b2b4c19f3acfde1012e05ae2696fdf",
+      "candidate_sha256": "d5217b4999c8312054db45ce0375abd261ef8c0ca3122cac5af9a76a2f64c2fd"
+    },
+    "tests/experimental_central_expansion.rs": {
+      "baseline_sha256": "c2f51ea731282758d4bf3a7e2e090774f2547eb12b2fe68201f4cec930d68da2",
+      "candidate_sha256": "35eee85b797ae7d0b2cf09941d62d3bcaa2909d5309786962f04f6c668cb4c79"
+    },
+    "scripts/generate_large_iteration_cases.py": {
+      "baseline_sha256": null,
+      "candidate_sha256": "74d0b3f9dcda43c9d468309b8dc01a7343ef8152b3aab0e725bb9bd790176422"
+    },
+    "tests/experimental_large_iteration.rs": {
+      "baseline_sha256": null,
+      "candidate_sha256": "a479f4c6f4a676ec363eba6a52a7ecb7fab966084dfaffcb62b09e5ec2cd8b68"
+    },
+    "docs/theoretical-cost-reduction.md": {
+      "baseline_sha256": null,
+      "candidate_sha256": "af1d61fdadf61fcdff425dbb5ec7c2c886750075afd038b44f7b40bf247fafb1"
+    }
+  },
+  "proofs": {
+    "central-degree-proof.json": {
+      "sha256": "687d931d9897a682002aa432145c496c34d630412e2007e2630b4a7a7a1fe045",
+      "status": "All exact rational assertions passed"
+    },
+    "large-fast-proof.json": {
+      "sha256": "200e826f105cd8f2894cb6c69f14b2cedc776422cd005afd7732fc2e7b1fbc3e",
+      "status": "All exact rational assertions passed"
+    },
+    "large-direct-proof.json": {
+      "sha256": "81fe6aca76887cdebafbc6361e3054639a1b3170d16c114d91867bc7ca914ed1",
+      "status": "All exact rational assertions passed"
+    },
+    "direct-d-proof.json": {
+      "sha256": "651aeb8bed3dec5e5c1348ef169ed11931a5c2de92bc68ff6bfe836eaa921213",
+      "status": "All exact rational assertions passed"
+    },
+    "as1-proof.json": {
+      "sha256": "398c874d41ab787b07e781d57840f74edbc405267f585d9b1a4ebca59bfc245b",
+      "status": "exact_rational_uniform_polynomial_and_five_FMA_certificate"
+    }
+  },
+  "conditional_bounds": {
+    "central": {
+      "max_rho_display": 0.5436933500953076,
+      "branches": [
+        {
+          "normal_branch": 0,
+          "rho_bound": "29128827704488598345152224442646587715952430288796123729196275003915/53919893334301279589334030174039261347274288845081144962207220498432",
+          "display": 0.5402241344190164,
+          "native_relative_error": "7763011881256824241127042366340131880577048382927901838471541561917/971334446112864535459730953411759453321203419526069760625906204869452142602604249088",
+          "normal_polynomial": {
+            "degree": 18,
+            "saved_simd_horner_stages": 7,
+            "transformed_high_magnitude": "13479973333728836576356717724005555951286765539743615579914924542895/13479973333575319897333507543509815336818572211270286240551805124608",
+            "transformed_span_magnitude": "6739986666864551570038355141799375828709334628228824260087122840495/6739986666787659948666753771754907668409286105635143120275902562304",
+            "deleted_tail_high_bound": "43666226252088206405619009660686753607150964526111792030879258042625/124330809102446660538845562036705210025114037699336929360115994223289874253133343883264",
+            "deleted_derivative_times_low_bound": "36372669101348775315106202581646789727622766158754957350727689251325/273406340597876490546562778389702670669146178861651554553221325801244124899921990402939147127881728",
+            "deleted_coordinate_error_bound": "52703366855589676535687947508195628924780499464728115926683250585989/75153362648762663292463379097258784876021841565066235862633311089030688803667470190838367948312598497021919232",
+            "deleted_tail_bound": "682284785189136668445900080533791602042831681569510825498009514699/1942668892225729070919461906823518906642406839052139521251812409738904285205208498176",
+            "deleted_tail_in_u": 0.0031634186521799896,
+            "native_error_before_tail": "26693080829674292496434526231117632276236738257396907527363554707827/124330809102446660538845562036705210025114037699336929360115994223289874253133343883264"
+          }
+        },
+        {
+          "normal_branch": 1,
+          "rho_bound": "7290827831179672055415399368321608652019893015874997637378926324247/13479973333575319897333507543509815336818572211270286240551805124608",
+          "display": 0.5408636687002935,
+          "native_relative_error": "31603785448708734926884597594666074102885738752490351419377643585293/3885337784451458141838923813647037813284813678104279042503624819477808570410416996352",
+          "normal_polynomial": {
+            "degree": 20,
+            "saved_simd_horner_stages": 5,
+            "transformed_high_magnitude": "26959946667501549111732196649250276588293789289462190438588870305825/26959946667150639794667015087019630673637144422540572481103610249216",
+            "transformed_span_magnitude": "13479973333751087508261591790575648323135505786045706936607518472225/13479973333575319897333507543509815336818572211270286240551805124608",
+            "deleted_tail_high_bound": "1022271406447966269356476885696702628533427978096652677111567513903/3885337784451458141838923813647037813284813678104279042503624819477808570410416996352",
+            "deleted_derivative_times_low_bound": "2212105608999114423736543635063685778090842601092759572153473524909/17087896287367280659160173649356416916821636178853222159576332862577757806245124400183696695492608",
+            "deleted_coordinate_error_bound": "24961979427712120235964113307687814477349501924518917453460379692077/37576681324381331646231689548629392438010920782533117931316655544515344401833735095419183974156299248510959616",
+            "deleted_tail_bound": "32712685006351015806056517905536432036575815681796087515052610266961/124330809102446660538845562036705210025114037699336929360115994223289874253133343883264",
+            "deleted_tail_in_u": 0.0023698846177940894,
+            "native_error_before_tail": "34759971575936313498673828286098562734623277950128883912083237774131/124330809102446660538845562036705210025114037699336929360115994223289874253133343883264"
+          }
+        },
+        {
+          "normal_branch": 2,
+          "rho_bound": "29115736260231481967221386371087130665834408614789493957475024501457/53919893334301279589334030174039261347274288845081144962207220498432",
+          "display": 0.539981340091217,
+          "native_relative_error": "7710646104228358735266653820595874624886600533183177817428109810717/971334446112864535459730953411759453321203419526069760625906204869452142602604249088",
+          "normal_polynomial": {
+            "degree": 20,
+            "saved_simd_horner_stages": 5,
+            "transformed_high_magnitude": "13479973333820971576617843500626399282981730793300906959032307440715/13479973333575319897333507543509815336818572211270286240551805124608",
+            "transformed_span_magnitude": "6739986666910708991526465366513813524753355664512753429514403732555/6739986666787659948666753771754907668409286105635143120275902562304",
+            "deleted_tail_high_bound": "9758387845349149896948559686037108994693883213736071208599028218615/31082702275611665134711390509176302506278509424834232340028998555822468563283335970816",
+            "deleted_derivative_times_low_bound": "3765695334041720751611575835014278302670075503497587096410453742937/17087896287367280659160173649356416916821636178853222159576332862577757806245124400183696695492608",
+            "deleted_coordinate_error_bound": "10426303429992199026105013278670921252672613882914276229203648966073/9394170331095332911557922387157348109502730195633279482829163886128836100458433773854795993539074812127739904",
+            "deleted_tail_bound": "39033551381423998627432792592689987870189091339287724824759959070175/124330809102446660538845562036705210025114037699336929360115994223289874253133343883264",
+            "deleted_tail_in_u": 0.0028278025169365508,
+            "native_error_before_tail": "31052676531362590129265511123539444170407567412760093522180180259515/124330809102446660538845562036705210025114037699336929360115994223289874253133343883264"
+          }
+        },
+        {
+          "normal_branch": 3,
+          "rho_bound": "14657943721853955829902751847572095778747149202242594450377665994419/26959946667150639794667015087019630673637144422540572481103610249216",
+          "display": 0.5436933500953076,
+          "native_relative_error": "34045003352536309663864082286718652203299681456963438029893917340497/3885337784451458141838923813647037813284813678104279042503624819477808570410416996352",
+          "normal_polynomial": {
+            "degree": 25,
+            "saved_simd_horner_stages": 0,
+            "transformed_high_magnitude": "13479973333820968583462490246937555108834139618214704011024956161099/13479973333575319897333507543509815336818572211270286240551805124608",
+            "transformed_span_magnitude": "6739986666910708991526465366513896601503092220648005273033097903179/6739986666787659948666753771754907668409286105635143120275902562304",
+            "deleted_tail_high_bound": "0",
+            "deleted_derivative_times_low_bound": "0",
+            "deleted_coordinate_error_bound": "0",
+            "deleted_tail_bound": "0",
+            "deleted_tail_in_u": 0.0,
+            "native_error_before_tail": "35128174789600223178723797616328540525470521488192286879643545747773/62165404551223330269422781018352605012557018849668464680057997111644937126566671941632"
+          }
+        }
+      ],
+      "assumptions": [
+        "Hash-bound exact normal-shape certificate; its four model cell covers are unchanged, with deleted coefficient tails separately enclosed.",
+        "Reviewed baseline pair/conversion arithmetic and shortened normal Horner chains; fixed independent SIMD lanes preserve each retained rounding point.",
+        "IEEE RN-even binary64 basic operations and single-rounding FMA, gradual underflow, source order preserved."
+      ],
+      "limits": "Conditional continuous helper proof; no whole-domain solver theorem, Lean completion, vendor libm claim, or speed claim."
+    },
+    "large": {
+      "original_input_rho": {
+        "lower": {
+          "exact_upper": "2928806202480276674899826382619808370499909844271642736421503541745092731030412340473675870808713869972079826173849308165621357582176247841857345926389613/3351951982485649274893506249551461531869841455148098344430890360930441007518386744200468574541725856922507964546621512713438470702986642486608412251521024",
+          "preview": 0.8737613837500179
+        },
+        "ordinary_cap": {
+          "exact_upper": "10202824075510027011638685215316510415567683134728073284043115667599872137937260809150894477489477082298746181923009729154275240564863689382357227154633411/13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084096",
+          "preview": 0.7609613837564653
+        },
+        "fixed_cap": {
+          "exact_upper": "10202824075510027011638685215316510415567683134728073284043115667599872137937260809150894477489477082298746181923009729154275240564863689382357227154633411/13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084096",
+          "preview": 0.7609613837564653
+        },
+        "expm1": {
+          "exact_upper": "11350990255154185112770999482139263990705606523902517996091801230001693064966300245531660291399819836788337995007331791051667404967630569956918362753551731/13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084096",
+          "preview": 0.8465955295947308
+        },
+        "maximum": {
+          "exact_upper": "2928806202480276674899826382619808370499909844271642736421503541745092731030412340473675870808713869972079826173849308165621357582176247841857345926389613/3351951982485649274893506249551461531869841455148098344430890360930441007518386744200468574541725856922507964546621512713438470702986642486608412251521024",
+          "preview": 0.8737613837500179
+        }
+      },
+      "log_iteration": {
+        "method": "Householder reciprocal derivative d=3",
+        "ideal_update": "n*(1+A*n/2)/(1+A*n+B*n*n/6)",
+        "local_order": 4,
+        "identities_checked": [
+          "3*(1/f)second/(1/f)third",
+          "inverse Taylor agreement through n^3",
+          "log third derivative ratio"
+        ],
+        "global_one_step_bound_claimed": false,
+        "termination": "Preserved finite/in-bracket guards, reliable residual signs and forced bisections; no proposal accuracy premise"
+      },
+      "primitive_contracts": [
+        "RN-even binary64 basic/FMA/sqrt; gradual underflow; no unsafe reassociation",
+        "reduced ln error <=u*abs(ln); fast ln error <=2u*abs(ln)",
+        "expm1 relative error <=2u at reached negative arguments"
+      ],
+      "inherited_analytic_dependencies": [
+        "Mills integral/moment identities and hash-bound continuous compensated-Mills certificate",
+        "Positive decreasing I1=-M' on nonnegative arguments; lower p increases with x and a; elementary exp Taylor inequalities",
+        "Existing source-identical target/cap/routing lemmas place the internal root inside the preserved brackets",
+        "Source-identical integer cap arithmetic and external Lefevre-Muller Property 1 separation theorem",
+        "Target-to-original-price finite transfer via Black vega log concavity and correlated gap/condition-number bounds"
+      ],
+      "limits": "No end-to-end Lean or vendor-libm proof; source hashes and finite tests are not themselves mathematical guarantees. Degree-16 compensated-Mills, finalizer source rounding and target budgets are recomputed, not inferred from old finalizer rho. Order-five predictor has no universal one-step handoff guarantee; safeguarded stopping is preserved."
+    }
+  },
+  "reference_provenance": {
+    "rows": 52617,
+    "inputs_sha256": "f302a2fbb15cd1f7dc1eb8ab96516955a07dda3fcdcab4bec1431f03577a5ed7",
+    "references_sha256": "f75db06312d7a225e49ac143fd93b39c4638254ba137127bd6e1dc266456e52f",
+    "sources": [
+      {
+        "path": "reference/iv_large_a_cap_table_v50/input/all_references.json",
+        "sha256": "ddab0d51371d23acc4b5a19764e6846cefeea9246ff2ee518f836fc3b7b405d4",
+        "source_rows": 46688,
+        "unique_core_rows": 46688,
+        "excluded": 0,
+        "duplicates": 0
+      },
+      {
+        "path": "results/fresh_accuracy.json",
+        "sha256": "14d3996d9a6fcfa77d888241fad09743c9564d32c7bef4a300084323641043dd",
+        "source_rows": 171,
+        "unique_core_rows": 167,
+        "excluded": 0,
+        "duplicates": 4
+      },
+      {
+        "path": "results/optimization/fresh_combined_fma.json",
+        "sha256": "06d53c6ab377a2b28f8c06adb615b4514e0d0ea9fc186969fe9735bbb92f8394",
+        "source_rows": 1912,
+        "unique_core_rows": 1895,
+        "excluded": 0,
+        "duplicates": 17
+      },
+      {
+        "path": "results/global_rho_proof/small_search_results.json",
+        "sha256": "5b343a7c2cbaf90b66e92e8b0fb8496d1208311b1aac80115ac11cdd63b0fb69",
+        "source_rows": 1918,
+        "unique_core_rows": 1867,
+        "excluded": 0,
+        "duplicates": 51
+      },
+      {
+        "path": "results/global_rho_proof/small_search_fixture/small_search_results.json",
+        "sha256": "705cf33e60e637d908649b06d4f8dce3fd9f0f99ed07dbdd1c488a80a1e77a19",
+        "source_rows": 2000,
+        "unique_core_rows": 2000,
+        "excluded": 0,
+        "duplicates": 0
+      }
+    ],
+    "scope": "Saved independent roots; current solver outputs are scored afresh. Exact binary64 normal-price open-cap inputs, finite evidence only."
+  },
+  "accuracy": {
+    "baseline": {
+      "rows": 52617,
+      "invalid": 0,
+      "rho_at_least_one": 0,
+      "max_rho": "0.6172411593798071119409379783130220469201213397416983244922726891226699273097154248516499623467750787523805184",
+      "worst": {
+        "a": "0x0.0p+0",
+        "b": "0x1.27bf33ffad27dp-597",
+        "true_s": "5.582937161978880425011504974583968356427224992245595684789849046526279747690410155705537314533463537874732005413891245298407942934e-180",
+        "eta": "0.000000000000000444089209850062616169452667236328125",
+        "source": "results/global_rho_proof/small_search_results.json",
+        "source_index": 1396,
+        "index": 50146,
+        "actual": "0x1.72a9ebd54e4d6p-596"
+      },
+      "changed_outputs": null,
+      "changed_max_rho": null,
+      "executable": "/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/baseline-replay",
+      "executable_sha256": "26b57969d0f62beb5c45f34f5ddb3a3d7e54d2a9eac4780755e4a1f13c13a7aa",
+      "outputs_sha256": "0a948b3799312325988c8b7e57f580451512e89a506116ff0304da009771eb38",
+      "corpus_sha256": "a57f506942826af92731828cef791eb84d75cb3807e7d2dc2d86f8102974d9e5"
+    },
+    "candidate": {
+      "rows": 52617,
+      "invalid": 0,
+      "rho_at_least_one": 0,
+      "max_rho": "0.6172411593798071119409379783130220469201213397416983244922726891226699273097154248516499623467750787523805184",
+      "worst": {
+        "a": "0x0.0p+0",
+        "b": "0x1.27bf33ffad27dp-597",
+        "true_s": "5.582937161978880425011504974583968356427224992245595684789849046526279747690410155705537314533463537874732005413891245298407942934e-180",
+        "eta": "0.000000000000000444089209850062616169452667236328125",
+        "source": "results/global_rho_proof/small_search_results.json",
+        "source_index": 1396,
+        "index": 50146,
+        "actual": "0x1.72a9ebd54e4d6p-596"
+      },
+      "changed_outputs": 46,
+      "changed_max_rho": "0.45907070247605580210937854527578345859079199874277699291315813363250676280745566945637559892299360485280721684",
+      "executable": "/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/candidate-replay",
+      "executable_sha256": "9a0e1a64ad10b92c0059970e5494470793791877f83f86e493a0b8223cbe2ba5",
+      "outputs_sha256": "11101baec3e078a68bc2755b4f3de330f515ccd2ce2076faaae61c63ddd1eb7c",
+      "corpus_sha256": "a57f506942826af92731828cef791eb84d75cb3807e7d2dc2d86f8102974d9e5"
+    },
+    "baseline-fma": {
+      "rows": 52617,
+      "invalid": 0,
+      "rho_at_least_one": 0,
+      "max_rho": "0.6172411593798071119409379783130220469201213397416983244922726891226699273097154248516499623467750787523805184",
+      "worst": {
+        "a": "0x0.0p+0",
+        "b": "0x1.27bf33ffad27dp-597",
+        "true_s": "5.582937161978880425011504974583968356427224992245595684789849046526279747690410155705537314533463537874732005413891245298407942934e-180",
+        "eta": "0.000000000000000444089209850062616169452667236328125",
+        "source": "results/global_rho_proof/small_search_results.json",
+        "source_index": 1396,
+        "index": 50146,
+        "actual": "0x1.72a9ebd54e4d6p-596"
+      },
+      "changed_outputs": 0,
+      "changed_max_rho": "0",
+      "executable": "/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/baseline-fma-replay",
+      "executable_sha256": "990cbcbce6d2a06853c831c4427fcfe4f032f5fd8952329f4d4f263fe0800acd",
+      "outputs_sha256": "0a948b3799312325988c8b7e57f580451512e89a506116ff0304da009771eb38",
+      "corpus_sha256": "a57f506942826af92731828cef791eb84d75cb3807e7d2dc2d86f8102974d9e5"
+    },
+    "candidate-fma": {
+      "rows": 52617,
+      "invalid": 0,
+      "rho_at_least_one": 0,
+      "max_rho": "0.6172411593798071119409379783130220469201213397416983244922726891226699273097154248516499623467750787523805184",
+      "worst": {
+        "a": "0x0.0p+0",
+        "b": "0x1.27bf33ffad27dp-597",
+        "true_s": "5.582937161978880425011504974583968356427224992245595684789849046526279747690410155705537314533463537874732005413891245298407942934e-180",
+        "eta": "0.000000000000000444089209850062616169452667236328125",
+        "source": "results/global_rho_proof/small_search_results.json",
+        "source_index": 1396,
+        "index": 50146,
+        "actual": "0x1.72a9ebd54e4d6p-596"
+      },
+      "changed_outputs": 46,
+      "changed_max_rho": "0.45907070247605580210937854527578345859079199874277699291315813363250676280745566945637559892299360485280721684",
+      "executable": "/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/candidate-fma-replay",
+      "executable_sha256": "e55968e43f9301240a1387e96407f3cd498856f38de34ccfa7cf098afe637c39",
+      "outputs_sha256": "11101baec3e078a68bc2755b4f3de330f515ccd2ce2076faaae61c63ddd1eb7c",
+      "corpus_sha256": "a57f506942826af92731828cef791eb84d75cb3807e7d2dc2d86f8102974d9e5"
+    }
+  },
+  "changed_output_summary": {
+    "changed": 46,
+    "improved": 23,
+    "worsened": 23,
+    "small_changes": 0,
+    "large_changes": 46
+  },
+  "fixtures": {
+    "experimental_central_expansion": {
+      "rows": 1026,
+      "source_sha256": "35eee85b797ae7d0b2cf09941d62d3bcaa2909d5309786962f04f6c668cb4c79",
+      "inputs_sha256": "922ad7400bd6bc56e7d70bac18bb5b458b1316fd59c779ef6452da3e75a21fcd",
+      "results": {
+        "baseline": {
+          "max_rho": "0.40008452240813933744047833564669639439433134905202897868524326718206988844131653517214187357712100413544519534",
+          "invalid": 0,
+          "rho_at_least_one": 0,
+          "changed_outputs": 0,
+          "changed_max_rho": "0",
+          "output_sha256": "6956e7233bfe38e8cb5895512ff19493fb0f1e356a00b85c34a3bbc3d81df0c7",
+          "executable_sha256": "26b57969d0f62beb5c45f34f5ddb3a3d7e54d2a9eac4780755e4a1f13c13a7aa"
+        },
+        "baseline-fma": {
+          "max_rho": "0.40008452240813933744047833564669639439433134905202897868524326718206988844131653517214187357712100413544519534",
+          "invalid": 0,
+          "rho_at_least_one": 0,
+          "changed_outputs": 0,
+          "changed_max_rho": "0",
+          "output_sha256": "6956e7233bfe38e8cb5895512ff19493fb0f1e356a00b85c34a3bbc3d81df0c7",
+          "executable_sha256": "990cbcbce6d2a06853c831c4427fcfe4f032f5fd8952329f4d4f263fe0800acd"
+        },
+        "candidate": {
+          "max_rho": "0.40008452240813933744047833564669639439433134905202897868524326718206988844131653517214187357712100413544519534",
+          "invalid": 0,
+          "rho_at_least_one": 0,
+          "changed_outputs": 1,
+          "changed_max_rho": "0.20580161565548261003804123554864395482471190483154346593127019927930103101237060843653553046569999465610949119",
+          "output_sha256": "909a439d86247688f91412ed4add295002fa013ccbf780ebae4cd422aeb5af46",
+          "executable_sha256": "9a0e1a64ad10b92c0059970e5494470793791877f83f86e493a0b8223cbe2ba5"
+        },
+        "candidate-fma": {
+          "max_rho": "0.40008452240813933744047833564669639439433134905202897868524326718206988844131653517214187357712100413544519534",
+          "invalid": 0,
+          "rho_at_least_one": 0,
+          "changed_outputs": 1,
+          "changed_max_rho": "0.20580161565548261003804123554864395482471190483154346593127019927930103101237060843653553046569999465610949119",
+          "output_sha256": "909a439d86247688f91412ed4add295002fa013ccbf780ebae4cd422aeb5af46",
+          "executable_sha256": "e55968e43f9301240a1387e96407f3cd498856f38de34ccfa7cf098afe637c39"
+        }
+      }
+    },
+    "experimental_rank_compression": {
+      "rows": 625,
+      "source_sha256": "76f3ac0d50ccce1630ed97cae546a81093252bfa06a96c2650ab64931e6c8480",
+      "inputs_sha256": "5bb7c7d6f63f63d8809bca9ab05ef83a413ceee1da4053703d7dc71d2777f110",
+      "results": {
+        "baseline": {
+          "max_rho": "0.45532608438056661709065492779286897382499727625790033779519366912506004312247687416255468287312564373051870666",
+          "invalid": 0,
+          "rho_at_least_one": 0,
+          "changed_outputs": 0,
+          "changed_max_rho": "0",
+          "output_sha256": "275a5f7ae2d6a91fc125fae833c6051dba196810ee4c4e06d4dbe40c4e2f1315",
+          "executable_sha256": "26b57969d0f62beb5c45f34f5ddb3a3d7e54d2a9eac4780755e4a1f13c13a7aa"
+        },
+        "baseline-fma": {
+          "max_rho": "0.45532608438056661709065492779286897382499727625790033779519366912506004312247687416255468287312564373051870666",
+          "invalid": 0,
+          "rho_at_least_one": 0,
+          "changed_outputs": 0,
+          "changed_max_rho": "0",
+          "output_sha256": "275a5f7ae2d6a91fc125fae833c6051dba196810ee4c4e06d4dbe40c4e2f1315",
+          "executable_sha256": "990cbcbce6d2a06853c831c4427fcfe4f032f5fd8952329f4d4f263fe0800acd"
+        },
+        "candidate": {
+          "max_rho": "0.45532608438056661709065492779286897382499727625790033779519366912506004312247687416255468287312564373051870666",
+          "invalid": 0,
+          "rho_at_least_one": 0,
+          "changed_outputs": 0,
+          "changed_max_rho": "0",
+          "output_sha256": "275a5f7ae2d6a91fc125fae833c6051dba196810ee4c4e06d4dbe40c4e2f1315",
+          "executable_sha256": "9a0e1a64ad10b92c0059970e5494470793791877f83f86e493a0b8223cbe2ba5"
+        },
+        "candidate-fma": {
+          "max_rho": "0.45532608438056661709065492779286897382499727625790033779519366912506004312247687416255468287312564373051870666",
+          "invalid": 0,
+          "rho_at_least_one": 0,
+          "changed_outputs": 0,
+          "changed_max_rho": "0",
+          "output_sha256": "275a5f7ae2d6a91fc125fae833c6051dba196810ee4c4e06d4dbe40c4e2f1315",
+          "executable_sha256": "e55968e43f9301240a1387e96407f3cd498856f38de34ccfa7cf098afe637c39"
+        }
+      }
+    },
+    "experimental_adaptive_seeds": {
+      "rows": 975,
+      "source_sha256": "81643f12c9e24bab4352dd6278435460159956cd3b9ec8adec0dc18e2a685836",
+      "inputs_sha256": "ae273eddb3026574a234862f96d0be87cd2da8c5618a4494eb8ec64e227c4cea",
+      "results": {
+        "baseline": {
+          "max_rho": "0.47681612757344314313722167301864846963387298212661325497783531856911510531819617321161358915485784243440274050",
+          "invalid": 0,
+          "rho_at_least_one": 0,
+          "changed_outputs": 0,
+          "changed_max_rho": "0",
+          "output_sha256": "d4f62cd46af68855a2b5466a36ab33e4375cce36871605aefdc70b34cf09e92f",
+          "executable_sha256": "26b57969d0f62beb5c45f34f5ddb3a3d7e54d2a9eac4780755e4a1f13c13a7aa"
+        },
+        "baseline-fma": {
+          "max_rho": "0.47681612757344314313722167301864846963387298212661325497783531856911510531819617321161358915485784243440274050",
+          "invalid": 0,
+          "rho_at_least_one": 0,
+          "changed_outputs": 0,
+          "changed_max_rho": "0",
+          "output_sha256": "d4f62cd46af68855a2b5466a36ab33e4375cce36871605aefdc70b34cf09e92f",
+          "executable_sha256": "990cbcbce6d2a06853c831c4427fcfe4f032f5fd8952329f4d4f263fe0800acd"
+        },
+        "candidate": {
+          "max_rho": "0.47681612757344314313722167301864846963387298212661325497783531856911510531819617321161358915485784243440274050",
+          "invalid": 0,
+          "rho_at_least_one": 0,
+          "changed_outputs": 0,
+          "changed_max_rho": "0",
+          "output_sha256": "d4f62cd46af68855a2b5466a36ab33e4375cce36871605aefdc70b34cf09e92f",
+          "executable_sha256": "9a0e1a64ad10b92c0059970e5494470793791877f83f86e493a0b8223cbe2ba5"
+        },
+        "candidate-fma": {
+          "max_rho": "0.47681612757344314313722167301864846963387298212661325497783531856911510531819617321161358915485784243440274050",
+          "invalid": 0,
+          "rho_at_least_one": 0,
+          "changed_outputs": 0,
+          "changed_max_rho": "0",
+          "output_sha256": "d4f62cd46af68855a2b5466a36ab33e4375cce36871605aefdc70b34cf09e92f",
+          "executable_sha256": "e55968e43f9301240a1387e96407f3cd498856f38de34ccfa7cf098afe637c39"
+        }
+      }
+    },
+    "experimental_common_finish": {
+      "rows": 156,
+      "source_sha256": "f3aa745063b0b447a656f4cde21e45481247eb2191c017b274100643521eda75",
+      "inputs_sha256": "860471a50191ed0e69e0f5c8fd80cb0ced0c784d695c402575cccdc915d13bcd",
+      "results": {
+        "baseline": {
+          "max_rho": "0.44667330251289748224315209568103800556184051377359495817836224701651059949494043369420789583072236270223436392",
+          "invalid": 0,
+          "rho_at_least_one": 0,
+          "changed_outputs": 0,
+          "changed_max_rho": "0",
+          "output_sha256": "ef0842820c0fc074ea811213f44e3a70fad117e9fbd13ae2523311635ae2cf93",
+          "executable_sha256": "26b57969d0f62beb5c45f34f5ddb3a3d7e54d2a9eac4780755e4a1f13c13a7aa"
+        },
+        "baseline-fma": {
+          "max_rho": "0.44667330251289748224315209568103800556184051377359495817836224701651059949494043369420789583072236270223436392",
+          "invalid": 0,
+          "rho_at_least_one": 0,
+          "changed_outputs": 0,
+          "changed_max_rho": "0",
+          "output_sha256": "ef0842820c0fc074ea811213f44e3a70fad117e9fbd13ae2523311635ae2cf93",
+          "executable_sha256": "990cbcbce6d2a06853c831c4427fcfe4f032f5fd8952329f4d4f263fe0800acd"
+        },
+        "candidate": {
+          "max_rho": "0.44667330251289748224315209568103800556184051377359495817836224701651059949494043369420789583072236270223436392",
+          "invalid": 0,
+          "rho_at_least_one": 0,
+          "changed_outputs": 0,
+          "changed_max_rho": "0",
+          "output_sha256": "ef0842820c0fc074ea811213f44e3a70fad117e9fbd13ae2523311635ae2cf93",
+          "executable_sha256": "9a0e1a64ad10b92c0059970e5494470793791877f83f86e493a0b8223cbe2ba5"
+        },
+        "candidate-fma": {
+          "max_rho": "0.44667330251289748224315209568103800556184051377359495817836224701651059949494043369420789583072236270223436392",
+          "invalid": 0,
+          "rho_at_least_one": 0,
+          "changed_outputs": 0,
+          "changed_max_rho": "0",
+          "output_sha256": "ef0842820c0fc074ea811213f44e3a70fad117e9fbd13ae2523311635ae2cf93",
+          "executable_sha256": "e55968e43f9301240a1387e96407f3cd498856f38de34ccfa7cf098afe637c39"
+        }
+      }
+    },
+    "experimental_large_iteration": {
+      "rows": 111,
+      "source_sha256": "a479f4c6f4a676ec363eba6a52a7ecb7fab966084dfaffcb62b09e5ec2cd8b68",
+      "inputs_sha256": "e07cbda2f1cecb4396a5a14be607e590315d5246e227ac53e5d40071ad0092a5",
+      "results": {
+        "baseline": {
+          "max_rho": "0.47194234116193482592239144574365746021695249188497945062992354600072368487885481886747023311813690364262814846",
+          "invalid": 0,
+          "rho_at_least_one": 0,
+          "changed_outputs": 0,
+          "changed_max_rho": "0",
+          "output_sha256": "83fe41401d67d76a186615c3c94389931ebd61dd72bf4c56dbf24e9a4e179fb7",
+          "executable_sha256": "26b57969d0f62beb5c45f34f5ddb3a3d7e54d2a9eac4780755e4a1f13c13a7aa"
+        },
+        "baseline-fma": {
+          "max_rho": "0.47194234116193482592239144574365746021695249188497945062992354600072368487885481886747023311813690364262814846",
+          "invalid": 0,
+          "rho_at_least_one": 0,
+          "changed_outputs": 0,
+          "changed_max_rho": "0",
+          "output_sha256": "83fe41401d67d76a186615c3c94389931ebd61dd72bf4c56dbf24e9a4e179fb7",
+          "executable_sha256": "990cbcbce6d2a06853c831c4427fcfe4f032f5fd8952329f4d4f263fe0800acd"
+        },
+        "candidate": {
+          "max_rho": "0.47194234116193482592239144574365746021695249188497945062992354600072368487885481886747023311813690364262814846",
+          "invalid": 0,
+          "rho_at_least_one": 0,
+          "changed_outputs": 1,
+          "changed_max_rho": "0.29864789316757423843624526037351604273388176625973406109518416383949809096677251736868094056076280692964202792",
+          "output_sha256": "d4da3f84a76dc67340838109da720cc9a74c35cc506fd151f3b913378376e1f6",
+          "executable_sha256": "9a0e1a64ad10b92c0059970e5494470793791877f83f86e493a0b8223cbe2ba5"
+        },
+        "candidate-fma": {
+          "max_rho": "0.47194234116193482592239144574365746021695249188497945062992354600072368487885481886747023311813690364262814846",
+          "invalid": 0,
+          "rho_at_least_one": 0,
+          "changed_outputs": 1,
+          "changed_max_rho": "0.29864789316757423843624526037351604273388176625973406109518416383949809096677251736868094056076280692964202792",
+          "output_sha256": "d4da3f84a76dc67340838109da720cc9a74c35cc506fd151f3b913378376e1f6",
+          "executable_sha256": "e55968e43f9301240a1387e96407f3cd498856f38de34ccfa7cf098afe637c39"
+        }
+      }
+    }
+  },
+  "new_fixture_generation": {
+    "central": {
+      "scope": "Finite exact-input Black references, not a continuous proof",
+      "cases": 1026,
+      "groups": {
+        "q_0.5": 54,
+        "q_0.625": 54,
+        "a_0.36": 27,
+        "a_0.45": 27,
+        "preflight_0.2": 18,
+        "preflight_0.25": 18,
+        "b_outer": 18,
+        "new_interior": 18,
+        "shape_degree_.000001": 54,
+        "shape_degree_.08": 54,
+        "shape_degree_.159": 54,
+        "shape_degree_.16": 36,
+        "shape_degree_.161": 54,
+        "shape_degree_.23": 54,
+        "shape_degree_.299": 54,
+        "shape_degree_.30": 36,
+        "shape_degree_.301": 54,
+        "shape_degree_.35": 54,
+        "shape_degree_.399": 54,
+        "shape_degree_.40": 36,
+        "shape_degree_.401": 54,
+        "shape_degree_.45": 54,
+        "shape_degree_.499": 54,
+        "shape_degree_.5": 36
+      },
+      "precision_digits": [
+        160,
+        240
+      ],
+      "output": "tests/experimental_central_expansion.rs",
+      "input_sha256": "922ad7400bd6bc56e7d70bac18bb5b458b1316fd59c779ef6452da3e75a21fcd",
+      "generator_sha256": "6ab99c7c77223e674ffe7d7607f91a6d103908a73c4397727518fe701485562a"
+    },
+    "large": {
+      "cases": 111,
+      "precision_digits": [
+        160,
+        240
+      ],
+      "input_sha256": "e07cbda2f1cecb4396a5a14be607e590315d5246e227ac53e5d40071ad0092a5",
+      "fixture_sha256": "a479f4c6f4a676ec363eba6a52a7ecb7fab966084dfaffcb62b09e5ec2cd8b68",
+      "scope": "Finite exact-input whole-solver accuracy; no one-step or whole-domain guarantee"
+    }
+  },
+  "evaluator_counts": {
+    "baseline": {
+      "outputs_match_uninstrumented": true,
+      "executable_sha256": "915df1047f288683eb69cfb5c4c912502dff4b8b7a52e1c0aaa8b2283506510f",
+      "counts_sha256": "aa2ec5c81ec1220c23ac7334439e77bd4ec7da8e2f803a6fda7c740be3f5086d",
+      "counts": {
+        "lower": {
+          "inputs": 26067,
+          "fast_calls": 26067,
+          "precise_calls": 26067,
+          "bisections": 0,
+          "maximum_first_precise_residual": 5.0032847748904177e-08,
+          "first_precise_above_gate": 0,
+          "call_histogram": [
+            {
+              "fast": 1,
+              "precise": 1,
+              "bisections": 0,
+              "inputs": 26067
+            }
+          ]
+        },
+        "upper": {
+          "inputs": 21003,
+          "fast_calls": 0,
+          "precise_calls": 21003,
+          "bisections": 0,
+          "maximum_first_precise_residual": 8.902103880678669e-06,
+          "first_precise_above_gate": 0,
+          "call_histogram": [
+            {
+              "fast": 0,
+              "precise": 1,
+              "bisections": 0,
+              "inputs": 21003
+            }
+          ]
+        }
+      }
+    },
+    "candidate": {
+      "outputs_match_uninstrumented": true,
+      "executable_sha256": "71baa0c7d588bd96c97a7b6008e70b09ca1e39c52b5294a2cbc4ede67a7ac65d",
+      "counts_sha256": "6b33f387badb5f7d994290f0c32ba8a7dec42ca71870ad9515b2346e67c6249e",
+      "counts": {
+        "lower": {
+          "inputs": 26067,
+          "fast_calls": 26067,
+          "precise_calls": 26067,
+          "bisections": 0,
+          "maximum_first_precise_residual": 4.1250335298593835e-05,
+          "first_precise_above_gate": 0,
+          "call_histogram": [
+            {
+              "fast": 1,
+              "precise": 1,
+              "bisections": 0,
+              "inputs": 26067
+            }
+          ]
+        },
+        "upper": {
+          "inputs": 21003,
+          "fast_calls": 0,
+          "precise_calls": 21003,
+          "bisections": 0,
+          "maximum_first_precise_residual": 8.902103880678669e-06,
+          "first_precise_above_gate": 0,
+          "call_histogram": [
+            {
+              "fast": 0,
+              "precise": 1,
+              "bisections": 0,
+              "inputs": 21003
+            }
+          ]
+        }
+      }
+    }
+  },
+  "runtime_replay_provenance": {
+    "baseline": {
+      "executable": "/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/baseline-replay",
+      "executable_sha256": "26b57969d0f62beb5c45f34f5ddb3a3d7e54d2a9eac4780755e4a1f13c13a7aa",
+      "library": "/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/baseline-target/release/deps/libimplied_vol-112d18b3b817d2ce.rlib",
+      "library_sha256": "a42a5a436c04bfddf8dd86e435050bcda937922fbd355f5f15e770f520ac0077",
+      "command": [
+        "rustc",
+        "--edition=2024",
+        "-C",
+        "opt-level=3",
+        "-C",
+        "target-cpu=native",
+        "-C",
+        "lto=fat",
+        "/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/replay.rs",
+        "--extern",
+        "implied_vol=/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/baseline-target/release/deps/libimplied_vol-112d18b3b817d2ce.rlib",
+        "-L",
+        "dependency=/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/baseline-target/release/deps",
+        "-o",
+        "/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/baseline-replay"
+      ]
+    },
+    "baseline-fma": {
+      "executable": "/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/baseline-fma-replay",
+      "executable_sha256": "990cbcbce6d2a06853c831c4427fcfe4f032f5fd8952329f4d4f263fe0800acd",
+      "library": "/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/baseline-fma-target/release/deps/libimplied_vol-171e4b0677845eac.rlib",
+      "library_sha256": "981bb461fad7b1c47a8f8b2886142a302aef1dbb21dba66a3455f5d41059a01d",
+      "command": [
+        "rustc",
+        "--edition=2024",
+        "-C",
+        "opt-level=3",
+        "-C",
+        "target-cpu=native",
+        "/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/replay.rs",
+        "--extern",
+        "implied_vol=/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/baseline-fma-target/release/deps/libimplied_vol-171e4b0677845eac.rlib",
+        "-L",
+        "dependency=/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/baseline-fma-target/release/deps",
+        "-o",
+        "/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/baseline-fma-replay"
+      ]
+    },
+    "candidate": {
+      "executable": "/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/candidate-replay",
+      "executable_sha256": "9a0e1a64ad10b92c0059970e5494470793791877f83f86e493a0b8223cbe2ba5",
+      "library": "/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/candidate-target/release/deps/libimplied_vol-112d18b3b817d2ce.rlib",
+      "library_sha256": "125c2718cdad56ae577eee52b5aab1c43753e553102226aef3f972d684a95397",
+      "command": [
+        "rustc",
+        "--edition=2024",
+        "-C",
+        "opt-level=3",
+        "-C",
+        "target-cpu=native",
+        "-C",
+        "lto=fat",
+        "/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/replay.rs",
+        "--extern",
+        "implied_vol=/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/candidate-target/release/deps/libimplied_vol-112d18b3b817d2ce.rlib",
+        "-L",
+        "dependency=/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/candidate-target/release/deps",
+        "-o",
+        "/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/candidate-replay"
+      ],
+      "final_runtime_source_sha256": {
+        "src/builder/implied_black_volatility.rs": "142c123b6b4ebdcca000a15f4631fe39cd5049f62565837b9dc8b4e55bc6d944",
+        "src/builder/implied_black_volatility_normalised.rs": "31afccf799a339159582e44e1e81e77c6dd4138d429fec72f3e8efc87e7f5445",
+        "src/builder/implied_normal_volatility.rs": "ec786945a81575df05f83827aa9aad136acc68e7307803ffa38159ca2ea765a8",
+        "src/builder/price_bachelier.rs": "d99f9de7b00635c22bbb4b4c56274f3d6dd2a7b6debe3e547a5881c8542742f9",
+        "src/builder/price_black_scholes.rs": "22012ebbdc1bbc2ff641acd4ea2349280c45bd3581c28d91e57ed4b84a24cb5b",
+        "src/builder/price_black_scholes_normalised.rs": "70c8b089273566fe07432515a163ee5f78b73e2425be63db77f062951dd96f08",
+        "src/builder.rs": "e319c6b2d5ede822497383f78b37c351106b276b44bd4fbc090e941c92afb7d2",
+        "src/cxx.rs": "14aae4a5242e211a0a76937f71ed84c1ae8bc921ee24320090422adc915c9428",
+        "src/experimental/lanes.rs": "40502418e5f024c8a4a522b52e1a9b226e126906bf9aca14496fd56c336d6f32",
+        "src/experimental/large.rs": "e39b3b256ee71c32ac16e1f9e92d9d1db20a43c7972340339141401dc3bc12cf",
+        "src/experimental/large_constants.rs": "9f4f8dc26f8c1313e60e7e2817a24438a609d73ab4ba130a7962902c35be3efd",
+        "src/experimental/large_direct_tests.rs": "798dff3995fc331e4a650117e731bc95c3eb2d9eb9408f235ed3164864e1957d",
+        "src/experimental/lbr_fallback.rs": "80c4eece767cb0a2958834328e8c694188d89af0b6bff71109c9603c0a80e1ca",
+        "src/experimental/math.rs": "47d3cf2e06eb8a8fb665a5c095baa70713086f5bd485d27367cce38c4e9c7423",
+        "src/experimental/mills_constants.rs": "0fda9d58f198c692908879ead2020d62bc0b2859fb2abbab1913fa8f06ed3063",
+        "src/experimental/small/central.rs": "d5217b4999c8312054db45ce0375abd261ef8c0ca3122cac5af9a76a2f64c2fd",
+        "src/experimental/small/constants.rs": "efa842dc1a7b8e132cbca3b2169d4648ca0259992f781133fd335ab6cfdb52da",
+        "src/experimental/small/direct_d.rs": "a6f8a8124ea8957fe761764097ff0131e3f50544dbbd9f132d5105d0d4c92199",
+        "src/experimental/small/direct_d_adaptive_tests.rs": "5a1b9e2785939186e10bcc575f589a823655808a8db8ffb90a6f3bccef17f26e",
+        "src/experimental/small/upper.rs": "2463e6e4c0518791655e7b6bea4d0ea446b2bb22ab00935c57377821df933f54",
+        "src/experimental/small.rs": "9004f2fc808fc37bdf0494f0a30933f732418c715fe27fc03504f159158de011",
+        "src/experimental.rs": "6cca73eaa9ee1198216c09a228f5bb9695d9a0f46179249eb99e268dea3f1310",
+        "src/explicit_black.rs": "711a69c098fb2d5803d9d40b8cc552852087bb689ae84d7f3088ccf2a86d1279",
+        "src/flashiv.rs": "6c11852ed73722aa5c5c6f72d13f56238258154cede03cb5b8cb6e186f95d80b",
+        "src/fused_multiply_add.rs": "86777de8b29f91189c2f03af18f48903f642cc3111b1969dfb62658320cb5ea2",
+        "src/lets_be_rational/bachelier_impl.rs": "1a4c302e7530cca9ae10d0d787c11bd2a7e8202a2460e78b426d93102de233e6",
+        "src/lets_be_rational/bs_option_price.rs": "7d78502339bcea61e1f72b422299dd4b16dd2734197c1f15452328332f2937d1",
+        "src/lets_be_rational/constants.rs": "f5314ba54ccf8dd5a1ef7d219bce3a7e1df63eb33493469710fab9f464fda112",
+        "src/lets_be_rational/householder.rs": "ed72effc08870bc2a401212e908dd3dee5c04199de3f29a56044cfd7f158153c",
+        "src/lets_be_rational/rational_cubic.rs": "7405e57c73357b5b0d4d1712853a54c170bc9b432a0a23d2152e7373d4b8baec",
+        "src/lets_be_rational/special_function/error_function.rs": "cec71c6d927636d299da811df5a4b558b4de12ca6fb209b4ed65e5984c36c517",
+        "src/lets_be_rational/special_function/normal_distribution.rs": "4920170896874bfdf6623562110dd71421fc5733ac500dce5a0c309a32b81379",
+        "src/lets_be_rational/special_function.rs": "e3259e4c90ac1135b59cafca7f81e146664afb20fb509572a3c0245214d835cc",
+        "src/lets_be_rational.rs": "48890360e55ca1d199e92a125c9fe89ca47b0cb662cd57439fbb2d5256457076",
+        "src/lib.rs": "647fd00117e9f6b7b27b4099d786c2e72f8de96f064ae4f1ee0d48129e017418",
+        "src/solver.rs": "ad743104ed54727c0910355f99fd9476f929148a9f025c08401a36a3730bc191"
+      }
+    },
+    "candidate-fma": {
+      "executable": "/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/candidate-fma-replay",
+      "executable_sha256": "e55968e43f9301240a1387e96407f3cd498856f38de34ccfa7cf098afe637c39",
+      "library": "/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/candidate-fma-target/release/deps/libimplied_vol-171e4b0677845eac.rlib",
+      "library_sha256": "727903116ea50c7c0f609600b9db5d7ace33e8e91b3ff10a09330db19485bbd8",
+      "command": [
+        "rustc",
+        "--edition=2024",
+        "-C",
+        "opt-level=3",
+        "-C",
+        "target-cpu=native",
+        "/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/replay.rs",
+        "--extern",
+        "implied_vol=/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/candidate-fma-target/release/deps/libimplied_vol-171e4b0677845eac.rlib",
+        "-L",
+        "dependency=/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/candidate-fma-target/release/deps",
+        "-o",
+        "/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/candidate-fma-replay"
+      ]
+    },
+    "instrumented-baseline": {
+      "executable": "/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/instrumented-baseline-replay",
+      "executable_sha256": "915df1047f288683eb69cfb5c4c912502dff4b8b7a52e1c0aaa8b2283506510f",
+      "library": "/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/instrumented-baseline-target/release/deps/libimplied_vol-605d22f8f1db5f62.rlib",
+      "library_sha256": "46a161243e3e4d4627e0d81b964dad50b46aafa273da90912aea6d121ea10399",
+      "command": [
+        "rustc",
+        "--edition=2024",
+        "-C",
+        "opt-level=3",
+        "-C",
+        "target-cpu=native",
+        "/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/replay.rs",
+        "--extern",
+        "implied_vol=/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/instrumented-baseline-target/release/deps/libimplied_vol-605d22f8f1db5f62.rlib",
+        "-L",
+        "dependency=/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/instrumented-baseline-target/release/deps",
+        "-o",
+        "/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/instrumented-baseline-replay"
+      ]
+    },
+    "instrumented-candidate": {
+      "executable": "/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/instrumented-candidate-replay",
+      "executable_sha256": "71baa0c7d588bd96c97a7b6008e70b09ca1e39c52b5294a2cbc4ede67a7ac65d",
+      "library": "/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/instrumented-candidate-target/release/deps/libimplied_vol-605d22f8f1db5f62.rlib",
+      "library_sha256": "1e8c6a6bc24dba9af0c4b844a271d8ea9cb7647eb89e4217268563d83165013f",
+      "command": [
+        "rustc",
+        "--edition=2024",
+        "-C",
+        "opt-level=3",
+        "-C",
+        "target-cpu=native",
+        "/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/replay.rs",
+        "--extern",
+        "implied_vol=/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/instrumented-candidate-target/release/deps/libimplied_vol-605d22f8f1db5f62.rlib",
+        "-L",
+        "dependency=/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/instrumented-candidate-target/release/deps",
+        "-o",
+        "/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/validation/instrumented-candidate-replay"
+      ]
+    }
+  },
+  "final_relink": {
+    "core_outputs_identical": true,
+    "fixture_results_identical": true,
+    "candidate_executable_identical": true,
+    "previous_candidate_library_sha256": "21f23964389c128e8677dfd3b7d273574c57e3eadb80cc848514cf91429152ff",
+    "final_candidate_library_sha256": "125c2718cdad56ae577eee52b5aab1c43753e553102226aef3f972d684a95397",
+    "final_candidate_executable_sha256": "9a0e1a64ad10b92c0059970e5494470793791877f83f86e493a0b8223cbe2ba5",
+    "core_cases": 52617,
+    "fixture_cases": 2893
+  },
+  "timing": {
+    "machine": "macOS-27.2-arm64-arm-64bit-Mach-O",
+    "measurement_host_rustc": "rustc 1.98.1 (48a229cea 2026-09-01)\nbinary: rustc\ncommit-hash: 48a229ceaefd4985c50990b14116b6d856af0985\ncommit-date: 2026-09-01\nhost: aarch64-apple-darwin\nrelease: 1.98.1\nLLVM version: 22.1.8\n",
+    "reported_build": {
+      "flags": "-C target-cpu=native",
+      "features": "experimental"
+    },
+    "iterations": 300000,
+    "rounds": 2,
+    "blocks": 6,
+    "executables": {
+      "baseline": {
+        "path": "/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/baseline-bench",
+        "sha256_before": "8dd9fad713c134ce953557291ac8e9b5c30914b460c3a890992cc6d85ac8e1ca",
+        "sha256_after": "8dd9fad713c134ce953557291ac8e9b5c30914b460c3a890992cc6d85ac8e1ca"
+      },
+      "candidate": {
+        "path": "/Users/nakashimahikaru/RustroverProjects/implied-vol/target/theory-20261106/candidate-bench",
+        "sha256_before": "1f7f1d86ab2d18d153a05f1222e929ee4b27c09e24b9f66bf0c25dd0f7d27fc9",
+        "sha256_after": "1f7f1d86ab2d18d153a05f1222e929ee4b27c09e24b9f66bf0c25dd0f7d27fc9"
+      }
+    },
+    "cases": {
+      "experimental": [
+        "atm",
+        "lowest",
+        "lower_middle",
+        "upper_middle",
+        "highest",
+        "near_atm",
+        "near_atm_wider",
+        "mixed_normalised",
+        "mixed_full",
+        "deep_otm_full",
+        "near_atm_short_full",
+        "legacy_otm_full",
+        "central_deferred",
+        "central_shape1",
+        "central_shape2",
+        "central_extended",
+        "rank_small2",
+        "wing_seed",
+        "finite_seed",
+        "large_lower",
+        "large_upper",
+        "large_asymptotic",
+        "large_near_cap",
+        "microscopic",
+        "mixed_large",
+        "mixed_near_atm"
+      ],
+      "hybrid": [
+        "atm",
+        "lowest",
+        "lower_middle",
+        "upper_middle",
+        "highest",
+        "near_atm",
+        "near_atm_wider",
+        "mixed_normalised",
+        "mixed_full",
+        "deep_otm_full",
+        "near_atm_short_full",
+        "legacy_otm_full"
+      ]
+    },
+    "population_flags": {
+      "experimental_paths": true,
+      "as1_paths": false,
+      "dpoly_paths": false
+    },
+    "caveat": "Inputs are prepared before timing from fixed and seeded populations. Each executable must report every requested case and round. Within-version checksum stability checks reproducibility, not root accuracy. Different baseline/candidate checksums are allowed; numerical changes require separate independent accuracy validation. Measurements cover warm, single-threaded synthetic workloads on this host.",
+    "summary": [
+      {
+        "solver": "experimental",
+        "case": "atm",
+        "baseline_ns": 10.790625,
+        "candidate_ns": 10.7695135,
+        "change_percent": -0.19564668404286056,
+        "paired_block_changes_percent": [
+          -0.7101124387142499,
+          -2.490572845216954,
+          -0.3762826799139529,
+          0.048319127964280284,
+          -1.1508591623164421,
+          -2.0064113509279946
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "5.9999999999687869e4",
+        "candidate_checksum": "5.9999999999687869e4",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "experimental",
+        "case": "lowest",
+        "baseline_ns": 110.327432,
+        "candidate_ns": 109.1223635,
+        "change_percent": -1.0922655210537258,
+        "paired_block_changes_percent": [
+          -0.5123335852911026,
+          -2.4261144618739183,
+          0.024141777822883626,
+          0.37664825734675667,
+          -1.6986974425206691,
+          -17.704907321508813
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "3.7500000000000000e4",
+        "candidate_checksum": "3.7500000000000000e4",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "experimental",
+        "case": "lower_middle",
+        "baseline_ns": 110.504098,
+        "candidate_ns": 110.4359715,
+        "change_percent": -0.061650654801970184,
+        "paired_block_changes_percent": [
+          -0.25566791826611146,
+          -2.3345663233176106,
+          0.030883999322806055,
+          -0.044262174337528215,
+          -1.1110714645170883,
+          -1.778738688896353
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "2.1000000000092798e5",
+        "candidate_checksum": "2.1000000000092798e5",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "experimental",
+        "case": "upper_middle",
+        "baseline_ns": 130.9813885,
+        "candidate_ns": 130.704097,
+        "change_percent": -0.2117029779387436,
+        "paired_block_changes_percent": [
+          -0.04216496606664899,
+          -2.89249928791222,
+          0.03764832883357272,
+          -0.043070756049479186,
+          -1.2183268977291828,
+          -2.73733679694691
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "4.7999999999750295e5",
+        "candidate_checksum": "4.7999999999750295e5",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "experimental",
+        "case": "highest",
+        "baseline_ns": 90.4613885,
+        "candidate_ns": 89.88639,
+        "change_percent": -0.6356286472432249,
+        "paired_block_changes_percent": [
+          -0.21799292808861725,
+          -2.0686848941257496,
+          -0.009242563693301342,
+          -0.11591860916162489,
+          -1.4439264862639356,
+          -6.249558547577205
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "1.2000000000000000e6",
+        "candidate_checksum": "1.2000000000000000e6",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "experimental",
+        "case": "near_atm",
+        "baseline_ns": 77.662985,
+        "candidate_ns": 70.3506935,
+        "change_percent": -9.415413919513915,
+        "paired_block_changes_percent": [
+          -8.811444836566585,
+          -12.067917471498546,
+          -8.75566379795183,
+          -9.024910308024447,
+          -9.584241724167786,
+          -12.313479623199608
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "1.5000000000000003e5",
+        "candidate_checksum": "1.5000000000000003e5",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "experimental",
+        "case": "near_atm_wider",
+        "baseline_ns": 77.354723,
+        "candidate_ns": 70.4203465,
+        "change_percent": -8.964386699439174,
+        "paired_block_changes_percent": [
+          -8.825017333895612,
+          -12.965959281162709,
+          -8.80794780731261,
+          -8.96319893111034,
+          -9.237935351934379,
+          -11.176302774930846
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "1.8000000000099823e5",
+        "candidate_checksum": "1.8000000000099823e5",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "experimental",
+        "case": "mixed_normalised",
+        "baseline_ns": 128.43798650000002,
+        "candidate_ns": 127.44020800000001,
+        "change_percent": -0.7768562301465276,
+        "paired_block_changes_percent": [
+          -0.49106319602012505,
+          -4.158691109929091,
+          -0.09815245280345719,
+          0.23320122824783684,
+          -0.5818158890965153,
+          -5.750398074040719
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "7.5017141795079864e5",
+        "candidate_checksum": "7.5017141795079864e5",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "experimental",
+        "case": "mixed_full",
+        "baseline_ns": 144.84896,
+        "candidate_ns": 144.6059035,
+        "change_percent": -0.16779996211225834,
+        "paired_block_changes_percent": [
+          -0.9466684312129159,
+          -4.593879984211247,
+          -0.24039836085929522,
+          -0.06598378636325508,
+          -0.3946077646135637,
+          -11.564061069873866
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "9.9339490134848945e5",
+        "candidate_checksum": "9.9339490134848945e5",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "experimental",
+        "case": "deep_otm_full",
+        "baseline_ns": 130.441667,
+        "candidate_ns": 130.03021,
+        "change_percent": -0.31543371796987074,
+        "paired_block_changes_percent": [
+          -0.5682985960055453,
+          -4.475345167487898,
+          -0.02976342498439699,
+          -0.0995015172249869,
+          0.32212161707445564,
+          -8.383564031809776
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "1.5000000000000003e5",
+        "candidate_checksum": "1.5000000000000003e5",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "experimental",
+        "case": "near_atm_short_full",
+        "baseline_ns": 94.2857635,
+        "candidate_ns": 88.927222,
+        "change_percent": -5.683298624399436,
+        "paired_block_changes_percent": [
+          -5.337081274315725,
+          -8.643274910500743,
+          -5.386780648924738,
+          -5.3857715005653395,
+          -5.709748219840161,
+          -14.288730036205877
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "5.9999999999687869e4",
+        "candidate_checksum": "5.9999999999687869e4",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "experimental",
+        "case": "legacy_otm_full",
+        "baseline_ns": 155.798403,
+        "candidate_ns": 151.800278,
+        "change_percent": -2.566216933558696,
+        "paired_block_changes_percent": [
+          -0.09336179977514902,
+          -4.125238300836987,
+          -0.12397179667258396,
+          -0.033143745500263666,
+          0.015732314374594658,
+          -12.091533741066506
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "1.3329281728427532e3",
+        "candidate_checksum": "1.3329281728427532e3",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "experimental",
+        "case": "central_deferred",
+        "baseline_ns": 77.242917,
+        "candidate_ns": 70.35472150000001,
+        "change_percent": -8.917575575246584,
+        "paired_block_changes_percent": [
+          -8.92451751967518,
+          -11.857793678091655,
+          -8.90996211944335,
+          -8.860932419679147,
+          -9.185130088436122,
+          -11.601762222092294
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "6.8889662635173940e4",
+        "candidate_checksum": "6.8889662635173940e4",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "experimental",
+        "case": "central_shape1",
+        "baseline_ns": 77.54715350000001,
+        "candidate_ns": 72.22639000000001,
+        "change_percent": -6.861326637862986,
+        "paired_block_changes_percent": [
+          -6.2166428625122006,
+          -10.003551860100501,
+          -6.765350505535572,
+          -6.814761421255788,
+          -7.195247064302834,
+          -11.478557419260637
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "5.1742600147590616e4",
+        "candidate_checksum": "5.1742600147590616e4",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "experimental",
+        "case": "central_shape2",
+        "baseline_ns": 81.882222,
+        "candidate_ns": 72.157848,
+        "change_percent": -11.876050456959996,
+        "paired_block_changes_percent": [
+          -11.574115878532998,
+          -15.612499505089572,
+          -11.825843121052927,
+          -11.84484275172306,
+          -11.64137766795882,
+          -14.10912375323944
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "3.9532705582844086e4",
+        "candidate_checksum": "3.9532705582844086e4",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "experimental",
+        "case": "central_extended",
+        "baseline_ns": 81.816458,
+        "candidate_ns": 77.7018065,
+        "change_percent": -5.029124458064405,
+        "paired_block_changes_percent": [
+          -4.136253349486186,
+          -8.021311115890962,
+          -4.869703331268482,
+          -5.048019589115549,
+          -4.967011295039148,
+          -6.587065412095072
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "1.2868649534059585e5",
+        "candidate_checksum": "1.2868649534059585e5",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "experimental",
+        "case": "rank_small2",
+        "baseline_ns": 104.82333299999999,
+        "candidate_ns": 104.59875,
+        "change_percent": -0.21424905464511035,
+        "paired_block_changes_percent": [
+          0.029799059951063356,
+          -4.054439400027132,
+          -0.002750730843992244,
+          -0.21424905464511035,
+          -0.14963917499186685,
+          -2.1892457187859593
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "1.1071538335238172e5",
+        "candidate_checksum": "1.1071538335238172e5",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "experimental",
+        "case": "wing_seed",
+        "baseline_ns": 110.5102085,
+        "candidate_ns": 109.789862,
+        "change_percent": -0.6518370653513017,
+        "paired_block_changes_percent": [
+          -0.07403746213459073,
+          -5.900038592018497,
+          0.020409035362289885,
+          -0.1068209250070229,
+          -0.3296309274523068,
+          -17.25119843102987
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "5.1825836775233591e4",
+        "candidate_checksum": "5.1825836775233591e4",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "experimental",
+        "case": "finite_seed",
+        "baseline_ns": 113.70736,
+        "candidate_ns": 113.383195,
+        "change_percent": -0.285087086711,
+        "paired_block_changes_percent": [
+          0.15072937380007367,
+          -3.9958017559863057,
+          -0.15565963414946316,
+          -0.021259343418578158,
+          -0.5787062107620811,
+          -14.508267662510999
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "6.5342386510235770e5",
+        "candidate_checksum": "6.5342386510235770e5",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "experimental",
+        "case": "large_lower",
+        "baseline_ns": 194.23993000000002,
+        "candidate_ns": 190.23472149999998,
+        "change_percent": -2.0619902921093725,
+        "paired_block_changes_percent": [
+          -1.917489707239728,
+          -6.751575196574877,
+          -1.963566607210021,
+          -1.2031931333583268,
+          -2.5092738496055644,
+          -6.339436157426381
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "1.5923813297662449e6",
+        "candidate_checksum": "1.5923813297662449e6",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "experimental",
+        "case": "large_upper",
+        "baseline_ns": 232.8123615,
+        "candidate_ns": 232.2570135,
+        "change_percent": -0.23853888016165392,
+        "paired_block_changes_percent": [
+          -0.15846820143229357,
+          -5.135674684643043,
+          -0.13564041372469138,
+          1.4404129301589963,
+          -0.8770310557963845,
+          -7.044724834127636
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "2.3701081480483511e6",
+        "candidate_checksum": "2.3701081480483511e6",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "experimental",
+        "case": "large_asymptotic",
+        "baseline_ns": 193.39125,
+        "candidate_ns": 189.492915,
+        "change_percent": -2.0157763083903713,
+        "paired_block_changes_percent": [
+          -1.5432401342301283,
+          -6.176739877225545,
+          -1.567379425559834,
+          -1.225763412523273,
+          -2.3838152972037063,
+          -3.5686982261986633
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "8.0159920484007790e5",
+        "candidate_checksum": "8.0159920484007790e5",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "experimental",
+        "case": "large_near_cap",
+        "baseline_ns": 299.57930650000003,
+        "candidate_ns": 299.387222,
+        "change_percent": -0.064118080198583,
+        "paired_block_changes_percent": [
+          0.19148325908915353,
+          -3.9407670796205108,
+          -0.07787409250538113,
+          0.29224362399953296,
+          0.23734338950816003,
+          -3.6669116687526593
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "9.7690850513088871e6",
+        "candidate_checksum": "9.7690850513088871e6",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "experimental",
+        "case": "microscopic",
+        "baseline_ns": 122.709445,
+        "candidate_ns": 116.7311115,
+        "change_percent": -4.871942416494512,
+        "paired_block_changes_percent": [
+          -4.640298193372095,
+          -8.849701598766268,
+          -5.4111448352185505,
+          -4.866244272648535,
+          -3.2639128258042716,
+          -9.90761755179066
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "3.2004497733228981e-195",
+        "candidate_checksum": "3.2004497733228981e-195",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "experimental",
+        "case": "mixed_large",
+        "baseline_ns": 207.97986,
+        "candidate_ns": 201.40125,
+        "change_percent": -3.1630995424268504,
+        "paired_block_changes_percent": [
+          -1.9710066493583311,
+          -5.485384802265269,
+          -1.9385477737764334,
+          -2.6356388559214405,
+          -2.636861026126991,
+          -5.656585909981205
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "6.3823353172230804e6",
+        "candidate_checksum": "6.3823353172230804e6",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "experimental",
+        "case": "mixed_near_atm",
+        "baseline_ns": 85.92479349999999,
+        "candidate_ns": 79.7629865,
+        "change_percent": -7.171163000816517,
+        "paired_block_changes_percent": [
+          -7.650924194453957,
+          -10.902989776931726,
+          -6.861169062257655,
+          -6.887244366784529,
+          -6.5446896758592725,
+          -8.971994752361267
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "9.0161104990296662e4",
+        "candidate_checksum": "9.0161104990296662e4",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "hybrid",
+        "case": "atm",
+        "baseline_ns": 7.847708,
+        "candidate_ns": 7.8579865,
+        "change_percent": 0.1309745469632695,
+        "paired_block_changes_percent": [
+          0.44865569729508614,
+          0.27500948017475935,
+          0.14797572727589525,
+          -1.6500602898843697,
+          0.021259481238078415,
+          -0.02382691680206106
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "5.9999999999687869e4",
+        "candidate_checksum": "5.9999999999687869e4",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "hybrid",
+        "case": "lowest",
+        "baseline_ns": 188.53513800000002,
+        "candidate_ns": 188.4222215,
+        "change_percent": -0.05989148823812851,
+        "paired_block_changes_percent": [
+          1.0885968376735278,
+          -0.24406776565226718,
+          0.4659143656706277,
+          -1.0850094143393663,
+          0.014351918591093416,
+          -0.6213433881549824
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "3.7500000000000000e4",
+        "candidate_checksum": "3.7500000000000000e4",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "hybrid",
+        "case": "lower_middle",
+        "baseline_ns": 116.07493,
+        "candidate_ns": 115.3897215,
+        "change_percent": -0.5903156693697786,
+        "paired_block_changes_percent": [
+          0.22385744847193134,
+          -0.613625938995177,
+          -0.3063253767343621,
+          -1.5695271784277876,
+          -0.0683847465395071,
+          -0.6114662610268273
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "2.1000000000092798e5",
+        "candidate_checksum": "2.1000000000092798e5",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "hybrid",
+        "case": "upper_middle",
+        "baseline_ns": 116.98347150000001,
+        "candidate_ns": 116.80875,
+        "change_percent": -0.1493557147515534,
+        "paired_block_changes_percent": [
+          0.2656963455506034,
+          -1.360522307719747,
+          -1.557196447886755,
+          -1.453880862527046,
+          0.18423313113358208,
+          -0.5289967733528966
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "4.7999999999750295e5",
+        "candidate_checksum": "4.7999999999750295e5",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "hybrid",
+        "case": "highest",
+        "baseline_ns": 194.29771,
+        "candidate_ns": 194.2286785,
+        "change_percent": -0.0355287254800829,
+        "paired_block_changes_percent": [
+          0.08857255137384445,
+          -0.7417948337995028,
+          -2.407639033031994,
+          -1.5092697303198066,
+          -0.06323656701242575,
+          0.1626680091867616
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "1.2000000000000000e6",
+        "candidate_checksum": "1.2000000000000000e6",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "hybrid",
+        "case": "near_atm",
+        "baseline_ns": 108.560625,
+        "candidate_ns": 108.6134035,
+        "change_percent": 0.048616613988738955,
+        "paired_block_changes_percent": [
+          0.5167637096675559,
+          -0.6415399590706583,
+          -0.21251488930362772,
+          0.6871720909878754,
+          -0.04028017137902573,
+          0.24493136158783013
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "1.5000000000000003e5",
+        "candidate_checksum": "1.5000000000000003e5",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "hybrid",
+        "case": "near_atm_wider",
+        "baseline_ns": 98.807708,
+        "candidate_ns": 98.67986,
+        "change_percent": -0.12939071514541656,
+        "paired_block_changes_percent": [
+          1.3582317848405134,
+          -0.7033531311298469,
+          0.13260950202975685,
+          0.012292850305217762,
+          -0.3380354692115284,
+          -0.04587543208196543
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "1.8000000000099823e5",
+        "candidate_checksum": "1.8000000000099823e5",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "hybrid",
+        "case": "mixed_normalised",
+        "baseline_ns": 183.154167,
+        "candidate_ns": 183.24604349999998,
+        "change_percent": 0.05016347785304909,
+        "paired_block_changes_percent": [
+          1.1383936634428382,
+          0.0804315238513098,
+          0.12150792464176163,
+          -0.9270962842624852,
+          -0.07866624273404899,
+          -0.008088809380335515
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "7.5017141795079864e5",
+        "candidate_checksum": "7.5017141795079864e5",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "hybrid",
+        "case": "mixed_full",
+        "baseline_ns": 204.2824315,
+        "candidate_ns": 204.7035415,
+        "change_percent": 0.20614107483833966,
+        "paired_block_changes_percent": [
+          0.6924427495562213,
+          -0.4439736376745884,
+          0.5528328107717195,
+          0.08637276331997512,
+          0.12075868215732921,
+          0.14134938345027326
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "9.9339490134848945e5",
+        "candidate_checksum": "9.9339490134848945e5",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "hybrid",
+        "case": "deep_otm_full",
+        "baseline_ns": 132.33833299999998,
+        "candidate_ns": 132.4286115,
+        "change_percent": 0.0682179516346304,
+        "paired_block_changes_percent": [
+          0.689594329298604,
+          -1.003668398681934,
+          -0.17945726228867365,
+          0.41110587117325625,
+          -0.016881718379857524,
+          0.31301248142519
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "1.5000000000000000e5",
+        "candidate_checksum": "1.5000000000000000e5",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "hybrid",
+        "case": "near_atm_short_full",
+        "baseline_ns": 176.37770799999998,
+        "candidate_ns": 176.107847,
+        "change_percent": -0.15300176142439836,
+        "paired_block_changes_percent": [
+          0.5245357112401816,
+          0.8266010741256657,
+          -0.11740054345492634,
+          1.0403765481767024,
+          -0.0598854022981099,
+          -0.47561149473770437
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "5.9999999999687869e4",
+        "candidate_checksum": "5.9999999999687869e4",
+        "checksum_changed_between_versions": false
+      },
+      {
+        "solver": "hybrid",
+        "case": "legacy_otm_full",
+        "baseline_ns": 138.60972199999998,
+        "candidate_ns": 138.54388849999998,
+        "change_percent": -0.04749558620426031,
+        "paired_block_changes_percent": [
+          1.0207520167271333,
+          1.0992401294589005,
+          0.026318528733648705,
+          0.5288023572266765,
+          -0.7340275314794975,
+          -0.16794578167947938
+        ],
+        "samples_per_version": 24,
+        "baseline_checksum": "1.3329281728427532e3",
+        "candidate_checksum": "1.3329281728427532e3",
+        "checksum_changed_between_versions": false
+      }
+    ]
+  },
+  "timing_controls": {
+    "hybrid_overall_median_change_percent_range": [
+      -0.5903156693697786,
+      0.20614107483833966
+    ],
+    "hybrid_paired_block_change_percent_range": [
+      -2.407639033031994,
+      1.3582317848405134
+    ],
+    "all_blocks_retained": true,
+    "scope": "Local synthetic workloads; not a universal or portable latency guarantee; degree-25 central improvement is not from deleted terms."
+  },
+  "checks": {
+    "rust_tests": {
+      "off": {
+        "features": "flashiv,experimental",
+        "passed": 120,
+        "log_sha256": "c75bf744f181ef4eb7c090a33262515110c77171dc4bf3023942cdb58fa6af6a"
+      },
+      "on": {
+        "features": "flashiv,experimental,fma",
+        "passed": 120,
+        "log_sha256": "223e779113bb3a1286f242867d56b04c922fb3ac0a5418168a129368ecbea6be"
+      }
+    },
+    "format": "cargo fmt --all --check passed",
+    "clippy": "library and path benchmark with flashiv,experimental and -D warnings passed",
+    "clippy_log_sha256": "33c5a71823cbba862ad9a2b0cb46f2f9c10672eae0c4ab21bdca281a23f2053f",
+    "python_benchmark_contract_tests": 9,
+    "central_controls": {
+      "positive": 1,
+      "negative_rejected": 13,
+      "log_sha256": "9f357b2747be449189b95a57809efe4569869f43f8bd9dec9b53d5647d945bbf"
+    },
+    "large_controls": {
+      "positive_control_passed": true,
+      "negative_controls": [
+        {
+          "name": "table_degree_17",
+          "rejected": true,
+          "expected_binding": "source bridge pattern"
+        },
+        {
+          "name": "mixed_table_missing_zero_padding",
+          "rejected": true,
+          "expected_binding": "source bridge pattern"
+        },
+        {
+          "name": "mixed_asymptotic_degree_16",
+          "rejected": true,
+          "expected_binding": "source bridge pattern"
+        },
+        {
+          "name": "missing_compensated_stage",
+          "rejected": true,
+          "expected_binding": "unmodeled compensated Mills arithmetic"
+        },
+        {
+          "name": "physical_wrong_coefficient",
+          "rejected": true,
+          "expected_binding": "unmodeled physical predictor"
+        },
+        {
+          "name": "physical_order_four",
+          "rejected": true,
+          "expected_binding": "unmodeled physical predictor"
+        },
+        {
+          "name": "log_third_derivative_coefficient",
+          "rejected": true,
+          "expected_binding": "unmodeled log iteration"
+        },
+        {
+          "name": "log_iteration_missing_newton_factor",
+          "rejected": true,
+          "expected_binding": "unmodeled log iteration"
+        },
+        {
+          "name": "missing_forced_bisection",
+          "rejected": true,
+          "expected_binding": "unreviewed target/routing/iteration source"
+        },
+        {
+          "name": "unchecked_predictor",
+          "rejected": true,
+          "expected_binding": "unreviewed target/routing/iteration source"
+        }
+      ],
+      "all_rejected": true
+    },
+    "native_execution": "aarch64-apple-darwin; no new Windows/wasm execution claim"
+  },
+  "local_raw_artifacts": {
+    "directory": "target/theory-20261106 (ignored by Git)",
+    "timing_sha256": "65475981f2e6787c72cc42d54c78165361799fda7ecffc469f440f1db4a1a0d8",
+    "changed_outputs_sha256": "4b5769e2a4c75ff344b45cd8add7a777091d2f2c417a3595cd53f1ec0d02b3b4",
+    "validation_helpers_sha256": {
+      "build_replays.py": "be851116b491742b8c021ea415b79748aa84ed0500ca0e8c5b9795e29c183558",
+      "counts.py": "f8d3e018a61168cbecadcd2c77a71d368bfae53b106390b9e747343f4a2b12e1",
+      "fixtures.py": "f5040f373aa02f8e80c9dd9d4aa3be7ec7088c1900cb2fa38c144e86d05df6f9",
+      "instrument.py": "ebbd6fc7639554867470ef5c5ddf7c6e77c8e0440224fade4f425ffdf0cf98b2",
+      "prepare_corpus.py": "c8e93c996afda5d0925d17582aee1fd0547e19a9110e78f603c20e69eb2aafb2",
+      "score.py": "5dd18d5759c2cf6f53fe5e01e46863e6e51fe12ef7b09bf5987c7be030bc516b"
+    }
+  },
+  "scope": "Conditional component bounds and finite exact-input validation; no complete-domain, correctly-rounded, or vendor-libm theorem."
+}

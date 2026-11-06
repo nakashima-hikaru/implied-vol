@@ -158,8 +158,8 @@ fn mills_fast(z: f64) -> f64 {
         }
         let c = &M_COEFF_HI[(k + 12) as usize];
         let x = z - (2 * k + 1) as f64 * 0.25;
-        let mut p = c[16];
-        for i in (0..16).rev() {
+        let mut p = c[13];
+        for i in (0..13).rev() {
             p = p.mul_add(x, c[i]);
         }
         p
@@ -193,25 +193,14 @@ fn fast_pair_impl<const A: bool, const B: bool>(a: f64, b: f64) -> [f64; 2] {
     );
     let coef = |i: usize| {
         F64x2::new(
-            if A {
-                ca[i]
-            } else if i <= 13 {
-                ASYM[i]
-            } else {
-                0.0
-            },
-            if B {
-                cb[i]
-            } else if i <= 13 {
-                ASYM[i]
-            } else {
-                0.0
-            },
+            if A { ca[i] } else { ASYM[i] },
+            if B { cb[i] } else { ASYM[i] },
         )
     };
-    let n = if A || B { 16 } else { 13 };
-    let mut p = coef(n);
-    for i in (0..n).rev() {
+    // Fast residuals need only bracket-sign/handoff accuracy. Table and
+    // asymptotic lanes share degree 13; the compensated finalizer is separate.
+    let mut p = coef(13);
+    for i in (0..13).rev() {
         p = p.mul_add(x, coef(i));
     }
     if !(A && B) {
@@ -269,14 +258,14 @@ fn precise_pair_impl<const A: bool, const B: bool>(a: DD, b: DD) -> [DD; 2] {
     let coef_hi = |i: usize| {
         F64x2::new(
             if A {
-                ca[i]
+                if i <= 16 { ca[i] } else { 0.0 }
             } else if i <= 18 {
                 ASYM[i]
             } else {
                 0.0
             },
             if B {
-                cb[i]
+                if i <= 16 { cb[i] } else { 0.0 }
             } else if i <= 18 {
                 ASYM[i]
             } else {
@@ -285,7 +274,9 @@ fn precise_pair_impl<const A: bool, const B: bool>(a: DD, b: DD) -> [DD; 2] {
         )
     };
     let coef_lo = |i: usize| F64x2::new(if A { la[i] } else { 0.0 }, if B { lb[i] } else { 0.0 });
-    let n = if A || B { 24 } else { 18 };
+    // Degree 16 table lanes retain the same three compensated low stages.
+    // A mixed pair keeps the degree 18 asymptotic lane and zero-pads the table.
+    let n = if A && B { 16 } else { 18 };
     let mut h = coef_hi(n);
     for i in (3..n).rev() {
         h = h.mul_add(qh, coef_hi(i));
@@ -488,7 +479,7 @@ pub(crate) fn solve(a: f64, b: f64) -> f64 {
     if upper {
         let yy = x.mul_add(x, 2.0 * a).sqrt();
         let ss = x + yy;
-        let next = x + physical_step7(x, yy, ss);
+        let next = x + physical_step5(x, yy, ss);
         if next.is_finite() && next > left && next < right {
             x = next;
         }
@@ -520,7 +511,7 @@ pub(crate) fn solve(a: f64, b: f64) -> f64 {
         } else {
             right = x;
         }
-        let mut nx = x + log_step5(a, x, &e);
+        let mut nx = x + log_step3(a, x, &e);
         if steps % 4 == 3 || !(nx > left && nx < right) || !nx.is_finite() {
             nx = (left + right) / 2.0;
         }
@@ -828,7 +819,7 @@ fn fma(a: f64, b: f64, c: f64) -> f64 {
 
 #[inline]
 #[allow(non_snake_case, unused_variables)]
-fn physical_step7(x: f64, y: f64, s: f64) -> f64 {
+fn physical_step5(x: f64, y: f64, s: f64) -> f64 {
     let n = mills_fast(y) * (y / s);
     let iy = f64::from_bits(0x3ff0000000000000) / y;
     let k = x * iy;
@@ -841,8 +832,6 @@ fn physical_step7(x: f64, y: f64, s: f64) -> f64 {
     let g2 = fma(xn, g1, -nn * g0) / f64::from_bits(0x4000000000000000);
     let g3 = fma(xn, g2, -nn * g1) / f64::from_bits(0x4008000000000000);
     let g4 = fma(xn, g3, -nn * g2) / f64::from_bits(0x4010000000000000);
-    let g5 = fma(xn, g4, -nn * g3) / f64::from_bits(0x4014000000000000);
-    let g6 = fma(xn, g5, -nn * g4) / f64::from_bits(0x4018000000000000);
     let v1 = v;
     let w1 = (f64::from_bits(0x3ff0000000000000) - k) * (f64::from_bits(0x3ff0000000000000)) * v1;
     let v2 = v1 * v / f64::from_bits(0x4000000000000000);
@@ -881,168 +870,34 @@ fn physical_step7(x: f64, y: f64, s: f64) -> f64 {
             f64::from_bits(0x0000000000000000),
         ))
         * v4;
-    let v5 = v4 * v / f64::from_bits(0x4014000000000000);
-    let w5 = (f64::from_bits(0x3ff0000000000000) - k)
-        * (fma(
-            fma(
-                fma(
-                    fma(
-                        f64::from_bits(0x408d880000000000),
-                        k,
-                        f64::from_bits(0x0000000000000000),
-                    ),
-                    k,
-                    -f64::from_bits(0x4083b00000000000),
-                ),
-                k,
-                f64::from_bits(0x0000000000000000),
-            ),
-            k,
-            f64::from_bits(0x4046800000000000),
-        ))
-        * v5;
-    let v6 = v5 * v / f64::from_bits(0x4018000000000000);
-    let w6 = (f64::from_bits(0x3ff0000000000000) - k)
-        * (fma(
-            fma(
-                fma(
-                    fma(
-                        fma(
-                            -f64::from_bits(0x40c44d8000000000),
-                            k,
-                            f64::from_bits(0x0000000000000000),
-                        ),
-                        k,
-                        f64::from_bits(0x40c2750000000000),
-                    ),
-                    k,
-                    f64::from_bits(0x0000000000000000),
-                ),
-                k,
-                -f64::from_bits(0x40989c0000000000),
-            ),
-            k,
-            f64::from_bits(0x0000000000000000),
-        ))
-        * v6;
     let q2 = (fma(g0, w1, g1)) / f64::from_bits(0x4000000000000000);
     let q3 = (fma(g0, w2, fma(g1, w1, g2))) / f64::from_bits(0x4008000000000000);
     let q4 = (fma(g0, w3, fma(g1, w2, fma(g2, w1, g3)))) / f64::from_bits(0x4010000000000000);
     let q5 = (fma(g0, w4, fma(g1, w3, fma(g2, w2, fma(g3, w1, g4)))))
         / f64::from_bits(0x4014000000000000);
-    let q6 = (fma(
-        g0,
-        w5,
-        fma(g1, w4, fma(g2, w3, fma(g3, w2, fma(g4, w1, g5)))),
-    )) / f64::from_bits(0x4018000000000000);
-    let q7 = (fma(
-        g0,
-        w6,
-        fma(
-            g1,
-            w5,
-            fma(g2, w4, fma(g3, w3, fma(g4, w2, fma(g5, w1, g6)))),
-        ),
-    )) / f64::from_bits(0x401c000000000000);
     let c0 = f64::from_bits(0x3ff0000000000000);
     let c1 = f64::from_bits(0x3ff0000000000000);
     let c2 = fma(q2, c0, c1);
     let c3 = fma(q3, c0, fma(q2, c1, c2));
     let c4 = fma(q4, c0, fma(q3, c1, fma(q2, c2, c3)));
     let c5 = fma(q5, c0, fma(q4, c1, fma(q3, c2, fma(q2, c3, c4))));
-    let c6 = fma(
-        q6,
-        c0,
-        fma(q5, c1, fma(q4, c2, fma(q3, c3, fma(q2, c4, c5)))),
-    );
-    let c7 = fma(
-        q7,
-        c0,
-        fma(
-            q6,
-            c1,
-            fma(q5, c2, fma(q4, c3, fma(q3, c4, fma(q2, c5, c6)))),
-        ),
-    );
-    n * c6 / c7
+    n * c4 / c5
 }
 
 #[inline]
-#[allow(non_snake_case, unused_variables)]
-fn log_step5(a: f64, x: f64, e: &Eval) -> f64 {
+fn log_step3(a: f64, x: f64, e: &Eval) -> f64 {
+    // Householder's third reciprocal derivative gives fourth-order local
+    // convergence. The precise gate and safeguarded bracket decide acceptance.
     let n = -e.f / e.df;
     let d = e.df;
-    let H = e.h;
-    let iy = f64::from_bits(0x3ff0000000000000) / e.y;
+    let h = e.h;
+    let iy = 1.0 / e.y;
     let iy2 = iy * iy;
-    let xx = x * x * iy2;
-    let H1 = -f64::from_bits(0x3ff0000000000000) - x * iy * iy2
-        + (x * x - f64::from_bits(0x4000000000000000) * a) * iy2 * iy2;
-    let H2 = (-f64::from_bits(0x3ff0000000000000) + f64::from_bits(0x4008000000000000) * xx)
-        * iy
-        * iy2
-        + (f64::from_bits(0x4018000000000000) * x - f64::from_bits(0x4020000000000000) * x * xx)
-            * iy2
-            * iy2;
-    let H3 = (f64::from_bits(0x4048000000000000) * xx * xx
-        - f64::from_bits(0x4048000000000000) * xx
-        + f64::from_bits(0x4018000000000000))
-        * iy2
-        * iy2
-        + x * (f64::from_bits(0x4022000000000000) - f64::from_bits(0x402e000000000000) * xx)
-            * iy
-            * iy2
-            * iy2;
-    let A = H - d;
-    let B = H1 + A * (H - f64::from_bits(0x4000000000000000) * d);
-    let C = H2
-        + (f64::from_bits(0x4008000000000000) * H - f64::from_bits(0x4010000000000000) * d) * H1
-        + A * (H * H - f64::from_bits(0x4018000000000000) * H * d
-            + f64::from_bits(0x4018000000000000) * d * d);
-    let D = H3
-        + (f64::from_bits(0x4010000000000000) * H - f64::from_bits(0x4014000000000000) * d) * H2
-        + f64::from_bits(0x4008000000000000) * H1 * H1
-        + H1 * (f64::from_bits(0x4034000000000000) * d * d
-            - f64::from_bits(0x4039000000000000) * d * H
-            + f64::from_bits(0x4018000000000000) * H * H)
-        + (((H - f64::from_bits(0x402e000000000000) * d) * H
-            + f64::from_bits(0x4049000000000000) * d * d)
-            * H
-            - f64::from_bits(0x404e000000000000) * d * d * d)
-            * H
-        + f64::from_bits(0x4038000000000000) * d * d * d * d;
-    let num = fma(
-        n,
-        fma(
-            n,
-            fma(
-                C / f64::from_bits(0x4038000000000000),
-                n,
-                A * A / f64::from_bits(0x4010000000000000) + B / f64::from_bits(0x4008000000000000),
-            ),
-            f64::from_bits(0x3ff8000000000000) * A,
-        ),
-        f64::from_bits(0x3ff0000000000000),
-    );
-    let den = fma(
-        n,
-        fma(
-            n,
-            fma(
-                n,
-                fma(
-                    D / f64::from_bits(0x405e000000000000),
-                    n,
-                    A * B / f64::from_bits(0x4018000000000000)
-                        + C / f64::from_bits(0x4028000000000000),
-                ),
-                f64::from_bits(0x4008000000000000) * A * A / f64::from_bits(0x4010000000000000)
-                    + B / f64::from_bits(0x4000000000000000),
-            ),
-            f64::from_bits(0x4000000000000000) * A,
-        ),
-        f64::from_bits(0x3ff0000000000000),
-    );
+    let h1 = -1.0 - x * iy * iy2 + (x * x - 2.0 * a) * iy2 * iy2;
+    let a2 = h - d;
+    let a3 = h1 + a2 * (h - 2.0 * d);
+    let num = (0.5 * a2).mul_add(n, 1.0);
+    let den = n.mul_add((a3 / 6.0).mul_add(n, a2), 1.0);
     n * num / den
 }
 

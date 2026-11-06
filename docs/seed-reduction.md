@@ -1,10 +1,12 @@
 # Reduced rank seeds and the cubic common finish
 
 The small/core rank factors use per-rectangle Chebyshev degrees. The 26 tables
-occupy **11,328 bytes**, down from 14,400 bytes with uniform degree 8/6 and
+occupy **11,104 bytes**, down from 11,328 bytes before rank compression,
+14,400 bytes with uniform degree 8/6 and
 17,600 bytes in the original archive. The explicit degree arrays contain
 another 52 bytes. This counts coefficient and degree payload, not process
-memory or binary size. The tables retain the existing padded rank layout.
+memory or binary size. Small rectangle 2 uses rank two and four lanes;
+the remaining tables retain their existing padded rank layout.
 
 | x/y degrees | Small rectangles | Core rectangles | Table count |
 |---|---|---|---:|
@@ -15,10 +17,13 @@ memory or binary size. The tables retain the existing padded rank layout.
 
 Each rank-three/four evaluation uses 22, 24 or 26 two-lane Horner stages,
 instead of 28 for uniform degree 8/6; rank-two evaluation uses 11 instead of
-14. These operation counts do not establish a runtime speedup. The compiler
+14. Small rectangle 2 now uses the rank-two specialization: its Horner count
+falls from 22 to 11, and the scalar rank reduction has one FMA instead of two.
+These operation counts do not establish a runtime speedup. The compiler
 sees fixed degree and array-size specializations selected by generated
-metadata. Upper-gap factors retain degree 8/8. Lane pairing, scalar rank
-reduction, price residual and the cubic common finish remain unchanged.
+metadata. Upper-gap factors retain degree 8/8. Each selected specialization
+preserves lane pairing, coefficient order and scalar rank reduction order;
+the price residual and cubic common finish remain unchanged.
 
 The generator works from the exact binary64 coefficients in the hash-bound
 reference archive. It converts each power polynomial to Chebyshev form using
@@ -26,9 +31,22 @@ rational arithmetic, removes the high modes, converts back exactly, and rounds
 each resulting coefficient once to binary64. Directly deleting high power
 coefficients would give a different and much larger error.
 
+For small rectangle 2, an SVD of the degree-6/5 bivariate Chebyshev coefficient
+matrix supplied two candidate factors. Their Chebyshev coefficients are frozen
+as binary64 values in `SMALL_2_RANK_TWO_CHEBYSHEV`; exact rational conversion
+to power form followed by one binary64 rounding defines every runtime
+coefficient. SVD accuracy and singular values are not proof premises. The
+checker independently expands both represented factorizations and bounds the
+coefficient difference from the hash-bound original archive, including the
+previous degree reduction. This gives a coefficient 1-norm below
+`5.807e-6`. On the rounded-coordinate square the function difference is at
+most that exact norm times `T_10(1+32u)^2`.
+
 ```sh
 python3 scripts/generate_seed_reduction.py --reference-root /path/to/implied-black-volatility --check
+python3 scripts/generate_seed_reduction.py --reference-root /path/to/implied-black-volatility --check --check-svd
 python3 scripts/verify_direct_d.py --reference-root /path/to/implied-black-volatility
+python3 scripts/verify_seed_bindings.py --reference-root /path/to/implied-black-volatility
 ```
 
 `--check` regenerates and compares every coefficient and degree entry. The integrated checker
@@ -41,6 +59,12 @@ changed selector cannot be admitted by updating a whole-file hash. The same
 bridge preserves the unchanged AS1/FMA-provider checks; it does not make AS1
 responsible for proving the changed seeds. The approximation change has its
 own bound and is not treated as a representation equivalence.
+The optional `--check-svd` reproduces all frozen candidate factor bits at 90
+and 130 decimal digits using `mpmath`; the exact coefficient-difference proof
+does not need that package or rely on its SVD implementation.
+The negative controls reject ten deliberate defects, including rank metadata,
+a compressed coefficient bit, its array extent and the rank-two shape, in
+both the direct-D bridge and the AS1 source consumer.
 
 The degree map is selected from finite candidate pairs by the final continuous
 error budget. It is not claimed globally optimal. Uniform degree 6/6 fails the
@@ -57,6 +81,9 @@ Horner evaluation, product rounding and rank reduction are bounded separately
 in source order. Each continuous leaf supplies an interval for its actual
 coordinate. This gives a finite relative bound `epsilon` between the original
 computed seed `s_old` and the reduced computed seed `s0`.
+For the compressed table, the exact bivariate coefficient difference replaces
+the lane-wise truncation bound; original rank-three and candidate rank-two
+Horner/product/reduction rounding are still charged separately in source order.
 
 The old root radius `r_old` transports to
 
@@ -113,3 +140,13 @@ reserve lemmas, and floating primitive contracts. It does not regenerate those
 certificates, establish a whole-domain solver theorem, prove the compiler or
 vendor libm, or make a speed claim. Empirical replay and host timing are separate
 evidence.
+
+Small rectangle 2 passes all 139 inherited continuous leaves with final
+`rho_J <= 0.590475`; the overall wing/small/core maxima remain `0.593446`,
+`0.884891` and `0.785461`. A separate 25-by-25 physical binary64 interior grid
+uses independent Black inversions agreeing at 160/240 decimal digits. Its
+maximum observed final `rho_J` is `0.455327` under each FMA policy; the existing
+rectangle boundary-neighbor corpus also passes under both policies. Generate
+the interior fixture with `scripts/generate_rank_compression_seams.py` and run
+`tests/experimental_rank_compression.rs`. This finite replay checks actual final
+outputs and complements the conditional continuous ledger.

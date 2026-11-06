@@ -77,6 +77,7 @@ def seed_delta(row,route):
  x=rn(im(rn((row['xl']-rect[0],row['xh']-rect[0])),(rect[1],rect[1])))
  y=rn(im(rn((row['yl']-rect[2],row['yh']-rect[2])),(rect[3],rect[3])))
  assert absmax(x)<=endpoint and absmax(y)<=endpoint
+ if 'old_rank' in m:return compressed_seed_delta(name,m,x,y)
  old=oldtables[name];new=newtables[name];oldv=[];newv=[];olde=[];newe=[];d=[]
  for lane in range(lanes):
   arg=x if lane<half else y;oc=old[lane::lanes];nc=new[lane::lanes];field=m['fields'][lane]
@@ -101,6 +102,35 @@ def seed_delta(row,route):
   # Archived seed proof establishes computed v=RN(q*factor)/q>1/64.
   lower=max(down(oldrange[0]-oldround),(F(1,64)-F(1,2**350))/(1+u))
   epsilon=up(((1+u)*delta/lower+2*u)/(1-u))
+ return epsilon,delta,lower
+
+def compressed_seed_delta(name,m,x,y):
+ # A changed factorization has no lane-wise correspondence. Expand the exact
+ # represented old/new factors to a bivariate Chebyshev matrix instead. On
+ # the rounded-coordinate square, each product is at most T_10(endpoint)^2.
+ # Both source-order rounding ledgers are charged separately below; SVD and
+ # singular-value error estimates are never proof premises.
+ def evaluated(values,lanes,rank):
+  half=lanes//2;polys=[values[k::lanes] for k in range(lanes)]
+  intervals=[horner(c,x if k<half else y) for k,c in enumerate(polys)]
+  errors=[source_poly_error(c,absmax(x if k<half else y))[0] for k,c in enumerate(polys)]
+  rounding=F(0);magnitude=F(0);value_range=(F(0),F(0))
+  for k in range(rank):
+   j=half+k;mx,my=absmax(intervals[k]),absmax(intervals[j]);ex,ey=errors[k],errors[j]
+   rounding+=ex*my+ey*mx+ex*ey
+   magnitude+=(mx+ex)*(my+ey)
+   value_range=ia(value_range,im(intervals[k],intervals[j]))
+  g=rank*u/(1-rank*u)
+  return up(rounding+g*magnitude+16*nu),value_range
+ oldround,oldrange=evaluated(oldtables[name],m['old_lanes'],m['old_rank'])
+ newround,_=evaluated(newtables[name],m['lanes'],m['rank'])
+ difference=up(F(m['chebyshev_difference'])*chebguard**2)
+ delta=up(difference+oldround+newround)
+ # This compressed table is exclusively the small q*factor route. Preserve
+ # the same q-product and archived positive-factor floor as the other tables.
+ assert name=='lr_small_2'
+ lower=max(down(oldrange[0]-oldround),(F(1,64)-F(1,2**350))/(1+u))
+ epsilon=up(((1+u)*delta/lower+2*u)/(1-u))
  return epsilon,delta,lower
 
 def pmul(a,b):
@@ -189,6 +219,10 @@ def audit(seed_rows, original_source, candidate_source, coefficient_metadata, ol
   assert 0<=y_degree<=x_degree<=10
   for lane in range(lanes//2,lanes):
    assert all(value==0 for value in newtables[name][lane::lanes][y_degree+1:])
+  if 'old_rank' in item:
+   import seed_reduction
+   difference=seed_reduction.rank_difference(oldtables[name],item['old_lanes'],item['old_rank'],newtables[name],lanes,item['rank'])
+   assert difference==F(item['chebyshev_difference'])
  rects={route:[table(original_source,route+'_rects')[i:i+4] for i in range(0,len(table(original_source,route+'_rects')),4)] for route in ['small','core']}
  ranks={route:[int(v) for v in re.findall(r'\(&lr_'+route+r'_\d+, (\d+)\)',original_source)] for route in ['small','core']}
  DERROR={(r['regime'],r['cell']):F(r['exact_total']) for r in cell_bounds}
@@ -217,10 +251,11 @@ def audit(seed_rows, original_source, candidate_source, coefficient_metadata, ol
    'worst':{k:str(v) if isinstance(v,F) else v for k,v in worst.items()},
    'rectangles':{str(k):{'x_degree':metadata[f'lr_{route}_{k}']['x_degree'],
                         'y_degree':metadata[f'lr_{route}_{k}']['y_degree'],
+                        'rank':metadata[f'lr_{route}_{k}'].get('rank',ranks[route][k]),
                         'maximum_rho_bound':str(max(r['rho'] for r in records if r['rect']==k))}
                  for k in sorted({r['rect'] for r in records})} if route!='wing' else {}}
  return {'status':'All represented-coefficient, source-order and continuous-leaf assertions passed',
-  'method':'Source-bound per-table degrees; exact Chebyshev mode truncation; source-order seed perturbation; finite vega/geometry transport; fourth inverse derivative remainder; cubic source rounding ledger',
+  'method':'Source-bound per-table degrees and small rectangle 2 rank compression; exact Chebyshev coefficient difference; source-order seed perturbation; finite vega/geometry transport; fourth inverse derivative remainder; cubic source rounding ledger',
   'route_bounds':reports,'coefficient_bytes_before':sum(v['old_bytes'] for v in metadata.values()),
   'coefficient_bytes_after':sum(v['new_bytes'] for v in metadata.values()),
   'degree_metadata_bytes':2*len(metadata),

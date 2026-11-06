@@ -124,12 +124,22 @@ def verify_source(path, reference_root=None):
     # sequence and balanced's h/t construction and range guards. Only comments
     # and whitespace are ignored; matching coefficients alone is insufficient.
     central_bytes=path.read_bytes()
+    actual_central_hash=hashlib.sha256(central_bytes).hexdigest()
+    central_bridge=None
+    if actual_central_hash!=CENTRAL_FILE_HASH:
+        import central_expansion
+        central_bytes=central_expansion.restore_central_source(central_bytes.decode()).encode()
+        central_bridge={
+            'status':'exact_reviewed_central_source_bridge',
+            'scope':'AS1 arithmetic is unchanged; deferred central normal/conversion degree reductions and the expanded domain are verified separately by verify_central_expansion.py.',
+            'bridge_module_sha256':hashlib.sha256(Path(central_expansion.__file__).read_bytes()).hexdigest(),
+        }
     got=hashlib.sha256(central_bytes).hexdigest()
     assert got==CENTRAL_FILE_HASH,('whole central source binding',got,CENTRAL_FILE_HASH)
     small_bytes=(path.parent.parent/'small.rs').read_bytes()
     constants_bytes=(path.parent/'constants.rs').read_bytes()
     actual_source_hashes={
-        'src/experimental/small/central.rs':hashlib.sha256(central_bytes).hexdigest(),
+        'src/experimental/small/central.rs':actual_central_hash,
         'src/experimental/small.rs':hashlib.sha256(small_bytes).hexdigest(),
         'src/experimental/small/constants.rs':hashlib.sha256(constants_bytes).hexdigest(),
     }
@@ -191,7 +201,8 @@ def verify_source(path, reference_root=None):
         atoms=[F.from_float(struct.unpack('>d',struct.pack('>Q',int(v,16)))[0]) for v in bits[::4]]
         assert all(F(1,2**50)<z<F(2**30) for z in atoms),('quadrature normality',name)
     return {'central_sha256':hashlib.sha256(path.read_bytes()).hexdigest(),
-            'actual_source_sha256':actual_source_hashes,'seed_approximation_source_bridge':seed_bridge}
+            'actual_source_sha256':actual_source_hashes,'seed_approximation_source_bridge':seed_bridge,
+            'central_expansion_source_bridge':central_bridge}
 
 
 def main():

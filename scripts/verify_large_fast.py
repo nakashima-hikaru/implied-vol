@@ -25,10 +25,10 @@ if not __debug__:
     raise RuntimeError("Assertions are required; do not use Python -O")
 
 SOURCE_FUNCTIONS = {
-    'mills_fast': 'a38617929a68dc6a799e5cb7c0c86bc43141849e9f69b673ba4b0cc6d914a119',
-    'fast_pair_impl': 'c6242010d9d618829a704f102dc9ef878b0a0486aaa7f480c76b7734b8d3f7b5',
+    'mills_fast': '78af8b69bcbd6a5ced95d45a03ac7a61a5dece11da386eb9c336a0d64165b8ca',
+    'fast_pair_impl': 'd252df351d482d6f6ec10f0b006b5a691bbcbb3ce588573e146f95723f9c096a',
     'mills_fast_pair': '8e1deeb5de3e24aaee8e2ee2a53fbf27daa2c6bf07c534fb822fa1bb18c2d28f',
-    'precise_pair_impl': '51e16a623f37ea4a84e34795097a6b27030ea999ad6000b1a32f9768882f07b6',
+    'precise_pair_impl': '647665593869600c1e6244275143257166363ee8f66c4124d19dac7a113e8dd0',
     'mills_precise_pair': '90981c1c1e96ce6b95ddf85878b5b532cbbc564edf22ec30019bb9fd7c2ab960',
     'geometry': 'e525b7b6cc2ac1af38c9a6be0979d6f1d132388b3225f6bc40315028b1a3694a',
     'residual': 'f56a99511350b50d415cd759e4d0dc229a037fedd3c8068d3556abd6943b6af0',
@@ -135,10 +135,10 @@ def main():
         radius = up((1 + u) / 4 + nu)
         truth = mp.true_taylor(F(2 * k + 1, 4))
         # Bound the actual degree-24 high polynomial first, then remove its
-        # represented degrees 17..24. This avoids a loose degree-16 Taylor
+        # represented degrees 14..24. This avoids a loose degree-13 Taylor
         # derivative bound on negative cells while retaining a rigorous model.
         coefficient = sum(max(abs(stored[j][0] - v) for v in truth[j]) * radius**j for j in range(25))
-        omitted = sum(abs(stored[j][0]) * radius**j for j in range(17, 25))
+        omitted = sum(abs(stored[j][0]) * radius**j for j in range(14, 25))
         zmin = F(k, 2) - 2 * u
         if zmin < 0:
             moment, i1 = ex.expq(F(4))[1] * 2**25 * factorial(12), F(6)
@@ -148,10 +148,10 @@ def main():
                 moment, i1 = min(moment, F(factorial(25)) / zmin**26), min(i1, 1 / zmin**2)
         taylor_tail = moment * radius**25 / factorial(25)
         model = up(coefficient + omitted + taylor_tail)
-        # Source starts exactly at stored[16]. Each of the 16 following FMAs
+        # Source starts exactly at stored[13]. Each of the 13 following FMAs
         # is rounded once. h bounds the rounded intermediate magnitude.
-        h, rounding = abs(stored[16][0]), F(0)
-        for j in range(15, -1, -1):
+        h, rounding = abs(stored[13][0]), F(0)
+        for j in range(12, -1, -1):
             p = up(h * radius + abs(stored[j][0]))
             rounding = up(radius * rounding + u * p + nu)
             h = up((1 + u) * p + nu)
@@ -160,7 +160,7 @@ def main():
             'k': k, 'omitted_high_tail': ex.pack(up(omitted)),
             'coefficient_error': ex.pack(up(coefficient)),
             'degree24_taylor_tail': ex.pack(up(taylor_tail)),
-            'degree16_horner_rounding': ex.pack(rounding),
+            'degree13_horner_rounding': ex.pack(rounding),
             'centering_error': ex.pack(up(centering)),
             'total_error': ex.pack(up(model + rounding + centering)),
         }
@@ -168,8 +168,8 @@ def main():
     computed = [table(k, rows[k + 12]) for k in range(-2, 32)]
     bounds, table_records = [r[0] for r in computed], [r[1] for r in computed]
     # The asymptotic polynomial, inverse-square and division are unchanged.
-    # For a mixed pair, degrees 16..14 are exact zeros and degree 13 inserts
-    # ASYM[13] exactly. The table lane's final division by 1 is exact.
+    # Both table and asymptotic lanes now start at degree 13, so mixed pairs
+    # require no padding. The table lane's final division by 1 is exact.
     asym_error = old_fast.asymptotic(asym)
     boxes = []
     for upper, count in ((False, 82), (True, 32)):
@@ -225,7 +225,7 @@ def main():
 
     out = {
         'status': 'All exact rational assertions passed',
-        'scope': 'Large fast Mills degree 16 and unchanged degree-13 asymptotic; 34 continuous table cells and 114 continuous residual boxes, conditional on caller bracket/target bounds; no finalizer or routing certificate',
+        'scope': 'Large fast Mills degree 13 and unchanged degree-13 asymptotic; 34 continuous table cells and 114 continuous residual boxes, conditional on caller bracket/target bounds; no finalizer or routing certificate',
         'maximum_residual_error': ex.pack(maximum),
         'maximum_residual_error_in_u': ex.pack(up(maximum/u)),
         'fits_2m38': maximum < epsilon,

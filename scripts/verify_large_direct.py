@@ -54,17 +54,21 @@ SOURCE_FILES = {
     'src/experimental/lanes.rs': '40502418e5f024c8a4a522b52e1a9b226e126906bf9aca14496fd56c336d6f32',
 }
 FAST_FUNCTIONS = {
-    'mills_fast': 'a38617929a68dc6a799e5cb7c0c86bc43141849e9f69b673ba4b0cc6d914a119',
-    'fast_pair_impl': 'c6242010d9d618829a704f102dc9ef878b0a0486aaa7f480c76b7734b8d3f7b5',
+    'mills_fast': '78af8b69bcbd6a5ced95d45a03ac7a61a5dece11da386eb9c336a0d64165b8ca',
+    'fast_pair_impl': 'd252df351d482d6f6ec10f0b006b5a691bbcbb3ce588573e146f95723f9c096a',
     'mills_fast_pair': '8e1deeb5de3e24aaee8e2ee2a53fbf27daa2c6bf07c534fb822fa1bb18c2d28f',
     'eval_fast': '8873a86ffc761a8a1372b33da7c0555301f848597dd53bc02fd7935d6eed210a',
 }
 SIMD_HASH = '65450215ad42e632e66e97a0f2f8229e0934441b50b9fcca483c2cad80f5af75'
-# This reviewed fast checker recomputes the degree-16 model/source arithmetic.
+# This reviewed fast checker recomputes the degree-13 model/source arithmetic.
 # Its certificate is consumed only for functions in FAST_FUNCTIONS, whose
 # current source and constants are compared independently.  No old finalizer
 # or whole-file hash is accepted as evidence for the new finalizer.
 FAST_VERIFIER_HASHES = {
+    # Degree-13 table source/model recomputed with the same residual envelope.
+    'a996f269f620916a88804701d1d495b04cad1265c7f9c6c7504a6cbedbf72028',
+    # Same fast numerical calculation; updated precise-component source binding.
+    '8f0624fb88456589d5ee3f89bd447aeb3371e4a18bcfbbbcefa055944e8b81d7',
     '93325b560759bf6e8f4af17ec513109615ecb0a472195cab70764c69d41f3a59',
     # Same numerical calculation, scoped to fast-component source and caller
     # premises; finalizer/routing bindings are owned by this direct checker.
@@ -75,7 +79,7 @@ FAST_VERIFIER_HASHES = {
 # reviewed source bridge to regenerate the same fast-component certificate.
 FAST_CERTIFICATE_FIELDS = ('maximum_residual_error', 'maximum_residual_error_in_u',
                            'table_errors', 'asymptotic_error', 'boxes', 'coefficient_identity')
-FAST_CERTIFICATE_PAYLOAD_HASH = '4c61185b937995a6251afc5baea833c64574c51700e8dab294706896070a55d1'
+FAST_CERTIFICATE_PAYLOAD_HASH = 'b15b040380e65c999e17a3f7e1046e576a8cd6847284e42207cddd2d892e68c8'
 
 FINISH_SOURCE = """fn finish_direct(x: f64, pe: Precise) -> f64 {
     let yy = val(pe.y);
@@ -101,6 +105,20 @@ NORMAL_LOG_SOURCE = """fn log_positive_normal_price(b: f64) -> DD {
     }
     let t = two(m.ln(), 0.0);
     add(scale(LN2, e as f64), t)
+}"""
+
+LOG_STEP3_SOURCE = """fn log_step3(a: f64, x: f64, e: &Eval) -> f64 {
+    let n = -e.f / e.df;
+    let d = e.df;
+    let h = e.h;
+    let iy = 1.0 / e.y;
+    let iy2 = iy * iy;
+    let h1 = -1.0 - x * iy * iy2 + (x * x - 2.0 * a) * iy2 * iy2;
+    let a2 = h - d;
+    let a3 = h1 + a2 * (h - 2.0 * d);
+    let num = (0.5 * a2).mul_add(n, 1.0);
+    let den = n.mul_add((a3 / 6.0).mul_add(n, a2), 1.0);
+    n * num / den
 }"""
 
 
@@ -194,7 +212,7 @@ class Ball:
 
 
 class Poly:
-    """Tiny exact polynomial ring in (lambda, alpha, beta, gamma)."""
+    """Tiny exact polynomial ring in four named-at-call-site variables."""
     def __init__(self, terms=None):
         self.terms = {k: F(v) for k, v in (terms or {}).items() if v}
 
@@ -233,6 +251,9 @@ class Poly:
 
     __rmul__ = __mul__
 
+    def __truediv__(self, divisor):
+        return self * (F(1) / F(divisor))
+
     def __pow__(self, power):
         result = Poly.constant(1)
         for _ in range(power):
@@ -250,6 +271,42 @@ class Poly:
 
     def __eq__(self, other):
         return isinstance(other, Poly) and self.terms == other.terms
+
+
+def symbolic_log_step3():
+    """Check Householder d=3 and its local inverse series in exact arithmetic.
+
+    For g=1/f, 3*g''/g''' is the update. With n=-f/f',
+    A=f''/f' and B=f'''/f', it is n*(1+A*n/2)/(1+A*n+B*n²/6).
+    This establishes the ideal formula, not its global convergence or a
+    one-step residual bound. The source-level safeguard supplies termination.
+    """
+    n, a, b, c = [Poly({tuple(int(i == j) for i in range(4)): F(1)})
+                  for j in range(4)]
+    numerator = n*(1+a*n/2)
+    denominator = 1+a*n+b*n**2/6
+    # After substituting f=-n*f', f^4*g'''=-f'^3*(6+6An+Bn²),
+    # while f^3*g''=f'^2*(2+An). Cross-multiply the reciprocal formula.
+    assert numerator*(6+6*a*n+b*n**2) == 3*n*(2+a*n)*denominator
+    inverse_cubic = n-a*n**2/2+(a**2/2-b/6)*n**3
+    residual = inverse_cubic*denominator-numerator
+    assert all(key[0] >= 4 for key in residual.terms)
+    # Normalize f(x+step)/f'=-n+step+A*step²/2+B*step³/6+C*step⁴/24+...
+    root_residual = (-n+inverse_cubic+a*inverse_cubic**2/2
+                     +b*inverse_cubic**3/6+c*inverse_cubic**4/24)
+    assert all(key[0] >= 4 for key in root_residual.terms)
+    # If d=f' and H=p''/p', then d'=d*(H-d). Differentiation gives
+    # A=H-d and B=H'+A*(H-2d), as implemented by a2 and a3.
+    d, h, h1 = a, b, c
+    a2 = h-d
+    assert h1-d*a2+a2**2 == h1+a2*(h-2*d)
+    return {'method': 'Householder reciprocal derivative d=3',
+            'ideal_update': 'n*(1+A*n/2)/(1+A*n+B*n*n/6)',
+            'local_order': 4,
+            'identities_checked': ['3*(1/f)second/(1/f)third',
+                                   'inverse Taylor agreement through n^3',
+                                   'log third derivative ratio'],
+            'global_one_step_bound_claimed': False}
 
 
 def symbolic_and_shape(ex):
@@ -378,7 +435,104 @@ def accepted_region_shape(ex, gate_bits):
             'fourth_derivative_bound_over_factorial': fourth}
 
 
-def finish_ledger(gate_bits, shape):
+
+def reduced_precise_budget(mp):
+    """Degree-16 model and exact existing compensated source rounding ledger.
+
+    Leading zero Horner stages are exact for finite qhi: zero times qhi plus
+    zero stays zero; inserting c16 is exact. Thus a zero-padded degree-24
+    evaluation has the same nonzero source operations as the shortened
+    table lane. The inherited ledger additionally charges harmless NU terms
+    for those omitted stages. Mixed lanes similarly zero-pad 18 and 17.
+    All three compensated stages, low-argument correction, degree-18
+    asymptotic evaluation and DD pair formation retain their source order.
+    """
+    ex, up, u, nu = mp.ex, mp.up, mp.U, mp.NU
+    rows, asym = mp.coefficients()
+    # Recheck the inherited analytic magnitude premises consumed by
+    # finish_low and the asymptotic/source-order ledgers.
+    assert max(abs(v) for row in rows for pair in row for v in pair) < 2**80
+    assert max(map(abs, asym)) < 2**80
+    assert ex.expq(F(51, 100))[1] < F(5, 3)
+    assert F(5, 3)*(F(4, 3)+F(1001, 1000)) < 4
+    assert 1+F(1001, 1000)*4 < 6
+    assert (1+F(1001, 1000)**2)*4+F(1001, 1000) < 12
+    assert 68*u/(1-u)+u/4+nu < F(1, 1000)
+    shortened = [row[:17]+[(F(0), F(0))]*8 for row in rows]
+    plain = [mp.table_bound(k, shortened[k+12], False) for k in range(-2, 32)]
+    low = [mp.table_bound(k, shortened[k+12], True) for k in range(-2, 32)]
+    ap, al = mp.asymptotic_bound(asym, False), mp.asymptotic_bound(asym, True)
+    # Exact coefficient difference to the represented degree-24 polynomial;
+    # local centering rounding can enlarge the mathematical radius slightly.
+    radius = up((1+u)/4+nu)
+    tails = [up(sum(abs(rows[k+12][j][0])*radius**j for j in range(17, 25)))
+             for k in range(-2, 32)]
+
+    def reachable(bounds, lo, hi, asym_bound):
+        # floor(2*zhi) selects [k/2,(k+1)/2). A lower endpoint at
+        # a seam cannot reach the preceding cell. This matters at x=0.
+        choices = [bounds[k+2] for k in range(-2, 32)
+                   if hi >= F(k, 2) and lo < F(k+1, 2)]
+        if hi >= 16:
+            choices.append(asym_bound)
+        assert choices
+        return max(choices)
+
+    def boxes(accepted):
+        result = []
+        for upper, count in ((False, 82), (True, 32)):
+            for i in range(count):
+                left = F(i, 2)+(0 if upper else -40)
+                right = left+F(1, 2)
+                if accepted and not upper:
+                    if left >= F(7, 20):
+                        continue
+                    right = min(right, F(7, 20))
+                xa = min(abs(left), abs(right)) if left*right > 0 else F(0)
+                xb = max(abs(left), abs(right))
+                yl, yh = ex.sqrtq(xa*xa+20)[0], ex.sqrtq(xb*xb+2834)[1]
+                sl = ex.sqrtq(left*left+20)[0]+left
+                zl, zr = (left, right) if upper else (-right, -left)
+                ef = reachable(plain, zl, zr, ap)
+                ey = reachable(low, yl*(1-2*u)-nu, yh*(1+2*u)+nu, al)
+                ed = up(ef+ey+65536*u*u+nu)
+                if upper:
+                    dl = ex.mills(right)[0]+yh/(yh*yh+1)
+                elif right <= 0:
+                    v = -left
+                    dl = 20/((ex.sqrtq(v*v+20)[1]+v)*(v*v+23))
+                else:
+                    dl = F(3, 4)
+                tail = (reachable(tails, zl, zr, F(0))+
+                        reachable(tails, yl*(1-2*u)-nu, yh*(1+2*u)+nu, F(0)))
+                result.append({'upper': upper, 'x': [str(left), str(right)],
+                               'D_error_over_u': ex.pack(up(ed/u)),
+                               'error_over_D_in_u': ex.pack(up(ed/dl/u)),
+                               'error_over_s_in_u': ex.pack(up(ed/sl/u)),
+                               'deleted_tail_over_s_in_u': ex.pack(up(tail/sl/u))})
+        return result
+
+    global_boxes, accepted_boxes = boxes(False), boxes(True)
+    value = lambda record, key: F(record[key]['exact'])
+    gd = max(value(b, 'error_over_D_in_u') for b in global_boxes)*u
+    ad = max(value(b, 'error_over_D_in_u') for b in accepted_boxes)*u
+    ass = max(value(b, 'error_over_s_in_u') for b in accepted_boxes)*u
+    tail = max(value(b, 'deleted_tail_over_s_in_u') for b in accepted_boxes)
+    assert gd < u and ad < u/8 and ass < u/32
+    assert tail < F(11, 1000)
+    return {'global_max_error_over_D': gd,
+            'accepted_max_error_over_D': ad, 'accepted_max_error_over_s': ass,
+            'accepted_deleted_tail_over_s_in_u': tail,
+            'table_degree': 16, 'asymptotic_degree': 18,
+            'compensated_stages': 3,
+            'method': 'exact binary64 coefficient fractions, continuous Taylor/moment enclosure and source-order rounding; no input samples',
+            'table_plain_errors': [ex.pack(v) for v in plain],
+            'table_low_errors': [ex.pack(v) for v in low],
+            'asymptotic_plain_error': ex.pack(ap), 'asymptotic_low_error': ex.pack(al),
+            'global_boxes': global_boxes, 'accepted_boxes': accepted_boxes}
+
+
+def finish_ledger(gate_bits, shape, mills):
     """Full new source rounding, stringent residual transfer, output rounding."""
     u, nu = U, NU
     gate = F(1, 2**gate_bits)
@@ -390,7 +544,7 @@ def finish_ledger(gate_bits, shape):
     assert radius == gate + F(1, 2**38)
     zmag = (1 + u) * (gate + nu) / (1 - u) + nu
     assert zmag < radius
-    true_s_error, true_y_error, true_d_error = 512*u*u, 64*u*u, u/8
+    true_s_error, true_y_error, true_d_error = 512*u*u, 64*u*u, mills['accepted_max_error_over_D']
     # D and s, their rounded values, and their quotient are positive normal.
     # The source sign multiplication is exact. Bound both ratio directions.
     num_upper = (1 + true_d_error) * (1 + u)
@@ -428,7 +582,7 @@ def finish_ledger(gate_bits, shape):
     computed_delta_mag = delta_mag + delta.err
     # Exact-cubic derivative/|lambda| <= 1+2r+(11/2)r^2 here.
     lipschitz = 1+2*c2_mag*radius+3*c3_mag*radius*radius
-    weighted_pair_error = mu*F(376, 1000)*u + (u/64)/(1-u/8) + 200000*u*u + 256*nu
+    weighted_pair_error = mu*F(376, 1000)*u + mills['accepted_max_error_over_s']/(1-true_d_error) + 200000*u*u + 256*nu
     # val(residual) is one RN sum, including when its result is subnormal.
     weighted_val_error = mu * (u*(gate+nu)/(1-u) + nu)
     residual_to_delta = lipschitz * (weighted_pair_error + weighted_val_error)
@@ -530,9 +684,22 @@ def main():
     unchanged = ('dd', 'two', 'neg', 'add', 'sub', 'mul', 'scale', 'divide', 'val',
                  'frexp', 'scalbn', 'logdd', 'raw_stage', 'reduced_cap',
                  'mills_precise_pair', 'geometry', 'residual', 'reduced_grid',
-                 'grid_dd', 'fixed_scaled_cap', 'resolve_cap', 'physical_step7', 'log_step5')
+                 'grid_dd', 'fixed_scaled_cap', 'resolve_cap')
     for name in unchanged:
         assert canonical(function_body(current, name)) == canonical(function_body(original, name)), ('inherited source order', name)
+    # The shortened physical predictor is exactly the existing recurrence
+    # stopped at order five. Its accuracy is not a premise: guarded precise
+    # handoff and the preserved bracket/bisection fallback certify completion.
+    predictor = function_body(original, 'physical_step7').replace('physical_step7(', 'physical_step5(')
+    for name in ('g5', 'g6', 'v5', 'w5', 'v6', 'w6', 'q6', 'q7', 'c6', 'c7'):
+        predictor, count = re.subn(r'    let '+name+r' = .*?;\n', '', predictor, flags=re.S)
+        assert count == 1, ('physical recurrence reduction', name)
+    predictor = predictor.replace('n * c6 / c7', 'n * c4 / c5')
+    assert canonical(function_body(current, 'physical_step5')) == canonical(predictor), 'unmodeled physical predictor'
+    # Changing the proposal cannot weaken the bracket or precise handoff. Its
+    # exact source/formula is still bound to make the reviewed algorithm explicit.
+    assert canonical(function_body(current, 'log_step3')) == canonical(LOG_STEP3_SOURCE), 'unmodeled log iteration'
+    log_iteration = symbolic_log_step3()
     # Retain the full integer implementation, not merely its caller hashes.
     def integer_source(text):
         return canonical(text[text.index('struct U256'):text.index('fn reduced_grid')])
@@ -546,6 +713,9 @@ def main():
     assert precise == canonical(function_body(original, 'precise')), 'unmodeled precise evaluator change'
 
     pair = canonical(function_body(current, 'precise_pair_impl'))
+    pair = replace_once(pair, 'ifA{ifi<=16{ca[i]}else{0.0}}', 'ifA{ca[i]}')
+    pair = replace_once(pair, 'ifB{ifi<=16{cb[i]}else{0.0}}', 'ifB{cb[i]}')
+    pair = replace_once(pair, 'letn=ifA&&B{16}else{18};', 'letn=ifA||B{24}else{18};')
     pair = replace_once(pair, '(z,q,iv,(k+12)asusize)', '(z,q,iv,&M_COEFF[(k+12)asusize])')
     pair = replace_once(pair,
         'let(za,qa,ia,ka)=prepare(a,A);let(zb,qb,ib,kb)=prepare(b,B);letca=&M_COEFF_HI[ka];letcb=&M_COEFF_HI[kb];letla=&M_COEFF_LO[ka];letlb=&M_COEFF_LO[kb];',
@@ -581,6 +751,8 @@ def main():
     prefix = solve.removesuffix('finish_direct(x,pe)}')
     assert prefix != solve, 'unreviewed finish call'
     prefix = replace_once(prefix, 'log_positive_normal_price(b)', 'logdd(dd(b))')
+    prefix = replace_once(prefix, 'physical_step5(', 'physical_step7(')
+    prefix = replace_once(prefix, 'log_step3(', 'log_step5(')
     prefix = replace_once(prefix, matched_gate.group(1), '0x3e90000000000000')
     assert prefix == old_solve.split('letyy=val(pe.y);', 1)[0], 'unreviewed target/routing/iteration source'
     # accepted_region_shape uses precisely this lower routing predicate and
@@ -625,8 +797,10 @@ def main():
     inherited = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(inherited)
     assert inherited.ROOT.resolve() == reference
-    geometry, residual = inherited.geometry(), inherited.residual()
+    geometry, residual, reciprocal = inherited.geometry(), inherited.residual(), inherited.reciprocal()
     ex = inherited.ex
+    assert qfield(reciprocal['inverse_relative_error_in_u2']) < 4
+    assert qfield(reciprocal['square_relative_error_in_u2']) < 32
     assert qfield(geometry['y_relative_error_in_u2']) < 64
     assert qfield(geometry['negative_s_relative_error_in_u2']) < 64
     assert qfield(geometry['positive_s_relative_error_in_u2']) < 64
@@ -647,11 +821,18 @@ def main():
     assert 22*ex.ln2[1] < 100
     assert ex.expq(-F(3, 2))[0] > F(1, 5)
     assert 115*ex.ln2[1] < 80
-    mills = json.loads((reference/'results/global_proof/mills_budget.json').read_text())
-    assert qfield(mills['max_error_over_D_in_u']) < F(1, 8)
-    assert qfield(mills['max_error_over_s_in_u']) < F(1, 64)
-    for name, wanted in mills['source_sha256'].items():
-        assert digest((reference/name).read_bytes()) == wanted
+    mills_spec = importlib.util.spec_from_file_location('bound_compensated_mills', reference/'scripts/prove_global_mills.py')
+    inherited_mills = importlib.util.module_from_spec(mills_spec)
+    mills_spec.loader.exec_module(inherited_mills)
+    assert inherited_mills.ROOT.resolve() == reference
+    mills = reduced_precise_budget(inherited_mills)
+    # High-component localization uses the wider whole-iteration bracket.
+    # The source arithmetic term is unchanged; the D-model defect is new.
+    global_d = mills['global_max_error_over_D']
+    precise_high = 1600*U + global_d/(1-global_d) + F(376, 1000)*U + 200000*U*U
+    assert precise_high < F(1, 2**38)
+    assert mills['accepted_max_error_over_D'] < U/8
+    assert mills['accepted_max_error_over_s'] < U/32
     cap = json.loads((reference/'results/global_rho_proof/large_cap_bound.json').read_text())
     domain = json.loads((reference/'results/global_proof/large_domain_integer.json').read_text())
     assert domain['k_integer_range'] == [6, 1021]
@@ -681,8 +862,8 @@ def main():
         # gate, so both entrances to finish_direct share the localized segment.
         assert F(1, 2**34)+fast_error+F(1, 2**38) < F(1, 2**gate)
         shape = accepted_region_shape(ex, gate)
-        lower = finish_ledger(gate, shape)
-        upper = finish_ledger(gate, shape)
+        lower = finish_ledger(gate, shape, mills)
+        upper = finish_ledger(gate, shape, mills)
         transferred = target_transfer(lower['raw_relative_error'], upper['raw_relative_error'], cap, ex)
         assert transferred['maximum'] < F(9, 10), ('rho budget failure', gate)
         all_bounds[str(gate)] = {
@@ -706,8 +887,13 @@ def main():
                     'global_bracket_fourth_derivative_bound_over_factorial': pack(global_fourth),
                     'accepted_region_fourth_derivative_bound_over_factorial': pack(F(33, 20)),
                     'identities_checked_symbolically': ['s2/s=lambda*(1-alpha)', 's3/s=lambda*(1-3*alpha+2*alpha^2+beta)', 's4/s=lambda*(1-7*alpha+12*alpha^2+6*beta-6*alpha^3-7*alpha*beta-gamma)']},
+        'recomputed_reduced_precise_mills': {k: pack(v) if isinstance(v, F) else v for k, v in mills.items()},
+        'recomputed_precise_high_error': pack(precise_high),
+        'physical_predictor': 'Source-identical physical recurrence truncated at order five; no one-step residual premise, preserved safeguards and forced bisections establish stopping',
+        'log_iteration': {**log_iteration, 'termination': 'Preserved finite/in-bracket guards, reliable residual signs and forced bisections; no proposal accuracy premise'},
+        'recomputed_inherited_source_reciprocal': reciprocal,
         'recomputed_inherited_source_geometry': geometry,
-        'recomputed_inherited_source_residual': residual,
+        'recomputed_inherited_source_residual_arithmetic': {k: residual[k] for k in ('LN2_constant_error_in_u2', 'LOGK_constant_error_in_u2', 'residual_arithmetic_error_in_u2')},
         'recomputed_inherited_target_logarithm': {k: pack(v) for k, v in target_logarithm.items()},
         'source_sha256': {'src/experimental/large.rs': digest(current.encode()), **SOURCE_FILES},
         'reference_bindings': REFERENCE_FILES,
@@ -723,7 +909,7 @@ def main():
             'Existing source-identical target/cap/routing lemmas place the internal root inside the preserved brackets',
             'Source-identical integer cap arithmetic and external Lefevre-Muller Property 1 separation theorem',
             'Target-to-original-price finite transfer via Black vega log concavity and correlated gap/condition-number bounds'],
-        'limits': 'No end-to-end Lean or vendor-libm proof; source hashes and finite tests are not themselves mathematical guarantees. New finalizer source rounding and target budgets are recomputed, not inferred from old finalizer rho.',
+        'limits': 'No end-to-end Lean or vendor-libm proof; source hashes and finite tests are not themselves mathematical guarantees. Degree-16 compensated-Mills, finalizer source rounding and target budgets are recomputed, not inferred from old finalizer rho. Order-five predictor has no universal one-step handoff guarantee; safeguarded stopping is preserved.',
     }
     path = args.out or source/'target/proof/large-direct-proof.json'
     path.parent.mkdir(parents=True, exist_ok=True)

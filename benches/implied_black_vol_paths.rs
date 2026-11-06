@@ -250,6 +250,14 @@ fn run<S: BenchmarkSolver>(
         // ordinary a<5 mixed workload. No price evaluation is timed.
         for (name, a, b) in [
             ("central_deferred", 0.1, 0.05),
+            ("central_shape1", 0.1, 0.03),
+            ("central_shape2", 0.1, 0.017),
+            ("central_extended", 0.4, 0.04),
+            (
+                "rank_small2",
+                f64::from_bits(0x3fe2_922b_4695_6c82),
+                f64::from_bits(0x3f82_8114_0937_8762),
+            ),
             ("wing_seed", 1.0, 1e-10),
             ("finite_seed", 5.0, 0.005),
             ("large_lower", 20.0, (-10.0_f64).exp() * 0.1),
