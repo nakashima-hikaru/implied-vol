@@ -152,6 +152,8 @@ jobs:
           grep 'VOLFI_SELECTIVE_ORACLE' rounding-results/selective-test.txt >> "$GITHUB_STEP_SUMMARY"
           cargo test --features volfi_book --test experimental_adaptive_seeds volfi_book_endpoint_independent_reference_seams -- --nocapture > rounding-results/endpoint-test.txt 2>&1
           grep 'VOLFI_ENDPOINT_ORACLE' rounding-results/endpoint-test.txt >> "$GITHUB_STEP_SUMMARY"
+          cargo test --features volfi_book --test experimental_adaptive_seeds volfi_book_extended_b_independent_reference_seams -- --nocapture > rounding-results/extra-b-test.txt 2>&1
+          grep 'VOLFI_EXTRA_B_ORACLE' rounding-results/extra-b-test.txt >> "$GITHUB_STEP_SUMMARY"
 
           cat rounding-results/summary.txt >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
@@ -215,6 +217,16 @@ jobs:
             --features volfi_book --flags "$RUSTFLAGS" \
             --output rsqrt-results/endpoint-vs-experimental.json > rsqrt-results/endpoint-vs-experimental.md
           cat rsqrt-results/endpoint-vs-experimental.md >> "$GITHUB_STEP_SUMMARY"
+          python3 benches/compare_volfi.py "$VOLFI_BENCH" --reference volfi-endpoint --candidate volfi-b17 \
+            --iterations 150000 --rounds 2 --blocks 4 \
+            --features volfi_book --flags "$RUSTFLAGS" \
+            --output rsqrt-results/b17.json > rsqrt-results/b17.md
+          cat rsqrt-results/b17.md >> "$GITHUB_STEP_SUMMARY"
+          python3 benches/compare_volfi.py "$VOLFI_BENCH" --reference volfi-endpoint --candidate volfi-b18 \
+            --iterations 150000 --rounds 2 --blocks 4 \
+            --features volfi_book --flags "$RUSTFLAGS" \
+            --output rsqrt-results/b18.json > rsqrt-results/b18.md
+          cat rsqrt-results/b18.md >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

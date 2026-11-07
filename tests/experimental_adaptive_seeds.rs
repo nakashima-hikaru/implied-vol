@@ -7000,6 +7000,34 @@ fn volfi_book_endpoint_independent_reference_seams() {
 
 #[cfg(feature = "volfi_book")]
 #[test]
+fn volfi_book_extended_b_independent_reference_seams() {
+    let mut covered = [0_usize; 2];
+    let mut max_rho = [0.0_f64; 2];
+    for &bits in REFERENCES {
+        let [h, b, hi, lo, eta] = bits.map(f64::from_bits);
+        for (i, candidate) in [
+            implied_vol::volfi_book::chart_total_volatility_b17(h, b),
+            implied_vol::volfi_book::chart_total_volatility_b18(h, b),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            if let Some(s) = candidate {
+                let rho = (((s - hi) - lo).abs() / hi) / eta;
+                assert!(s > 0.0 && s.is_finite() && rho.is_finite(), "h={h}, b={b}");
+                max_rho[i] = max_rho[i].max(rho);
+                covered[i] += 1;
+            }
+        }
+    }
+    assert_eq!(covered, [495, 495]);
+    eprintln!(
+        "VOLFI_EXTRA_B_ORACLE|covered={covered:?}|max_rho={max_rho:?}"
+    );
+}
+
+#[cfg(feature = "volfi_book")]
+#[test]
 fn volfi_book_dump_direct_oracle_rows() {
     if std::env::var_os("VOLFI_TRACE").is_none() {
         return;

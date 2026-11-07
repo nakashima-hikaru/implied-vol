@@ -5,12 +5,14 @@ use std::io::{self, BufRead};
 
 type Inverse = fn(f64, f64) -> Option<f64>;
 
-const VARIANTS: [(&str, Inverse); 5] = [
+const VARIANTS: [(&str, Inverse); 7] = [
     ("book", volfi_book::chart_total_volatility),
     ("rsqrt", volfi_book::chart_total_volatility_rsqrt),
     ("selective", volfi_book::chart_total_volatility_selective),
     ("endpoint", volfi_book::chart_total_volatility_endpoint),
     ("twofold", volfi_book::chart_total_volatility_compensated),
+    ("b17", volfi_book::chart_total_volatility_b17),
+    ("b18", volfi_book::chart_total_volatility_b18),
 ];
 
 #[derive(Default)]
@@ -28,7 +30,7 @@ fn from_bits(s: &str) -> f64 {
 
 fn main() {
     let mut total = 0_usize;
-    let mut stats: [Stats; 5] = std::array::from_fn(|_| Stats::default());
+    let mut stats: [Stats; 7] = std::array::from_fn(|_| Stats::default());
     for line in io::stdin().lock().lines() {
         let line = line.expect("read stress case");
         if line.starts_with('#') || line.is_empty() {

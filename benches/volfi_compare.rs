@@ -1,8 +1,8 @@
 //! Scalar/whole-book A/B benchmark: identical prepared quotes and one process.
 //! Use with benches/compare_volfi.py, not the historical cross-host README values.
 use implied_vol::solver::{
-    BlackSolver, Experimental, VolfiBook, VolfiBookCompensated, VolfiBookEndpoint, VolfiBookRsqrt,
-    VolfiBookSelective, VolfiBookSinh,
+    BlackSolver, Experimental, VolfiBook, VolfiBookB17, VolfiBookB18, VolfiBookCompensated,
+    VolfiBookEndpoint, VolfiBookRsqrt, VolfiBookSelective, VolfiBookSinh,
 };
 use implied_vol::{
     DefaultSpecialFn, ImpliedBlackVolatility, ImpliedBlackVolatilityNormalised,
@@ -196,6 +196,8 @@ fn main() {
         "volfi-compensated" => run::<VolfiBookCompensated>(case, n, rounds),
         "volfi-selective" => run::<VolfiBookSelective>(case, n, rounds),
         "volfi-endpoint" => run::<VolfiBookEndpoint>(case, n, rounds),
+        "volfi-b17" => run::<VolfiBookB17>(case, n, rounds),
+        "volfi-b18" => run::<VolfiBookB18>(case, n, rounds),
         _ => panic!("unknown solver: {solver}"),
     }
 }

@@ -94,8 +94,11 @@ macro_rules! rows_a {
 }
 
 macro_rules! rows_b {
-    ($q:expr, $w:expr) => {{
-        let mut sum = 0.0_f64;
+    ($q:expr, $w:expr) => {
+        rows_b!($q, $w, 0.0_f64)
+    };
+    ($q:expr, $w:expr, $initial:expr) => {{
+        let mut sum = $initial;
         sum = sum.mul_add($q, poly_b::<16>($w));
         sum = sum.mul_add($q, poly_b::<15>($w));
         sum = sum.mul_add($q, poly_b::<14>($w));
@@ -145,6 +148,7 @@ fn direct_b<
     const COMPENSATED: bool,
     const SELECTIVE: bool,
     const ENDPOINT: bool,
+    const EXTRA_B_ROWS: usize,
 >(
     h: f64,
     a: f64,
@@ -181,7 +185,18 @@ fn direct_b<
     let z = h * h * INV_4PI2;
     let sp = (1.0 + z).sqrt() + 1.0;
     let q = z / (sp * sp);
-    let sum = rows_b!(q, w);
+    // The original v0.3.1 uses rows 1..=16, but upstream's generated
+    // table also includes rows 17 and 18. Only the additional high-order
+    // factors change; rows 16..1 retain their FMA order.
+    let sum = if EXTRA_B_ROWS == 0 {
+        rows_b!(q, w)
+    } else if EXTRA_B_ROWS == 1 {
+        rows_b!(q, w, poly_b::<17>(w))
+    } else {
+        const { assert!(EXTRA_B_ROWS == 2); }
+        let initial = q.mul_add(poly_b::<18>(w), poly_b::<17>(w));
+        rows_b!(q, w, initial)
+    };
     (t * q).mul_add(sum, t)
 }
 
@@ -192,7 +207,7 @@ fn direct_b<
 #[must_use]
 #[inline]
 pub fn chart_total_volatility(h: f64, b: f64) -> Option<f64> {
-    chart_impl::<false, false, false, false, false>(h, b)
+    chart_impl::<false, false, false, false, false, 0>(h, b)
 }
 
 /// Alternative algebraically equivalent coordinate:
@@ -203,7 +218,7 @@ pub fn chart_total_volatility(h: f64, b: f64) -> Option<f64> {
 #[must_use]
 #[inline]
 pub fn chart_total_volatility_sinh(h: f64, b: f64) -> Option<f64> {
-    chart_impl::<true, false, false, false, false>(h, b)
+    chart_impl::<true, false, false, false, false, 0>(h, b)
 }
 
 /// Research chart variant with a single FMA-based inverse-sqrt correction
@@ -211,7 +226,7 @@ pub fn chart_total_volatility_sinh(h: f64, b: f64) -> Option<f64> {
 #[must_use]
 #[inline]
 pub fn chart_total_volatility_rsqrt(h: f64, b: f64) -> Option<f64> {
-    chart_impl::<false, true, false, false, false>(h, b)
+    chart_impl::<false, true, false, false, false, 0>(h, b)
 }
 
 /// High-precision chart-coordinate prototype; evaluated only when opted in.
@@ -219,7 +234,7 @@ pub fn chart_total_volatility_rsqrt(h: f64, b: f64) -> Option<f64> {
 #[must_use]
 #[inline]
 pub fn chart_total_volatility_compensated(h: f64, b: f64) -> Option<f64> {
-    chart_impl::<false, true, true, false, false>(h, b)
+    chart_impl::<false, true, true, false, false, 0>(h, b)
 }
 
 /// Localized twofold Clenshaw research variant, retaining the same A/B
@@ -227,14 +242,31 @@ pub fn chart_total_volatility_compensated(h: f64, b: f64) -> Option<f64> {
 #[must_use]
 #[inline]
 pub fn chart_total_volatility_selective(h: f64, b: f64) -> Option<f64> {
-    chart_impl::<false, true, false, true, false>(h, b)
+    chart_impl::<false, true, false, true, false, 0>(h, b)
 }
 
 /// Localized FMA error-free transformations without general twofold arithmetic.
 #[must_use]
 #[inline]
 pub fn chart_total_volatility_endpoint(h: f64, b: f64) -> Option<f64> {
-    chart_impl::<false, true, false, false, true>(h, b)
+    chart_impl::<false, true, false, false, true, 0>(h, b)
+}
+
+/// Endpoint compensation with row 17 of the upstream conformal series.
+///
+/// Research variant only: precision is empirically tested, not certified over
+/// every admissible `(h, b)`.
+#[must_use]
+#[inline]
+pub fn chart_total_volatility_b17(h: f64, b: f64) -> Option<f64> {
+    chart_impl::<false, true, false, false, true, 1>(h, b)
+}
+
+/// Endpoint compensation with rows 17 and 18 of the upstream conformal series.
+#[must_use]
+#[inline]
+pub fn chart_total_volatility_b18(h: f64, b: f64) -> Option<f64> {
+    chart_impl::<false, true, false, false, true, 2>(h, b)
 }
 
 #[inline]
@@ -244,6 +276,7 @@ fn chart_impl<
     const COMPENSATED: bool,
     const SELECTIVE: bool,
     const ENDPOINT: bool,
+    const EXTRA_B_ROWS: usize,
 >(
     h: f64,
     b: f64,
@@ -276,7 +309,7 @@ fn chart_impl<
         if !(a <= A_MAX && h <= 4.0 && h <= a.mul_add(0.16, 0.85)) {
             return None;
         }
-        direct_b::<REFINED_RSQRT, COMPENSATED, SELECTIVE, ENDPOINT>(h, a)
+        direct_b::<REFINED_RSQRT, COMPENSATED, SELECTIVE, ENDPOINT, EXTRA_B_ROWS>(h, a)
     };
     (v > 0.0 && v.is_finite()).then_some(v)
 }
@@ -329,6 +362,22 @@ pub fn implied_total_volatility_selective(h: f64, b: f64) -> f64 {
 #[inline]
 pub fn implied_total_volatility_endpoint(h: f64, b: f64) -> f64 {
     chart_total_volatility_endpoint(h, b)
+        .unwrap_or_else(|| crate::experimental::implied_total_volatility(h, b))
+}
+
+/// Region-B 17-term endpoint chart, with the existing Experimental fallback.
+#[must_use]
+#[inline]
+pub fn implied_total_volatility_b17(h: f64, b: f64) -> f64 {
+    chart_total_volatility_b17(h, b)
+        .unwrap_or_else(|| crate::experimental::implied_total_volatility(h, b))
+}
+
+/// Region-B 18-term endpoint chart, with the existing Experimental fallback.
+#[must_use]
+#[inline]
+pub fn implied_total_volatility_b18(h: f64, b: f64) -> f64 {
+    chart_total_volatility_b18(h, b)
         .unwrap_or_else(|| crate::experimental::implied_total_volatility(h, b))
 }
 

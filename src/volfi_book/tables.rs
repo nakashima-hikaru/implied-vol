@@ -156,7 +156,7 @@ pub(super) const NWRowA_OFF: [usize; 16] = [0, 1, 2, 4, 7, 11, 16, 22, 29, 37, 4
 pub(super) const NWRowA_DEG: [usize; 16] = [0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
 
 #[rustfmt::skip]
-pub(super) const NWRowB_OFF: [usize; 17] = [0, 0, 1, 3, 6, 10, 15, 21, 28, 36, 45, 55, 66, 78, 91, 105, 120];
+pub(super) const NWRowB_OFF: [usize; 19] = [0, 0, 1, 3, 6, 10, 15, 21, 28, 36, 45, 55, 66, 78, 91, 105, 120, 136, 153];
 
 #[rustfmt::skip]
-pub(super) const NWRowB_DEG: [usize; 17] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+pub(super) const NWRowB_DEG: [usize; 19] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
