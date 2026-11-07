@@ -164,7 +164,7 @@ jobs:
               if len(exes) != 1:
                   raise RuntimeError(f"expected one {label} executable, got {exes}")
               with open(os.environ["GITHUB_ENV"], "a") as env:
-                  env.write(f"{label.upper()}_BENCH={Path(exes[0]).resolve()}\\n")
+                  env.write(f"{label.upper()}_BENCH={Path(exes[0]).resolve()}\n")
           PY
           rustc -vV > results/rustc.txt
           lscpu > results/cpu.txt
