@@ -27,23 +27,26 @@ const TWO_PI: f64 = 6.283_185_307_179_586;
 const A_MAX: f64 = 700.0;
 const INV_4PI2: f64 = 2.533_029_591_058_444_3e-2;
 
-#[inline]
-fn clenshaw(coef: &[f64], x: f64) -> f64 {
+// Keep all coefficient indices and row degrees compile-time constants as in
+// volfi's C++ templates. The former runtime-indexed loop prevented LLVM from
+// seeing the straight-line structure of the original whole-book chart.
+#[inline(always)]
+fn clenshaw<const N: usize>(coef: &[f64; N], x: f64) -> f64 {
     let x2 = 2.0 * x;
     let mut e0 = 0.0;
     let mut e1 = 0.0;
-    for &c in coef[1..].iter().rev() {
-        let next = x2.mul_add(e0, c) - e1;
+    for i in (1..N).rev() {
+        let next = x2.mul_add(e0, coef[i]) - e1;
         e1 = e0;
         e0 = next;
     }
     x.mul_add(e0, coef[0]) - e1
 }
 
-#[inline]
-fn poly_a(row: usize, y: f64) -> f64 {
-    let offset = NWRowA_OFF[row];
-    let degree = NWRowA_DEG[row];
+#[inline(always)]
+fn poly_a<const ROW: usize>(y: f64) -> f64 {
+    let offset = NWRowA_OFF[ROW];
+    let degree = NWRowA_DEG[ROW];
     let mut p = NW_P[offset];
     for j in 1..=degree {
         p = p.mul_add(y, NW_P[offset + j]);
@@ -51,15 +54,63 @@ fn poly_a(row: usize, y: f64) -> f64 {
     p
 }
 
-#[inline]
-fn poly_b(row: usize, w: f64) -> f64 {
-    let offset = NWRowB_OFF[row];
-    let degree = NWRowB_DEG[row];
+#[inline(always)]
+fn poly_b<const ROW: usize>(w: f64) -> f64 {
+    let offset = NWRowB_OFF[ROW];
+    let degree = NWRowB_DEG[ROW];
     let mut p = NW_D[offset];
     for j in 1..degree {
         p = p.mul_add(w, NW_D[offset + j]);
     }
     p * w
+}
+
+// Unroll the outer dimension (each row is a separate monomorphization).
+// Within each row the Horner FMA sequence and scalar accumulator are identical
+// to the original Rust port; only integer indexing/control are removed.
+macro_rules! rows_a {
+    ($x:expr, $y:expr) => {{
+        let mut sum = 0.0_f64;
+        sum = sum.mul_add($x, poly_a::<15>($y));
+        sum = sum.mul_add($x, poly_a::<14>($y));
+        sum = sum.mul_add($x, poly_a::<13>($y));
+        sum = sum.mul_add($x, poly_a::<12>($y));
+        sum = sum.mul_add($x, poly_a::<11>($y));
+        sum = sum.mul_add($x, poly_a::<10>($y));
+        sum = sum.mul_add($x, poly_a::<9>($y));
+        sum = sum.mul_add($x, poly_a::<8>($y));
+        sum = sum.mul_add($x, poly_a::<7>($y));
+        sum = sum.mul_add($x, poly_a::<6>($y));
+        sum = sum.mul_add($x, poly_a::<5>($y));
+        sum = sum.mul_add($x, poly_a::<4>($y));
+        sum = sum.mul_add($x, poly_a::<3>($y));
+        sum = sum.mul_add($x, poly_a::<2>($y));
+        sum = sum.mul_add($x, poly_a::<1>($y));
+        sum
+    }};
+}
+
+macro_rules! rows_b {
+    ($q:expr, $w:expr) => {{
+        let mut sum = 0.0_f64;
+        sum = sum.mul_add($q, poly_b::<16>($w));
+        sum = sum.mul_add($q, poly_b::<15>($w));
+        sum = sum.mul_add($q, poly_b::<14>($w));
+        sum = sum.mul_add($q, poly_b::<13>($w));
+        sum = sum.mul_add($q, poly_b::<12>($w));
+        sum = sum.mul_add($q, poly_b::<11>($w));
+        sum = sum.mul_add($q, poly_b::<10>($w));
+        sum = sum.mul_add($q, poly_b::<9>($w));
+        sum = sum.mul_add($q, poly_b::<8>($w));
+        sum = sum.mul_add($q, poly_b::<7>($w));
+        sum = sum.mul_add($q, poly_b::<6>($w));
+        sum = sum.mul_add($q, poly_b::<5>($w));
+        sum = sum.mul_add($q, poly_b::<4>($w));
+        sum = sum.mul_add($q, poly_b::<3>($w));
+        sum = sum.mul_add($q, poly_b::<2>($w));
+        sum = sum.mul_add($q, poly_b::<1>($w));
+        sum
+    }};
 }
 
 #[inline]
@@ -69,10 +120,7 @@ fn direct_a(h: f64, a: f64) -> f64 {
     let t = h / a0;
     let x = t * t;
     let y = a0 * a0;
-    let mut sum = 0.0_f64;
-    for row in (1..=15).rev() {
-        sum = sum.mul_add(x, poly_a(row, y));
-    }
+    let sum = rows_a!(x, y);
     (t * x).mul_add(sum, t)
 }
 
@@ -89,10 +137,7 @@ fn direct_b(h: f64, a: f64) -> f64 {
     let z = h * h * INV_4PI2;
     let sp = (1.0 + z).sqrt() + 1.0;
     let q = z / (sp * sp);
-    let mut sum = 0.0_f64;
-    for row in (1..=16).rev() {
-        sum = sum.mul_add(q, poly_b(row, w));
-    }
+    let sum = rows_b!(q, w);
     (t * q).mul_add(sum, t)
 }
 
