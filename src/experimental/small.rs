@@ -3,6 +3,8 @@
 mod central;
 mod constants;
 mod direct_d;
+#[cfg(test)]
+mod rank3_tests;
 mod upper;
 use crate::experimental::lanes::F64x2;
 use crate::experimental::math::inverse_norm_cdf;
@@ -290,14 +292,42 @@ fn rank_seed_shape<
     let half = LANES / 2;
     assert!(rank <= half, "rank factors");
     let mut values = [0.0; 8];
-    for k in (0..LANES).step_by(2) {
-        let z = F64x2::splat(if k < half { x } else { y });
-        let n = if k < half { X_DEGREE } else { Y_DEGREE };
-        let mut v = F64x2::new(c[n * LANES + k], c[n * LANES + k + 1]);
-        for j in (0..n).rev() {
-            v = v.mul_add(z, F64x2::new(c[j * LANES + k], c[j * LANES + k + 1]));
+    if rank == 3 && LANES == 8 {
+        // Evaluate the two live paired factors with the original SIMD Horner
+        // chains. The third x/y factors use independent scalar fused chains;
+        // the fourth pair is dead for rank three and need not be evaluated.
+        for k in [0, half] {
+            let z = F64x2::splat(if k == 0 { x } else { y });
+            let n = if k == 0 { X_DEGREE } else { Y_DEGREE };
+            let mut v = F64x2::new(c[n * LANES + k], c[n * LANES + k + 1]);
+            for j in (0..n).rev() {
+                v = v.mul_add(z, F64x2::new(c[j * LANES + k], c[j * LANES + k + 1]));
+            }
+            values[k..k + 2].copy_from_slice(&v.to_array());
         }
-        values[k..k + 2].copy_from_slice(&v.to_array());
+        let mut last_x = c[X_DEGREE * LANES + 2];
+        for j in (0..X_DEGREE).rev() {
+            last_x = fma(last_x, x, c[j * LANES + 2]);
+        }
+        values[2] = last_x;
+
+        let mut last_y = c[Y_DEGREE * LANES + half + 2];
+        for j in (0..Y_DEGREE).rev() {
+            last_y = fma(last_y, y, c[j * LANES + half + 2]);
+        }
+        values[half + 2] = last_y;
+    } else {
+        // Rank-two tables already use four lanes. Full-rank tables retain
+        // the original degree-specific two-lane Horner evaluations.
+        for k in (0..LANES).step_by(2) {
+            let z = F64x2::splat(if k < half { x } else { y });
+            let n = if k < half { X_DEGREE } else { Y_DEGREE };
+            let mut v = F64x2::new(c[n * LANES + k], c[n * LANES + k + 1]);
+            for j in (0..n).rev() {
+                v = v.mul_add(z, F64x2::new(c[j * LANES + k], c[j * LANES + k + 1]));
+            }
+            values[k..k + 2].copy_from_slice(&v.to_array());
+        }
     }
     let mut v = values[0] * values[half];
     for k in 1..rank {
