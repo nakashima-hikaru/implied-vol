@@ -125,6 +125,7 @@ fn direct_a(h: f64, a: f64) -> f64 {
 }
 
 #[inline]
+#[allow(clippy::suboptimal_flops)] // Retain the analysed unfused correction order.
 fn direct_b<const REFINED_RSQRT: bool>(h: f64, a: f64) -> f64 {
     let root = a.sqrt();
     let mut u = root.recip();
