@@ -59,7 +59,9 @@ fn mul(a: Pair, b: Pair) -> Pair {
 /// high-precision evaluation of the entire Chebyshev polynomial.
 #[inline(always)]
 fn clenshaw<const N: usize, const LOW_STAGES: usize>(coefficients: &[f64; N], x: f64) -> Pair {
-    const { assert!(LOW_STAGES < N); }
+    const {
+        assert!(LOW_STAGES < N);
+    }
     let x2 = x + x;
     let mut fast0 = 0.0_f64;
     let mut fast1 = 0.0_f64;
