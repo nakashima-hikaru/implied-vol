@@ -63,7 +63,7 @@ fn direct_a(h: f64, a: f64) -> f64 {
     let t = h / a0;
     let x = t * t;
     let y = a0 * a0;
-    let mut sum = 0.0;
+    let mut sum = 0.0_f64;
     for row in (1..=15).rev() {
         sum = sum.mul_add(x, poly_a(row, y));
     }
@@ -83,7 +83,7 @@ fn direct_b(h: f64, a: f64) -> f64 {
     let z = h * h * INV_4PI2;
     let sp = (1.0 + z).sqrt() + 1.0;
     let q = z / (sp * sp);
-    let mut sum = 0.0;
+    let mut sum = 0.0_f64;
     for row in (1..=16).rev() {
         sum = sum.mul_add(q, poly_b(row, w));
     }
