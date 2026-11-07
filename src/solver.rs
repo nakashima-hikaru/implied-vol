@@ -54,6 +54,10 @@ pub struct Experimental;
 #[cfg(feature = "volfi_book")]
 pub struct VolfiBook;
 
+/// Research variant of VolfiBook using the exact sinh-coordinate identity.
+#[cfg(feature = "volfi_book")]
+pub struct VolfiBookSinh;
+
 impl<SpFn: SpecialFn> sealed::Sealed for Hybrid<SpFn> {}
 impl<SpFn: SpecialFn> sealed::Sealed for Jaeckel<SpFn> {}
 #[cfg(feature = "flashiv")]
@@ -66,6 +70,11 @@ impl sealed::Sealed for Experimental {
 
 #[cfg(feature = "volfi_book")]
 impl sealed::Sealed for VolfiBook {
+    const MINIMUM_TIME_VALUE: f64 = 0.0;
+    const CHECK_ROUNDED_INTERIOR_CAP: bool = false;
+}
+#[cfg(feature = "volfi_book")]
+impl sealed::Sealed for VolfiBookSinh {
     const MINIMUM_TIME_VALUE: f64 = 0.0;
     const CHECK_ROUNDED_INTERIOR_CAP: bool = false;
 }
@@ -147,6 +156,24 @@ impl BlackSolver for Experimental {
             return Some(f64::INFINITY);
         }
         let s = crate::experimental::implied_total_volatility(x.abs(), beta);
+        (s.is_finite() && s > 0.0).then_some(s)
+    }
+}
+
+#[cfg(feature = "volfi_book")]
+impl BlackSolver for VolfiBookSinh {
+    #[inline]
+    fn implied_total_volatility(x: f64, beta: f64) -> Option<f64> {
+        if !valid_input(x, beta) {
+            return None;
+        }
+        if beta == 0.0 {
+            return Some(0.0);
+        }
+        if x == 0.0 && beta == 1.0 {
+            return Some(f64::INFINITY);
+        }
+        let s = crate::volfi_book::implied_total_volatility_sinh(x.abs(), beta);
         (s.is_finite() && s > 0.0).then_some(s)
     }
 }

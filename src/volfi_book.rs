@@ -103,15 +103,35 @@ fn direct_b(h: f64, a: f64) -> f64 {
 #[must_use]
 #[inline]
 pub fn chart_total_volatility(h: f64, b: f64) -> Option<f64> {
+    chart_impl::<false>(h, b)
+}
+
+/// Alternative algebraically equivalent coordinate:
+/// a = log1p(2*sinh(h/2)/b). This avoids both exp(h/2) and expm1(h).
+///
+/// On the stated chart the region inequalities imply a > h, which is exactly
+/// the strict Black cap condition b < exp(-h/2) in real arithmetic.
+#[must_use]
+#[inline]
+pub fn chart_total_volatility_sinh(h: f64, b: f64) -> Option<f64> {
+    chart_impl::<true>(h, b)
+}
+
+#[inline]
+fn chart_impl<const SINH: bool>(h: f64, b: f64) -> Option<f64> {
     if !(h >= H_FLOOR && h <= 16.5 && b > 0.0 && b.is_finite()) {
         return None;
     }
-    let c = b * (0.5 * h).exp();
-    if !(c > 0.0 && c < 1.0) {
-        return None;
-    }
     // a is volfi's intrinsic coordinate, not log-moneyness h.
-    let ratio = h.exp_m1() / c;
+    let ratio = if SINH {
+        2.0 * (0.5 * h).sinh() / b
+    } else {
+        let c = b * (0.5 * h).exp();
+        if !(c > 0.0 && c < 1.0) {
+            return None;
+        }
+        h.exp_m1() / c
+    };
     if !ratio.is_finite() {
         return None;
     }
@@ -138,6 +158,14 @@ pub fn chart_total_volatility(h: f64, b: f64) -> Option<f64> {
 #[inline]
 pub fn implied_total_volatility(h: f64, b: f64) -> f64 {
     chart_total_volatility(h, b)
+        .unwrap_or_else(|| crate::experimental::implied_total_volatility(h, b))
+}
+
+/// Research variant using the hyperbolic-sine intrinsic coordinate.
+#[must_use]
+#[inline]
+pub fn implied_total_volatility_sinh(h: f64, b: f64) -> f64 {
+    chart_total_volatility_sinh(h, b)
         .unwrap_or_else(|| crate::experimental::implied_total_volatility(h, b))
 }
 
