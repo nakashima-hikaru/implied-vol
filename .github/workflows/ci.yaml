@@ -234,6 +234,11 @@ jobs:
             --features volfi_book --flags "$RUSTFLAGS" \
             --output rsqrt-results/b17-final.json > rsqrt-results/b17-final.md
           cat rsqrt-results/b17-final.md >> "$GITHUB_STEP_SUMMARY"
+          python3 benches/compare_volfi.py "$VOLFI_BENCH" --reference experimental --candidate volfi-b17-final \
+            --iterations 150000 --rounds 2 --blocks 4 \
+            --features volfi_book --flags "$RUSTFLAGS" \
+            --output rsqrt-results/b17-final-vs-experimental.json > rsqrt-results/b17-final-vs-experimental.md
+          cat rsqrt-results/b17-final-vs-experimental.md >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
