@@ -118,7 +118,7 @@ def read_rust_outputs(path: Path | None) -> dict[tuple[int, int], Decimal]:
     if path is None:
         return {}
     results = {}
-    for h, b, vol in re.findall(r"VOLFI\\|([0-9a-f]{16})\\|([0-9a-f]{16})\\|([0-9a-f]{16})", path.read_text()):
+    for h, b, vol in re.findall(r"VOLFI\|([0-9a-f]{16})\|([0-9a-f]{16})\|([0-9a-f]{16})", path.read_text()):
         key = int(h, 16), int(b, 16)
         if key in results:
             raise ValueError(f"duplicate runtime output {key}")
