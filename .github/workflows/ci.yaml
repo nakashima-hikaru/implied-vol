@@ -129,3 +129,52 @@ jobs:
         with:
           name: hybrid-lbr-${{ matrix.mode }}
           path: benchmark-results/
+
+  volfi-optimized-bench:
+    name: Volfi Book const-row throughput experiment (temporary)
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'codex/volfi-book-prototype-20261107'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      RUSTFLAGS: -C target-cpu=native -C target-feature=+fma
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Compile same executable
+        shell: bash
+        run: |
+          mkdir -p study-results
+          cargo bench --bench volfi_compare --features volfi_book \
+            --no-run --message-format=json > study-results/build.jsonl
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          artifacts = (json.loads(x) for x in Path("study-results/build.jsonl").read_text().splitlines())
+          exes = [x["executable"] for x in artifacts if x.get("reason") == "compiler-artifact"
+                  and x["target"]["name"] == "volfi_compare" and x.get("executable")]
+          if len(exes) != 1: raise RuntimeError(exes)
+          with open(os.environ["GITHUB_ENV"], "a") as env:
+              env.write("VOLFI_BENCH=" + str(Path(exes[0]).resolve()) + "\n")
+          PY
+          rustc -vV > study-results/rustc.txt
+          lscpu > study-results/cpu.txt
+      - name: Benchmark all fixed and mixed workloads
+        shell: bash
+        run: |
+          python3 -m unittest discover -s benches -p test_compare_volfi.py
+          cargo test --features volfi_book --test experimental_adaptive_seeds \
+            volfi_book_ -- --nocapture > study-results/accuracy.log 2>&1
+          python3 benches/compare_volfi.py "$VOLFI_BENCH" \
+            --iterations 150000 --rounds 2 --blocks 4 \
+            --features volfi_book --flags "$RUSTFLAGS" \
+            --reference experimental --candidate volfi-book \
+            --output study-results/volfi.json > study-results/summary.md
+          cat study-results/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: volfi-specialized-scalar
+          path: study-results/
