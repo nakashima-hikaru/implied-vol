@@ -64,7 +64,7 @@ fn poly_b(row: usize, w: f64) -> f64 {
 
 #[inline]
 fn direct_a(h: f64, a: f64) -> f64 {
-    let g = clenshaw(&NW_G0, a.mul_add(0.318_309_886_183_790_67, -1.0));
+    let g = clenshaw(&NW_G0, a.mul_add(0.318_309_886_183_790_7, -1.0));
     let a0 = a * g;
     let t = h / a0;
     let x = t * t;
