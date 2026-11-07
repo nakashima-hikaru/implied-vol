@@ -98,7 +98,8 @@ and Rust's standard `exp_m1` / `ln_1p` replace volfi's vectorizable custom
 transcendental kernels. This feature does **not** change the default solver.
 
 ```toml
-implied-vol = { version = "2.1", features = ["volfi_book"] }
+# Local checkout of this research branch; volfi_book is not yet published to crates.io.
+implied-vol = { path = "../implied-vol", features = ["volfi_book"] }
 ```
 
 ```rust
