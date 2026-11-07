@@ -146,6 +146,8 @@ jobs:
           python3 scripts/study_volfi_rounding.py --rust-outputs rounding-results/runtime.txt --output rounding-results/analysis.json > rounding-results/summary.txt
           cargo test --features volfi_book --test experimental_adaptive_seeds volfi_book_rsqrt_independent_reference_seams -- --nocapture > rounding-results/rsqrt-test.txt 2>&1
           grep 'VOLFI_RSQRT_ORACLE' rounding-results/rsqrt-test.txt >> "$GITHUB_STEP_SUMMARY"
+          cargo test --features volfi_book --test experimental_adaptive_seeds volfi_book_compensated_independent_reference_seams -- --nocapture > rounding-results/compensated-test.txt 2>&1
+          grep 'VOLFI_COMPENSATED_ORACLE' rounding-results/compensated-test.txt >> "$GITHUB_STEP_SUMMARY"
 
           cat rounding-results/summary.txt >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
@@ -189,6 +191,11 @@ jobs:
             --features volfi_book --flags "$RUSTFLAGS" \
             --output rsqrt-results/paired.json > rsqrt-results/summary.md
           cat rsqrt-results/summary.md >> "$GITHUB_STEP_SUMMARY"
+          python3 benches/compare_volfi.py "$VOLFI_BENCH" --reference volfi-book --candidate volfi-compensated \
+            --iterations 150000 --rounds 2 --blocks 4 \
+            --features volfi_book --flags "$RUSTFLAGS" \
+            --output rsqrt-results/compensated.json > rsqrt-results/compensated.md
+          cat rsqrt-results/compensated.md >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

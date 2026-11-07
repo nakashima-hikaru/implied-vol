@@ -65,6 +65,8 @@ fn poly_b<const ROW: usize>(w: f64) -> f64 {
     p * w
 }
 
+mod compensated;
+
 // Unroll the outer dimension (each row is a separate monomorphization).
 // Within each row the Horner FMA sequence and scalar accumulator are identical
 // to the original Rust port; only integer indexing/control are removed.
@@ -114,10 +116,14 @@ macro_rules! rows_b {
 }
 
 #[inline]
-fn direct_a(h: f64, a: f64) -> f64 {
-    let g = clenshaw(&NW_G0, a.mul_add(0.318_309_886_183_790_7, -1.0));
-    let a0 = a * g;
-    let t = h / a0;
+fn direct_a<const COMPENSATED: bool>(h: f64, a: f64) -> f64 {
+    let (a0, t) = if COMPENSATED {
+        compensated::region_a_scale(h, a)
+    } else {
+        let g = clenshaw(&NW_G0, a.mul_add(0.318_309_886_183_790_7, -1.0));
+        let a0 = a * g;
+        (a0, h / a0)
+    };
     let x = t * t;
     let y = a0 * a0;
     let sum = rows_a!(x, y);
@@ -126,7 +132,7 @@ fn direct_a(h: f64, a: f64) -> f64 {
 
 #[inline]
 #[allow(clippy::suboptimal_flops)] // Retain the analysed unfused correction order.
-fn direct_b<const REFINED_RSQRT: bool>(h: f64, a: f64) -> f64 {
+fn direct_b<const REFINED_RSQRT: bool, const COMPENSATED: bool>(h: f64, a: f64) -> f64 {
     let root = a.sqrt();
     let mut u = root.recip();
     if REFINED_RSQRT {
@@ -141,11 +147,15 @@ fn direct_b<const REFINED_RSQRT: bool>(h: f64, a: f64) -> f64 {
         let correction = reciprocal_residual - (0.5 * square_residual) * (u * u);
         u = u.mul_add(correction, u);
     }
-    let f1 = clenshaw(
-        &NW_F1,
-        u.mul_add(5.537_929_048_854_298, -1.209_314_043_451_270_6),
-    );
-    let pp = u * f1;
+    let pp = if COMPENSATED {
+        compensated::region_b_scale(a)
+    } else {
+        let f1 = clenshaw(
+            &NW_F1,
+            u.mul_add(5.537_929_048_854_298, -1.209_314_043_451_270_6),
+        );
+        u * f1
+    };
     let t = h * pp;
     let w = pp * pp;
     let z = h * h * INV_4PI2;
@@ -162,7 +172,7 @@ fn direct_b<const REFINED_RSQRT: bool>(h: f64, a: f64) -> f64 {
 #[must_use]
 #[inline]
 pub fn chart_total_volatility(h: f64, b: f64) -> Option<f64> {
-    chart_impl::<false, false>(h, b)
+    chart_impl::<false, false, false>(h, b)
 }
 
 /// Alternative algebraically equivalent coordinate:
@@ -173,7 +183,7 @@ pub fn chart_total_volatility(h: f64, b: f64) -> Option<f64> {
 #[must_use]
 #[inline]
 pub fn chart_total_volatility_sinh(h: f64, b: f64) -> Option<f64> {
-    chart_impl::<true, false>(h, b)
+    chart_impl::<true, false, false>(h, b)
 }
 
 /// Research chart variant with a single FMA-based inverse-sqrt correction
@@ -181,11 +191,22 @@ pub fn chart_total_volatility_sinh(h: f64, b: f64) -> Option<f64> {
 #[must_use]
 #[inline]
 pub fn chart_total_volatility_rsqrt(h: f64, b: f64) -> Option<f64> {
-    chart_impl::<false, true>(h, b)
+    chart_impl::<false, true, false>(h, b)
+}
+
+/// High-precision chart-coordinate prototype; evaluated only when opted in.
+/// Validated on existing finite reference fixtures, not globally certified.
+#[must_use]
+#[inline]
+pub fn chart_total_volatility_compensated(h: f64, b: f64) -> Option<f64> {
+    chart_impl::<false, true, true>(h, b)
 }
 
 #[inline]
-fn chart_impl<const SINH: bool, const REFINED_RSQRT: bool>(h: f64, b: f64) -> Option<f64> {
+fn chart_impl<const SINH: bool, const REFINED_RSQRT: bool, const COMPENSATED: bool>(
+    h: f64,
+    b: f64,
+) -> Option<f64> {
     // Both shipped direct charts imply h <= 4: region A has h <= 0.35*2pi
     // and region B explicitly imposes h <= 4.
     if !(h >= H_FLOOR && h <= 4.0 && b > 0.0 && b.is_finite()) {
@@ -209,12 +230,12 @@ fn chart_impl<const SINH: bool, const REFINED_RSQRT: bool>(h: f64, b: f64) -> Op
         if h > 0.35 * a {
             return None;
         }
-        direct_a(h, a)
+        direct_a::<COMPENSATED>(h, a)
     } else {
         if !(a <= A_MAX && h <= 4.0 && h <= a.mul_add(0.16, 0.85)) {
             return None;
         }
-        direct_b::<REFINED_RSQRT>(h, a)
+        direct_b::<REFINED_RSQRT, COMPENSATED>(h, a)
     };
     (v > 0.0 && v.is_finite()).then_some(v)
 }
@@ -243,6 +264,14 @@ pub fn implied_total_volatility_sinh(h: f64, b: f64) -> f64 {
 #[inline]
 pub fn implied_total_volatility_rsqrt(h: f64, b: f64) -> f64 {
     chart_total_volatility_rsqrt(h, b)
+        .unwrap_or_else(|| crate::experimental::implied_total_volatility(h, b))
+}
+
+/// Compensated research route with Rust Experimental fallback.
+#[must_use]
+#[inline]
+pub fn implied_total_volatility_compensated(h: f64, b: f64) -> f64 {
+    chart_total_volatility_compensated(h, b)
         .unwrap_or_else(|| crate::experimental::implied_total_volatility(h, b))
 }
 
