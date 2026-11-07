@@ -254,3 +254,21 @@ The [adaptive-predictor report](adaptive-physical-improvements.md) records the
   the inverse-Gaussian representation.
 - [FlashIV](https://arxiv.org/abs/2605.29102v1), log-price Householder inversion.
 - Li and Lee, [equation 42 and seed coefficients](https://mpra.ub.uni-muenchen.de/6867/1/MPRA_paper_6867.pdf).
+
+## Volfi Book: experimental direct inverse charts
+
+The optional `volfi_book` feature imports the BSD-3-Clause whole-book
+A/B chart from `wol-fi/volfi` (pinned in the research report), with existing
+Rust Experimental as fallback outside the chart. The original full
+four-chart volfi inverter and its AVX/GPU math functions are **not** ported.
+The `VolfiBookSinh` variant uses the exact identity
+`a = log1p(2*sinh(h/2)/b)` instead of upstream's
+`a = log1p(expm1(h)/(b*exp(h/2)))`.
+
+This is an opt-in research comparison **not covered by Experimental's
+source-bound conditional accuracy proof**. For 975 independent-reference
+seed-seam fixtures, the direct chart covers 495 and reaches
+`rho_J=2.17876517`; therefore it does not satisfy the `rho_J<1`
+target even over all tested accepted inputs. Scalar A/B timings on
+synthetic inputs also regress versus Experimental. See
+[the reproducible study](volfi-book-study.md).

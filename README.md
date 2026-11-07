@@ -61,9 +61,11 @@ let volatility = option.calculate_with::<Jaeckel>().unwrap();
 | `solver::Jaeckel` | Always | Let's Be Rational |
 | `solver::FlashIv` | `flashiv` feature | FlashIV paper's fixed-count Algorithm 1 |
 | `solver::Experimental` | `experimental` feature | Author's own implementation |
+| `solver::VolfiBook` | `volfi_book` feature | Research port of volfi's whole-book direct charts, with Experimental fallback |
+| `solver::VolfiBookSinh` | `volfi_book` feature | Research-only equivalent-coordinate variant |
 
-Solver features add types and leave the default solver selection unchanged. Both
-optional solvers can be enabled together:
+Solver features add types and leave the default solver selection unchanged. FlashIv
+and Experimental can be enabled together:
 
 ```toml
 implied-vol = { version = "2.1", features = ["flashiv", "experimental"] }
@@ -83,8 +85,40 @@ Black solver selection does not change pricing or Bachelier inversion.
 |---|---|
 | `flashiv` | Makes `solver::FlashIv` available |
 | `experimental` | Makes `solver::Experimental` available |
+| `volfi_book` | Adds the experimental `VolfiBook` and `VolfiBookSinh` solvers, and enables `experimental` |
 | `fma` | Enables optional FMA arithmetic in shared numerical kernels |
 | `cxx_bench` | Builds the bundled C++ comparison implementation; requires a C++ compiler |
+
+### Experimental volfi whole-book research
+
+On this source branch, `volfi_book` enables an **opt-in research port of volfi's
+whole-book direct A/B charts**. It is **not the complete four-chart C++ volfi
+engine**: inputs outside the direct charts use the existing Experimental solver,
+and Rust's standard `exp_m1` / `ln_1p` replace volfi's vectorizable custom
+transcendental kernels. This feature does **not** change the default solver.
+
+```toml
+implied-vol = { version = "2.1", features = ["volfi_book"] }
+```
+
+```rust
+use implied_vol::{ImpliedBlackVolatilityNormalised, solver::VolfiBook};
+
+let option = ImpliedBlackVolatilityNormalised::builder()
+    .log_moneyness(-0.2).normalised_price(0.05)
+    .build().unwrap();
+let s = option.calculate_with::<VolfiBook>().unwrap();
+assert!(s > 0.0);
+```
+
+On pinned synthetic, scalar x86-64 Linux workloads, this research port is
+**slower** than `Experimental`. Independent high-precision fixtures contain
+a directly routed point with `rho_J > 1`, so **it is not a substitute
+for the existing Experimental precision target**. The report below includes
+source attribution, workload coverage, full same-host measurements, accuracy
+and numerical limitations.
+
+- [Volfi whole-book port: research results and reproducibility](docs/volfi-book-study.md)
 
 ## Performance and precision
 
