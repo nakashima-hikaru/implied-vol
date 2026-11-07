@@ -3,17 +3,32 @@
 use implied_vol::volfi_book;
 use std::io::{self, BufRead};
 
+type Inverse = fn(f64, f64) -> Option<f64>;
+
+const VARIANTS: [(&str, Inverse); 5] = [
+    ("book", volfi_book::chart_total_volatility),
+    ("rsqrt", volfi_book::chart_total_volatility_rsqrt),
+    ("selective", volfi_book::chart_total_volatility_selective),
+    ("endpoint", volfi_book::chart_total_volatility_endpoint),
+    ("twofold", volfi_book::chart_total_volatility_compensated),
+];
+
+#[derive(Default)]
+struct Stats {
+    fails: usize,
+    covered: usize,
+    max_rho: f64,
+    worst: (f64, f64),
+    values: Vec<f64>,
+}
+
 fn from_bits(s: &str) -> f64 {
     f64::from_bits(u64::from_str_radix(s, 16).expect("binary64 hexadecimal bits"))
 }
 
 fn main() {
     let mut total = 0_usize;
-    let mut covered = 0_usize;
-    let mut fails = 0_usize;
-    let mut max_rho = 0.0_f64;
-    let mut worst = (0.0_f64, 0.0_f64);
-    let mut values = Vec::new();
+    let mut stats: [Stats; 5] = std::array::from_fn(|_| Stats::default());
     for line in io::stdin().lock().lines() {
         let line = line.expect("read stress case");
         if line.starts_with('#') || line.is_empty() {
@@ -27,39 +42,48 @@ fn main() {
         let lo = from_bits(parts[3]);
         let eta = from_bits(parts[4]);
         total += 1;
-        let plain = volfi_book::chart_total_volatility(h, b);
-        let refined = volfi_book::chart_total_volatility_endpoint(h, b);
-        assert_eq!(plain.is_some(), refined.is_some(), "chart coverage changed");
-        let Some(s) = refined else {
-            continue;
-        };
-        let rho = (((s - hi) - lo).abs() / hi) / eta;
-        assert!(
-            s.is_finite() && s > 0.0 && rho.is_finite(),
-            "invalid result: {line}"
-        );
-        covered += 1;
-        values.push(rho);
-        if rho >= 1.0 {
-            fails += 1;
-            if fails <= 30 {
-                println!(
-                    "FAIL|h={h:.17e}|b={b:.17e}|rho={rho:.9}|region={}",
-                    parts[5]
-                );
+
+        for (i, &(name, solver)) in VARIANTS.iter().enumerate() {
+            let s = solver(h, b).expect("the chart must cover generated inputs");
+            let rho = (((s - hi) - lo).abs() / hi) / eta;
+            assert!(
+                s.is_finite() && s > 0.0 && rho.is_finite(),
+                "invalid result in {name}: {line}"
+            );
+            let st = &mut stats[i];
+            st.covered += 1;
+            st.values.push(rho);
+            if rho >= 1.0 {
+                st.fails += 1;
+                if st.fails <= 10 {
+                    println!(
+                        "FAIL|variant={name}|h={h:.17e}|b={b:.17e}|rho={rho:.9}|region={}",
+                        parts[5]
+                    );
+                }
+            }
+            if rho > st.max_rho {
+                st.max_rho = rho;
+                st.worst = (h, b);
             }
         }
-        if rho > max_rho {
-            max_rho = rho;
-            worst = (h, b);
+    }
+
+    assert!(total >= 750, "too few reference inputs");
+    for (i, &(name, _)) in VARIANTS.iter().enumerate() {
+        let st = &mut stats[i];
+        assert_eq!(st.covered, total, "chart coverage differs for {name}");
+        st.values.sort_by(f64::total_cmp);
+        let p95 = st.values[(95 * st.values.len()) / 100];
+        println!(
+            "VARIANT|name={name}|total={total}|covered={}|rho_gt_one={}|max_rho={:.9}|p95={p95:.9}|worst_h={:.17e}|worst_b={:.17e}",
+            st.covered, st.fails, st.max_rho, st.worst.0, st.worst.1
+        );
+        if name == "endpoint" {
+            println!(
+                "STRESS|total={total}|covered={}|rho_gt_one={}|max_rho={:.9}|p95={p95:.9}|worst_h={:.17e}|worst_b={:.17e}",
+                st.covered, st.fails, st.max_rho, st.worst.0, st.worst.1
+            );
         }
     }
-    assert!(total >= 750, "too few reference inputs");
-    assert!(covered >= 700, "unexpected direct coverage");
-    values.sort_by(f64::total_cmp);
-    let p95 = values[(95 * values.len()) / 100];
-    println!(
-        "STRESS|total={total}|covered={covered}|rho_gt_one={fails}|max_rho={max_rho:.9}|p95={p95:.9}|worst_h={:.17e}|worst_b={:.17e}",
-        worst.0, worst.1
-    );
 }
