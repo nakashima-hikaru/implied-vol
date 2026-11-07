@@ -34,7 +34,13 @@ fn add(a: Pair, b: Pair) -> Pair {
 
 #[inline(always)]
 fn sub(a: Pair, b: Pair) -> Pair {
-    add(a, Pair { hi: -b.hi, lo: -b.lo })
+    add(
+        a,
+        Pair {
+            hi: -b.hi,
+            lo: -b.lo,
+        },
+    )
 }
 
 #[inline(always)]
@@ -83,10 +89,10 @@ pub(super) fn region_b_scale(a: f64) -> f64 {
     let inv = root.recip();
     let square_residual = (-root).mul_add(root, a);
     let reciprocal_residual = (-root).mul_add(inv, 1.0);
-    let correction =
-        inv * (reciprocal_residual - (0.5 * square_residual) * (inv * inv));
+    let correction = inv * (reciprocal_residual - (0.5 * square_residual) * (inv * inv));
     let u = two_sum(inv, correction);
-    let x = u.hi.mul_add(5.537_929_048_854_298, -1.209_314_043_451_270_6);
+    let x =
+        u.hi.mul_add(5.537_929_048_854_298, -1.209_314_043_451_270_6);
     let f1 = clenshaw(&NW_F1, x);
     let pp = mul(u, f1);
     pp.hi + pp.lo
