@@ -66,6 +66,7 @@ fn poly_b<const ROW: usize>(w: f64) -> f64 {
 }
 
 mod compensated;
+mod endpoint;
 
 // Unroll the outer dimension (each row is a separate monomorphization).
 // Within each row the Horner FMA sequence and scalar accumulator are identical
@@ -116,8 +117,13 @@ macro_rules! rows_b {
 }
 
 #[inline]
-fn direct_a<const COMPENSATED: bool, const SELECTIVE: bool>(h: f64, a: f64) -> f64 {
-    let (a0, t) = if SELECTIVE {
+fn direct_a<const COMPENSATED: bool, const SELECTIVE: bool, const ENDPOINT: bool>(
+    h: f64,
+    a: f64,
+) -> f64 {
+    let (a0, t) = if ENDPOINT {
+        endpoint::region_a_scale(h, a)
+    } else if SELECTIVE {
         compensated::region_a_scale_selective(h, a)
     } else if COMPENSATED {
         compensated::region_a_scale(h, a)
@@ -134,7 +140,12 @@ fn direct_a<const COMPENSATED: bool, const SELECTIVE: bool>(h: f64, a: f64) -> f
 
 #[inline]
 #[allow(clippy::suboptimal_flops)] // Retain the analysed unfused correction order.
-fn direct_b<const REFINED_RSQRT: bool, const COMPENSATED: bool, const SELECTIVE: bool>(
+fn direct_b<
+    const REFINED_RSQRT: bool,
+    const COMPENSATED: bool,
+    const SELECTIVE: bool,
+    const ENDPOINT: bool,
+>(
     h: f64,
     a: f64,
 ) -> f64 {
@@ -152,7 +163,9 @@ fn direct_b<const REFINED_RSQRT: bool, const COMPENSATED: bool, const SELECTIVE:
         let correction = reciprocal_residual - (0.5 * square_residual) * (u * u);
         u = u.mul_add(correction, u);
     }
-    let pp = if SELECTIVE {
+    let pp = if ENDPOINT {
+        endpoint::region_b_scale(a)
+    } else if SELECTIVE {
         compensated::region_b_scale_selective(a)
     } else if COMPENSATED {
         compensated::region_b_scale(a)
@@ -179,7 +192,7 @@ fn direct_b<const REFINED_RSQRT: bool, const COMPENSATED: bool, const SELECTIVE:
 #[must_use]
 #[inline]
 pub fn chart_total_volatility(h: f64, b: f64) -> Option<f64> {
-    chart_impl::<false, false, false, false>(h, b)
+    chart_impl::<false, false, false, false, false>(h, b)
 }
 
 /// Alternative algebraically equivalent coordinate:
@@ -190,7 +203,7 @@ pub fn chart_total_volatility(h: f64, b: f64) -> Option<f64> {
 #[must_use]
 #[inline]
 pub fn chart_total_volatility_sinh(h: f64, b: f64) -> Option<f64> {
-    chart_impl::<true, false, false, false>(h, b)
+    chart_impl::<true, false, false, false, false>(h, b)
 }
 
 /// Research chart variant with a single FMA-based inverse-sqrt correction
@@ -198,7 +211,7 @@ pub fn chart_total_volatility_sinh(h: f64, b: f64) -> Option<f64> {
 #[must_use]
 #[inline]
 pub fn chart_total_volatility_rsqrt(h: f64, b: f64) -> Option<f64> {
-    chart_impl::<false, true, false, false>(h, b)
+    chart_impl::<false, true, false, false, false>(h, b)
 }
 
 /// High-precision chart-coordinate prototype; evaluated only when opted in.
@@ -206,7 +219,7 @@ pub fn chart_total_volatility_rsqrt(h: f64, b: f64) -> Option<f64> {
 #[must_use]
 #[inline]
 pub fn chart_total_volatility_compensated(h: f64, b: f64) -> Option<f64> {
-    chart_impl::<false, true, true, false>(h, b)
+    chart_impl::<false, true, true, false, false>(h, b)
 }
 
 /// Localized twofold Clenshaw research variant, retaining the same A/B
@@ -214,7 +227,14 @@ pub fn chart_total_volatility_compensated(h: f64, b: f64) -> Option<f64> {
 #[must_use]
 #[inline]
 pub fn chart_total_volatility_selective(h: f64, b: f64) -> Option<f64> {
-    chart_impl::<false, true, false, true>(h, b)
+    chart_impl::<false, true, false, true, false>(h, b)
+}
+
+/// Localized FMA error-free transformations without general twofold arithmetic.
+#[must_use]
+#[inline]
+pub fn chart_total_volatility_endpoint(h: f64, b: f64) -> Option<f64> {
+    chart_impl::<false, true, false, false, true>(h, b)
 }
 
 #[inline]
@@ -223,6 +243,7 @@ fn chart_impl<
     const REFINED_RSQRT: bool,
     const COMPENSATED: bool,
     const SELECTIVE: bool,
+    const ENDPOINT: bool,
 >(
     h: f64,
     b: f64,
@@ -250,12 +271,12 @@ fn chart_impl<
         if h > 0.35 * a {
             return None;
         }
-        direct_a::<COMPENSATED, SELECTIVE>(h, a)
+        direct_a::<COMPENSATED, SELECTIVE, ENDPOINT>(h, a)
     } else {
         if !(a <= A_MAX && h <= 4.0 && h <= a.mul_add(0.16, 0.85)) {
             return None;
         }
-        direct_b::<REFINED_RSQRT, COMPENSATED, SELECTIVE>(h, a)
+        direct_b::<REFINED_RSQRT, COMPENSATED, SELECTIVE, ENDPOINT>(h, a)
     };
     (v > 0.0 && v.is_finite()).then_some(v)
 }
@@ -300,6 +321,14 @@ pub fn implied_total_volatility_compensated(h: f64, b: f64) -> f64 {
 #[inline]
 pub fn implied_total_volatility_selective(h: f64, b: f64) -> f64 {
     chart_total_volatility_selective(h, b)
+        .unwrap_or_else(|| crate::experimental::implied_total_volatility(h, b))
+}
+
+/// Endpoint-compensated research solver with Experimental fallback.
+#[must_use]
+#[inline]
+pub fn implied_total_volatility_endpoint(h: f64, b: f64) -> f64 {
+    chart_total_volatility_endpoint(h, b)
         .unwrap_or_else(|| crate::experimental::implied_total_volatility(h, b))
 }
 
