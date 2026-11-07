@@ -12,7 +12,7 @@ struct Pair {
 }
 
 #[inline(always)]
-fn exact(hi: f64) -> Pair {
+const fn exact(hi: f64) -> Pair {
     Pair { hi, lo: 0.0 }
 }
 
@@ -85,6 +85,7 @@ fn clenshaw<const N: usize, const LOW_STAGES: usize>(coefficients: &[f64; N], x:
 /// The division is corrected once with the error of the product and the
 /// low part of A0. This preserves its original uncorrected chart separately.
 #[inline]
+#[allow(clippy::suboptimal_flops)] // The independent residual is intentionally unfused.
 fn region_a_scale_impl<const LOW_STAGES: usize>(h: f64, a: f64) -> (f64, f64) {
     let x = a.mul_add(0.318_309_886_183_790_7, -1.0);
     let g = clenshaw::<23, LOW_STAGES>(&NW_G0, x);
