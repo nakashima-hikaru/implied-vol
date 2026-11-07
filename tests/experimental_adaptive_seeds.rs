@@ -7021,9 +7021,7 @@ fn volfi_book_extended_b_independent_reference_seams() {
         }
     }
     assert_eq!(covered, [495, 495]);
-    eprintln!(
-        "VOLFI_EXTRA_B_ORACLE|covered={covered:?}|max_rho={max_rho:?}"
-    );
+    eprintln!("VOLFI_EXTRA_B_ORACLE|covered={covered:?}|max_rho={max_rho:?}");
 }
 
 #[cfg(feature = "volfi_book")]

@@ -193,7 +193,7 @@ fn direct_b<
     } else if EXTRA_B_ROWS == 1 {
         rows_b!(q, w, poly_b::<17>(w))
     } else {
-        const { assert!(EXTRA_B_ROWS == 2); }
+        debug_assert_eq!(EXTRA_B_ROWS, 2);
         let initial = q.mul_add(poly_b::<18>(w), poly_b::<17>(w));
         rows_b!(q, w, initial)
     };
