@@ -54,7 +54,7 @@ pub struct Experimental;
 #[cfg(feature = "volfi_book")]
 pub struct VolfiBook;
 
-/// Research variant of VolfiBook using the exact sinh-coordinate identity.
+/// Research variant of `VolfiBook` using the exact sinh-coordinate identity.
 #[cfg(feature = "volfi_book")]
 pub struct VolfiBookSinh;
 
