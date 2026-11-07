@@ -269,6 +269,8 @@ This is an opt-in research comparison **not covered by Experimental's
 source-bound conditional accuracy proof**. For 975 independent-reference
 seed-seam fixtures, the direct chart covers 495 and reaches
 `rho_J=2.17876517`; therefore it does not satisfy the `rho_J<1`
-target even over all tested accepted inputs. Scalar A/B timings on
-synthetic inputs also regress versus Experimental. See
+target even over all tested accepted inputs. After compile-time
+specialization of the chart polynomial rows, a chart-only 4,096-quote
+synthetic benchmark improves by 8.40%, but the wider market and full
+API workloads remain slower than Experimental. See
 [the reproducible study](volfi-book-study.md).

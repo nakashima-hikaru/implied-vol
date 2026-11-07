@@ -111,8 +111,10 @@ let s = option.calculate_with::<VolfiBook>().unwrap();
 assert!(s > 0.0);
 ```
 
-On pinned synthetic, scalar x86-64 Linux workloads, this research port is
-**slower** than `Experimental`. Independent high-precision fixtures contain
+With monomorphized polynomial rows, the scalar port is **8.40% faster**
+than `Experimental` on a synthetic 4,096-quote **chart-only** workload,
+but **23.35% slower** on a broader synthetic market workload (and slower
+on fixed single-input paths). Independent high-precision fixtures contain
 a directly routed point with `rho_J > 1`, so **it is not a substitute
 for the existing Experimental precision target**. The report below includes
 source attribution, workload coverage, full same-host measurements, accuracy

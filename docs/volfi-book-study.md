@@ -90,7 +90,7 @@ a finite counterexample to asserting `rho_J<1` for the port; it is not
 a proof that the original C++ author's different numerical implementation
 has the same error at that input.
 
-## Same-host scalar benchmark (original-coordinate port)
+## Initial scalar benchmark: dynamic-indexed Rust polynomial rows
 
 **Runner:** Linux x86-64, Azure AMD EPYC; `rustc 1.99.1` /
 LLVM 23.1.1, `RUSTFLAGS="-C target-cpu=native -C target-feature=+fma"`,
@@ -138,6 +138,60 @@ option prices from a deliberately broader region. Direct coverage of the
 latter is a workload property and **not** a universal market coverage rate.
 This is a scalar **latency** test, not an AVX2/AVX-512 batch throughput or
 end-to-end official volfi port benchmark.
+
+
+## Optimized scalar benchmark: compile-time specialized polynomial rows
+
+The initial port above evaluated `poly_a(row, y)` and `poly_b(row, w)`
+with **runtime row indices**, while upstream volfi uses a template
+instantiation per row. The Rust port now monomorphizes `poly_a::<ROW>`
+and `poly_b::<ROW>` for all 15/16 rows and expands the outer Horner
+chain into fixed calls. The coefficient bits and per-row FMA order are
+unchanged. An explicit exact-bit regression test compares these rows
+against a frozen dynamic evaluator on a grid of `(x,y)` inputs;
+the preceding 975-reference accuracy replay also retains its maximum
+`rho_J`.
+
+A fresh **same-executable** rotating comparison on AMD EPYC 7763,
+rustc 1.99.1, same `-C target-cpu=native -C target-feature=+fma`
+flags and bench LTO, 4 blocks, 2 rounds, 150,000 calls,
+16 samples per solver and case, gives:
+
+| Case | Experimental ns | Specialized VolfiBook ns | Change | Direct accepted |
+|---|---:|---:|---:|---:|
+| book_a | 83.62 | 131.70 | +57.51% | 1/1 |
+| book_b | 188.31 | 194.82 | +3.46% | 1/1 |
+| book_seam | 190.50 | 194.06 | +1.87% | 1/1 |
+| fallback | 188.25 | 190.23 | +1.05% | 0/1 |
+| mixed_book | 188.95 | 173.07 | **-8.40%** | 4096/4096 |
+| mixed_market | 196.68 | 242.60 | +23.35% | 1041/4096 |
+| mixed_full | 218.66 | 258.84 | +18.38% | 1041/4096 |
+
+All four paired blocks for `mixed_book` improve between
+**-8.32% and -8.47%**. All four blocks of `book_a`,
+`book_b`, `book_seam`, `mixed_market` and
+`mixed_full` show higher latency than Experimental. The unchanged
+`fallback` workload has one noisy paired block, so its small
+median regression should not be overinterpreted.
+
+[Optimized benchmark artifact](https://github.com/nakashima-hikaru/implied-vol/actions/runs/42375084283/artifacts/13574499581)
+contains full block-level samples, command provenance, executable
+hash, CPU metadata and the independent-root accuracy log.
+
+The initial dynamic-indexed benchmark above and this specialized
+benchmark ran on *different CI instances*; their absolute ns values
+must **not** be used as a pinned before/after speedup measurement.
+The new row-specialization regression verifies arithmetic identity;
+the revised solver-vs-solver results establish the mixed-book benefit.
+Neither the narrower advantage nor the broader regressions prove
+portable behavior on Apple Silicon or original C++/AVX volfi.
+
+**Interpretation:** At least for all-chart synthetic input populations,
+the optimized scalar approximation may offer a small latency
+advantage. On broader populations, the intrinsic-coordinate
+transcendentals and chart fallback overwhelm the savings. The
+`rho_J>1` accepted-input counterexample still disqualifies
+it as a precision-equivalent replacement.
 
 ## Theory-first follow-up research
 
