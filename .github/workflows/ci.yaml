@@ -175,12 +175,29 @@ jobs:
         shell: bash
         run: |
           python3 -m unittest discover -s benches -p test_compare_volfi.py
+          cargo test --features "${{ matrix.features }}" --test experimental_adaptive_seeds \
+            volfi_book_ -- --nocapture > benchmark-results/accuracy.log 2>&1
+          grep 'adaptive-seam oracle' benchmark-results/accuracy.log >> "$GITHUB_STEP_SUMMARY"
           python3 benches/compare_volfi.py "$VOLFI_BENCH" \
             --iterations 150000 --rounds 2 --blocks 4 \
             --features "${{ matrix.features }}" --flags "$RUSTFLAGS" \
-            --output benchmark-results/volfi.json \
-            > benchmark-results/volfi-summary.md
-          cat benchmark-results/volfi-summary.md >> "$GITHUB_STEP_SUMMARY"
+            --reference experimental --candidate volfi-book \
+            --output benchmark-results/volfi-book.json \
+            > benchmark-results/volfi-book.md
+          python3 benches/compare_volfi.py "$VOLFI_BENCH" \
+            --iterations 150000 --rounds 2 --blocks 4 \
+            --features "${{ matrix.features }}" --flags "$RUSTFLAGS" \
+            --reference experimental --candidate volfi-sinh \
+            --output benchmark-results/volfi-sinh.json \
+            > benchmark-results/volfi-sinh.md
+          python3 benches/compare_volfi.py "$VOLFI_BENCH" \
+            --iterations 150000 --rounds 2 --blocks 4 \
+            --features "${{ matrix.features }}" --flags "$RUSTFLAGS" \
+            --reference volfi-book --candidate volfi-sinh \
+            --output benchmark-results/volfi-sinh-vs-original.json \
+            > benchmark-results/volfi-sinh-vs-original.md
+          cat benchmark-results/volfi-book.md benchmark-results/volfi-sinh.md \
+            benchmark-results/volfi-sinh-vs-original.md >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

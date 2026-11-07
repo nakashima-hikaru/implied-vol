@@ -22,6 +22,8 @@ class ParseTests(unittest.TestCase):
     def test_rotation(self):
         self.assertEqual(bench.rotation(0), ("experimental", "volfi-book", "volfi-book", "experimental"))
         self.assertEqual(bench.rotation(1), ("volfi-book", "experimental", "experimental", "volfi-book"))
+        self.assertEqual(bench.rotation(0, "volfi-book", "volfi-sinh"),
+                         ("volfi-book", "volfi-sinh", "volfi-sinh", "volfi-book"))
 
 
 if __name__ == "__main__":

@@ -11,14 +11,14 @@ import statistics
 import subprocess
 from pathlib import Path
 
-SOLVERS = ("experimental", "volfi-book")
+SOLVERS = ("experimental", "volfi-book", "volfi-sinh")
 CASES = ("book_a", "book_b", "book_seam", "fallback", "mixed_book", "mixed_market", "mixed_full")
 FIELDS = ("case", "round", "ns_per_call", "checksum", "covered", "total")
 
 
-def rotation(block):
-    return ("experimental", "volfi-book", "volfi-book", "experimental") if block % 2 == 0 else (
-        "volfi-book", "experimental", "experimental", "volfi-book"
+def rotation(block, reference="experimental", candidate="volfi-book"):
+    return (reference, candidate, candidate, reference) if block % 2 == 0 else (
+        candidate, reference, reference, candidate
     )
 
 
@@ -51,11 +51,14 @@ def parse_output(stdout, case, solver, rounds):
     return rows
 
 
-def compare(executable, cases, blocks, iterations, rounds):
+def compare(executable, cases, blocks, iterations, rounds, reference="experimental", candidate="volfi-book"):
+    if reference not in SOLVERS or candidate not in SOLVERS or reference == candidate:
+        raise ValueError("unknown or identical comparison solvers")
+    pair = (reference, candidate)
     samples = []
     for case in cases:
         for block in range(blocks):
-            for position, solver in enumerate(rotation(block)):
+            for position, solver in enumerate(rotation(block, reference, candidate)):
                 command = [str(executable), str(iterations), str(rounds),
                            "--case", case, "--solver", solver]
                 result = subprocess.run(command, capture_output=True, text=True, check=False)
@@ -67,39 +70,40 @@ def compare(executable, cases, blocks, iterations, rounds):
     summary = []
     for case in cases:
         group = {solver: [r for r in samples if r["case"] == case and r["solver"] == solver]
-                 for solver in SOLVERS}
-        for solver in SOLVERS:
+                 for solver in pair}
+        for solver in pair:
             rows = group[solver]
             if len(rows) != 2 * blocks * rounds:
                 raise ValueError(f"{case}/{solver}: missing samples")
             if len({(r["block"], r["position"], r["round"]) for r in rows}) != len(rows):
                 raise ValueError(f"{case}/{solver}: duplicate rounds")
-            if any(rotation(r["block"])[r["position"]] != solver for r in rows):
+            if any(rotation(r["block"], reference, candidate)[r["position"]] != solver for r in rows):
                 raise ValueError(f"{case}/{solver}: invalid ABBA order")
             if len({r["checksum"] for r in rows}) != 1:
                 raise ValueError(f"{case}/{solver}: checksum drift")
             if len({(r["covered"], r["total"]) for r in rows}) != 1:
                 raise ValueError(f"{case}/{solver}: case population drift")
-        before, after = (statistics.median(r["ns"] for r in group[s]) for s in SOLVERS)
-        control_coverage = {(r["covered"], r["total"]) for r in group[SOLVERS[0]]}
-        candidate_coverage = {(r["covered"], r["total"]) for r in group[SOLVERS[1]]}
+        before, after = (statistics.median(r["ns"] for r in group[s]) for s in pair)
+        control_coverage = {(r["covered"], r["total"]) for r in group[reference]}
+        candidate_coverage = {(r["covered"], r["total"]) for r in group[candidate]}
         if control_coverage != candidate_coverage:
             raise ValueError(f"{case}: different input coverage between solvers")
         covered, total = control_coverage.pop()
         blocks_percent = []
         for block in range(blocks):
             a, b = [statistics.median(r["ns"] for r in group[s] if r["block"] == block)
-                    for s in SOLVERS]
+                    for s in pair]
             blocks_percent.append(100 * (b / a - 1))
         summary.append({
-            "case": case, "experimental_ns": before, "volfi_book_ns": after,
-            "volfi_vs_experimental_percent": 100 * (after / before - 1),
-            "experimental_over_volfi_speedup": before / after,
+            "case": case, "reference": reference, "candidate": candidate,
+            "reference_ns": before, "candidate_ns": after,
+            "candidate_change_percent": 100 * (after / before - 1),
+            "relative_speedup": before / after,
             "block_changes_percent": blocks_percent,
             "direct_coverage_count": covered, "case_count": total,
             "direct_coverage_ratio": covered / total,
-            "checksum_changed": group[SOLVERS[0]][0]["checksum"] != group[SOLVERS[1]][0]["checksum"],
-            "samples_per_solver": len(group[SOLVERS[0]]),
+            "checksum_changed": group[reference][0]["checksum"] != group[candidate][0]["checksum"],
+            "samples_per_solver": len(group[reference]),
         })
     return samples, summary
 
@@ -114,18 +118,22 @@ def main():
     parser.add_argument("--iterations", type=int, default=150000)
     parser.add_argument("--features", required=True)
     parser.add_argument("--flags", required=True)
+    parser.add_argument("--reference", choices=SOLVERS, default="experimental")
+    parser.add_argument("--candidate", choices=SOLVERS, default="volfi-book")
     args = parser.parse_args()
     if min(args.blocks, args.rounds, args.iterations) <= 0:
         parser.error("nonpositive measurement parameters")
     path = args.executable.resolve()
     digest = hashlib.sha256(path.read_bytes()).hexdigest()
-    samples, summary = compare(path, args.cases, args.blocks, args.iterations, args.rounds)
+    samples, summary = compare(path, args.cases, args.blocks, args.iterations,
+                               args.rounds, args.reference, args.candidate)
     if hashlib.sha256(path.read_bytes()).hexdigest() != digest:
         raise ValueError("executable modified during measurement")
     report = {
         "platform": platform.platform(),
         "rustc": subprocess.check_output(["rustc", "-vV"], text=True),
         "exe": str(path), "sha256": digest, "features": args.features,
+        "reference": args.reference, "candidate": args.candidate,
         "flags": args.flags, "iterations": args.iterations,
         "rounds": args.rounds, "blocks": args.blocks,
         "method": "same executable; same prepared inputs; rotating ABBA/BAAB; warmup outside timing",
@@ -134,11 +142,11 @@ def main():
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
-    print("| Workload | Experimental ns | Volfi Book ns | Change | Direct coverage |")
+    print(f"| Workload | {args.reference} ns | {args.candidate} ns | Change | Direct coverage |")
     print("|---|---:|---:|---:|---:|")
     for r in summary:
-        print(f"| {r['case']} | {r['experimental_ns']:.2f} | {r['volfi_book_ns']:.2f} | "
-              f"{r['volfi_vs_experimental_percent']:+.2f}% | "
+        print(f"| {r['case']} | {r['reference_ns']:.2f} | {r['candidate_ns']:.2f} | "
+              f"{r['candidate_change_percent']:+.2f}% | "
               f"{r['direct_coverage_count']}/{r['case_count']} |")
 
 
