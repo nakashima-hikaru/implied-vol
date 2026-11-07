@@ -6876,3 +6876,36 @@ fn volfi_book_independent_reference_seams() {
         worst.1
     );
 }
+
+#[cfg(feature = "volfi_book")]
+#[test]
+fn volfi_book_sinh_independent_reference_seams() {
+    let mut covered = 0_usize;
+    let mut max_rho = 0.0_f64;
+    let mut max_discrepancy = 0.0_f64;
+    let mut worst = (0.0_f64, 0.0_f64);
+    for &bits in REFERENCES {
+        let [h, b, hi, lo, eta] = bits.map(f64::from_bits);
+        let got = implied_vol::volfi_book::chart_total_volatility_sinh(h, b);
+        if let Some(s) = got {
+            let rho = (((s - hi) - lo).abs() / hi) / eta;
+            assert!(s.is_finite() && s > 0.0 && rho.is_finite() && rho < 64.0,
+                "h={h:e}, b={b:e}, rho_J={rho}, sigma={s:e}");
+            if rho > max_rho {
+                max_rho = rho;
+                worst = (h, b);
+            }
+            if let Some(original) = implied_vol::volfi_book::chart_total_volatility(h, b) {
+                max_discrepancy = max_discrepancy.max(((s - original) / original).abs());
+            }
+            covered += 1;
+        }
+    }
+    assert!(covered >= 40);
+    eprintln!(
+        "volfi_book_sinh adaptive-seam oracle: covered={covered}/{}, max_rho_J={max_rho:.8}, max_relative_change={max_discrepancy:.8e}, worst_h={:.17e}, worst_b={:.17e}",
+        REFERENCES.len(),
+        worst.0,
+        worst.1
+    );
+}

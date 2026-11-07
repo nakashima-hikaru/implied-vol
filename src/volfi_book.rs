@@ -119,7 +119,9 @@ pub fn chart_total_volatility_sinh(h: f64, b: f64) -> Option<f64> {
 
 #[inline]
 fn chart_impl<const SINH: bool>(h: f64, b: f64) -> Option<f64> {
-    if !(h >= H_FLOOR && h <= 16.5 && b > 0.0 && b.is_finite()) {
+    // Both shipped direct charts imply h <= 4: region A has h <= 0.35*2pi
+    // and region B explicitly imposes h <= 4.
+    if !(h >= H_FLOOR && h <= 4.0 && b > 0.0 && b.is_finite()) {
         return None;
     }
     // a is volfi's intrinsic coordinate, not log-moneyness h.
