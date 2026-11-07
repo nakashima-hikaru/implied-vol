@@ -210,8 +210,46 @@ jobs:
             --features volfi_book --flags "$RUSTFLAGS" \
             --output rsqrt-results/endpoint.json > rsqrt-results/endpoint.md
           cat rsqrt-results/endpoint.md >> "$GITHUB_STEP_SUMMARY"
+          python3 benches/compare_volfi.py "$VOLFI_BENCH" --reference experimental --candidate volfi-endpoint \
+            --iterations 150000 --rounds 2 --blocks 4 \
+            --features volfi_book --flags "$RUSTFLAGS" \
+            --output rsqrt-results/endpoint-vs-experimental.json > rsqrt-results/endpoint-vs-experimental.md
+          cat rsqrt-results/endpoint-vs-experimental.md >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: volfi-rsqrt-study
           path: rsqrt-results/
+
+  volfi-generated-oracle:
+    name: Independent mpmath chart-domain stress (temporary)
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'codex/volfi-book-prototype-20261107'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Generate exact-binary64 high-precision roots
+        run: |
+          python3 -m venv /tmp/volfi-stress-venv
+          /tmp/volfi-stress-venv/bin/pip install mpmath==1.3.0
+          mkdir -p stress-results
+          /tmp/volfi-stress-venv/bin/python scripts/volfi_book_stress.py \
+            --output stress-results/inputs.tsv > stress-results/generator.txt
+      - name: Evaluate actual optimized Rust implementation
+        env:
+          RUSTFLAGS: -C target-cpu=native -C target-feature=+fma
+        run: |
+          cargo run --release --example volfi_book_stress --features volfi_book \
+            < stress-results/inputs.tsv > stress-results/summary.txt
+          cat stress-results/summary.txt >> "$GITHUB_STEP_SUMMARY"
+          cat stress-results/generator.txt >> "$GITHUB_STEP_SUMMARY"
+          rustc -vV > stress-results/rustc.txt
+          lscpu > stress-results/cpu.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: volfi-generated-oracle
+          path: stress-results/
