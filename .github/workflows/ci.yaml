@@ -141,7 +141,8 @@ jobs:
       - name: Decompose represented chart approximation error with Decimal
         run: |
           mkdir -p rounding-results
-          python3 scripts/study_volfi_rounding.py --output rounding-results/analysis.json > rounding-results/summary.txt
+          VOLFI_TRACE=1 cargo test --features volfi_book --test experimental_adaptive_seeds volfi_book_dump_direct_oracle_rows -- --nocapture > rounding-results/runtime.txt 2>&1
+          python3 scripts/study_volfi_rounding.py --rust-outputs rounding-results/runtime.txt --output rounding-results/analysis.json > rounding-results/summary.txt
           cat rounding-results/summary.txt >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()

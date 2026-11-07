@@ -6911,3 +6911,25 @@ fn volfi_book_sinh_independent_reference_seams() {
         worst.1
     );
 }
+
+#[cfg(feature = "volfi_book")]
+#[test]
+fn volfi_book_dump_direct_oracle_rows() {
+    if std::env::var_os("VOLFI_TRACE").is_none() {
+        return;
+    }
+    let mut count = 0_usize;
+    for &bits in REFERENCES {
+        let [h, b, _, _, _] = bits.map(f64::from_bits);
+        if let Some(s) = implied_vol::volfi_book::chart_total_volatility(h, b) {
+            println!(
+                "VOLFI|{:016x}|{:016x}|{:016x}",
+                h.to_bits(),
+                b.to_bits(),
+                s.to_bits()
+            );
+            count += 1;
+        }
+    }
+    assert_eq!(count, 495);
+}
