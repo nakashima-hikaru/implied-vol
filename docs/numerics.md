@@ -73,6 +73,13 @@ stages. Exact bivariate Chebyshev coefficient differences and separate old/new
 source-rounding bounds transport this change to the cubic finish. Other tables
 retain their lanes and scalar reduction order.
 
+For rank-three small/core and upper-gap factor tables, the first two factors
+of each coordinate retain their original SIMD FMA Horner chains; the third
+factor is evaluated with a scalar FMA chain. This avoids computing unused
+fourth factors, with identical coefficient bits, live-factor evaluation
+order and scalar reduction order. The [paired A/B experiment](rank3-scalar-tail.md)
+records timings, exact-output regressions and the scope of evidence.
+
 The deferred central expansion accepts `a<=0.45` and a compensated central
 coordinate `q.high<=0.625`, widened from `0.36` and `0.5`. Its stored coefficients
 are unchanged. A recomputed continuous conversion remainder and
