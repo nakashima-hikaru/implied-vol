@@ -58,6 +58,10 @@ pub struct VolfiBook;
 #[cfg(feature = "volfi_book")]
 pub struct VolfiBookSinh;
 
+/// Research variant that refines the inverse square root in region B.
+#[cfg(feature = "volfi_book")]
+pub struct VolfiBookRsqrt;
+
 impl<SpFn: SpecialFn> sealed::Sealed for Hybrid<SpFn> {}
 impl<SpFn: SpecialFn> sealed::Sealed for Jaeckel<SpFn> {}
 #[cfg(feature = "flashiv")]
@@ -75,6 +79,11 @@ impl sealed::Sealed for VolfiBook {
 }
 #[cfg(feature = "volfi_book")]
 impl sealed::Sealed for VolfiBookSinh {
+    const MINIMUM_TIME_VALUE: f64 = 0.0;
+    const CHECK_ROUNDED_INTERIOR_CAP: bool = false;
+}
+#[cfg(feature = "volfi_book")]
+impl sealed::Sealed for VolfiBookRsqrt {
     const MINIMUM_TIME_VALUE: f64 = 0.0;
     const CHECK_ROUNDED_INTERIOR_CAP: bool = false;
 }
@@ -192,6 +201,24 @@ impl BlackSolver for VolfiBook {
             return Some(f64::INFINITY);
         }
         let s = crate::volfi_book::implied_total_volatility(x.abs(), beta);
+        (s.is_finite() && s > 0.0).then_some(s)
+    }
+}
+
+#[cfg(feature = "volfi_book")]
+impl BlackSolver for VolfiBookRsqrt {
+    #[inline]
+    fn implied_total_volatility(x: f64, beta: f64) -> Option<f64> {
+        if !valid_input(x, beta) {
+            return None;
+        }
+        if beta == 0.0 {
+            return Some(0.0);
+        }
+        if x == 0.0 && beta == 1.0 {
+            return Some(f64::INFINITY);
+        }
+        let s = crate::volfi_book::implied_total_volatility_rsqrt(x.abs(), beta);
         (s.is_finite() && s > 0.0).then_some(s)
     }
 }

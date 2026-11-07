@@ -125,8 +125,21 @@ fn direct_a(h: f64, a: f64) -> f64 {
 }
 
 #[inline]
-fn direct_b(h: f64, a: f64) -> f64 {
-    let u = a.sqrt().recip();
+fn direct_b<const REFINED_RSQRT: bool>(h: f64, a: f64) -> f64 {
+    let root = a.sqrt();
+    let mut u = root.recip();
+    if REFINED_RSQRT {
+        // Remove double rounding in sqrt(a) followed by reciprocal:
+        //   a - root^2 and 1 - root*u are FMA residuals.
+        // One inverse-square-root Newton correction approximates
+        //   u*sqrt(a) = 1 in the exact input a, not only rounded root.
+        // This is a finite-precision optimization candidate, not a
+        // globally certified correctly-rounded reciprocal square root.
+        let square_residual = (-root).mul_add(root, a);
+        let reciprocal_residual = (-root).mul_add(u, 1.0);
+        let correction = reciprocal_residual - (0.5 * square_residual) * (u * u);
+        u = u.mul_add(correction, u);
+    }
     let f1 = clenshaw(
         &NW_F1,
         u.mul_add(5.537_929_048_854_298, -1.209_314_043_451_270_6),
@@ -148,7 +161,7 @@ fn direct_b(h: f64, a: f64) -> f64 {
 #[must_use]
 #[inline]
 pub fn chart_total_volatility(h: f64, b: f64) -> Option<f64> {
-    chart_impl::<false>(h, b)
+    chart_impl::<false, false>(h, b)
 }
 
 /// Alternative algebraically equivalent coordinate:
@@ -159,11 +172,19 @@ pub fn chart_total_volatility(h: f64, b: f64) -> Option<f64> {
 #[must_use]
 #[inline]
 pub fn chart_total_volatility_sinh(h: f64, b: f64) -> Option<f64> {
-    chart_impl::<true>(h, b)
+    chart_impl::<true, false>(h, b)
+}
+
+/// Research chart variant with a single FMA-based inverse-sqrt correction
+/// in region B. This branch may still exceed rho_J = 1.
+#[must_use]
+#[inline]
+pub fn chart_total_volatility_rsqrt(h: f64, b: f64) -> Option<f64> {
+    chart_impl::<false, true>(h, b)
 }
 
 #[inline]
-fn chart_impl<const SINH: bool>(h: f64, b: f64) -> Option<f64> {
+fn chart_impl<const SINH: bool, const REFINED_RSQRT: bool>(h: f64, b: f64) -> Option<f64> {
     // Both shipped direct charts imply h <= 4: region A has h <= 0.35*2pi
     // and region B explicitly imposes h <= 4.
     if !(h >= H_FLOOR && h <= 4.0 && b > 0.0 && b.is_finite()) {
@@ -192,7 +213,7 @@ fn chart_impl<const SINH: bool>(h: f64, b: f64) -> Option<f64> {
         if !(a <= A_MAX && h <= 4.0 && h <= a.mul_add(0.16, 0.85)) {
             return None;
         }
-        direct_b(h, a)
+        direct_b::<REFINED_RSQRT>(h, a)
     };
     (v > 0.0 && v.is_finite()).then_some(v)
 }
@@ -213,6 +234,14 @@ pub fn implied_total_volatility(h: f64, b: f64) -> f64 {
 #[inline]
 pub fn implied_total_volatility_sinh(h: f64, b: f64) -> f64 {
     chart_total_volatility_sinh(h, b)
+        .unwrap_or_else(|| crate::experimental::implied_total_volatility(h, b))
+}
+
+/// Same direct region as VolfiBook, with compensated inverse square root in B.
+#[must_use]
+#[inline]
+pub fn implied_total_volatility_rsqrt(h: f64, b: f64) -> f64 {
+    chart_total_volatility_rsqrt(h, b)
         .unwrap_or_else(|| crate::experimental::implied_total_volatility(h, b))
 }
 

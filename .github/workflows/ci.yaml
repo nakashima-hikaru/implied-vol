@@ -144,9 +144,53 @@ jobs:
           tar -czf rounding-results/analysis-source.tar.gz src/volfi_book.rs src/volfi_book/tables.rs tests/experimental_adaptive_seeds.rs scripts/study_volfi_rounding.py
           VOLFI_TRACE=1 cargo test --features volfi_book --test experimental_adaptive_seeds volfi_book_dump_direct_oracle_rows -- --nocapture > rounding-results/runtime.txt 2>&1
           python3 scripts/study_volfi_rounding.py --rust-outputs rounding-results/runtime.txt --output rounding-results/analysis.json > rounding-results/summary.txt
+          cargo test --features volfi_book --test experimental_adaptive_seeds volfi_book_rsqrt_independent_reference_seams -- --nocapture > rounding-results/rsqrt-test.txt 2>&1
+          grep 'VOLFI_RSQRT_ORACLE' rounding-results/rsqrt-test.txt >> "$GITHUB_STEP_SUMMARY"
+
           cat rounding-results/summary.txt >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: volfi-rounding-study
           path: rounding-results/
+
+  volfi-rsqrt-study:
+    name: Volfi inverse-sqrt correction paired A/B (temporary)
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'codex/volfi-book-prototype-20261107'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      RUSTFLAGS: -C target-cpu=native -C target-feature=+fma
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build optimized common benchmark executable
+        run: |
+          mkdir -p rsqrt-results
+          cargo bench --bench volfi_compare --features volfi_book --no-run --message-format=json > rsqrt-results/build.jsonl
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          entries = [json.loads(s) for s in Path("rsqrt-results/build.jsonl").read_text().splitlines()]
+          paths = [x["executable"] for x in entries if x.get("reason")=="compiler-artifact"
+                   and x["target"]["name"]=="volfi_compare" and x.get("executable")]
+          if len(paths)!=1: raise RuntimeError(paths)
+          with open(os.environ["GITHUB_ENV"], "a") as f:
+              f.write("VOLFI_BENCH="+str(Path(paths[0]).resolve())+"\n")
+          PY
+          rustc -vV > rsqrt-results/rustc.txt
+          lscpu > rsqrt-results/cpu.txt
+      - name: Compare current solver to correction on same population
+        run: |
+          python3 benches/compare_volfi.py "$VOLFI_BENCH" --reference volfi-book --candidate volfi-rsqrt \
+            --iterations 150000 --rounds 2 --blocks 4 \
+            --features volfi_book --flags "$RUSTFLAGS" \
+            --output rsqrt-results/paired.json > rsqrt-results/summary.md
+          cat rsqrt-results/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: volfi-rsqrt-study
+          path: rsqrt-results/

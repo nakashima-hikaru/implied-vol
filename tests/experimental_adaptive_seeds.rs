@@ -6914,6 +6914,29 @@ fn volfi_book_sinh_independent_reference_seams() {
 
 #[cfg(feature = "volfi_book")]
 #[test]
+fn volfi_book_rsqrt_independent_reference_seams() {
+    let mut covered = 0_usize;
+    let mut exceeded = 0_usize;
+    let mut max_rho = 0.0_f64;
+    for &bits in REFERENCES {
+        let [a, b, hi, lo, eta] = bits.map(f64::from_bits);
+        if let Some(s) = implied_vol::volfi_book::chart_total_volatility_rsqrt(a, b) {
+            let rho = (((s - hi) - lo).abs() / hi) / eta;
+            assert!(
+                s.is_finite() && s > 0.0 && rho.is_finite() && rho < 64.0,
+                "a={a:e}, b={b:e}, rho_J={rho}"
+            );
+            max_rho = max_rho.max(rho);
+            exceeded += usize::from(rho >= 1.0);
+            covered += 1;
+        }
+    }
+    assert_eq!(covered, 495);
+    eprintln!("VOLFI_RSQRT_ORACLE|covered={covered}|rho_gt_one={exceeded}|max_rho={max_rho:.9}");
+}
+
+#[cfg(feature = "volfi_book")]
+#[test]
 fn volfi_book_dump_direct_oracle_rows() {
     if std::env::var_os("VOLFI_TRACE").is_none() {
         return;
