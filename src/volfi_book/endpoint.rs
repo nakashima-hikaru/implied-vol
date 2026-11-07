@@ -7,7 +7,7 @@
 use super::tables::{NW_F1, NW_G0};
 
 #[inline(always)]
-fn two_sum(a: f64, b: f64) -> (f64, f64) {
+pub(super) fn two_sum(a: f64, b: f64) -> (f64, f64) {
     let s = a + b;
     let z = s - a;
     (s, (a - (s - z)) + (b - z))
@@ -85,6 +85,14 @@ pub(super) fn region_a_scale(h: f64, a: f64) -> (f64, f64) {
 #[inline]
 #[allow(clippy::suboptimal_flops)] // Preserve the verified FMA/rounding order.
 pub(super) fn region_b_scale(a: f64) -> f64 {
+    let (high, low) = region_b_scale_pair(a);
+    high + low
+}
+
+/// Retain the low product residual beyond the final rounded f64 price scale.
+#[inline]
+#[allow(clippy::suboptimal_flops)] // Preserve the audited split-rounding operations.
+pub(super) fn region_b_scale_pair(a: f64) -> (f64, f64) {
     let root = a.sqrt();
     let inv = root.recip();
     let square_residual = (-root).mul_add(root, a);
@@ -95,5 +103,5 @@ pub(super) fn region_b_scale(a: f64) -> f64 {
     let (f1, f1_low) = clenshaw_tail::<40, 1>(&NW_F1, x);
     let pp = u * f1;
     let pp_low = u.mul_add(f1, -pp) + u * f1_low + u_low * f1;
-    pp + pp_low
+    (pp, pp_low)
 }

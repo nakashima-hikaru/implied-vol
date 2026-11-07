@@ -11,7 +11,7 @@ import statistics
 import subprocess
 from pathlib import Path
 
-SOLVERS = ("experimental", "volfi-book", "volfi-sinh", "volfi-rsqrt", "volfi-compensated", "volfi-selective", "volfi-endpoint", "volfi-b17", "volfi-b18")
+SOLVERS = ("experimental", "volfi-book", "volfi-sinh", "volfi-rsqrt", "volfi-compensated", "volfi-selective", "volfi-endpoint", "volfi-b17", "volfi-b18", "volfi-b17-final")
 CASES = ("book_a", "book_b", "book_seam", "fallback", "mixed_book", "mixed_market", "mixed_full")
 FIELDS = ("case", "round", "ns_per_call", "checksum", "covered", "total")
 
