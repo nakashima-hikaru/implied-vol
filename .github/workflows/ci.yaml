@@ -129,3 +129,22 @@ jobs:
         with:
           name: hybrid-lbr-${{ matrix.mode }}
           path: benchmark-results/
+
+  volfi-rounding-study:
+    name: High-precision volfi approximation decomposition (temporary)
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'codex/volfi-book-prototype-20261107'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Decompose represented chart approximation error with Decimal
+        run: |
+          mkdir -p rounding-results
+          python3 scripts/study_volfi_rounding.py --output rounding-results/analysis.json > rounding-results/summary.txt
+          cat rounding-results/summary.txt >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: volfi-rounding-study
+          path: rounding-results/
