@@ -221,6 +221,41 @@ mod tests {
     use super::*;
 
     #[test]
+    fn specialized_rows_preserve_dynamic_horner_bits() {
+        // The original dynamic evaluator is frozen below. Compile-time row
+        // specialization must not change a single live FMA rounding point.
+        for x in [0.0_f64, f64::EPSILON, 1e-8, 0.005, 0.02, 0.1, 0.4] {
+            for y in [0.0_f64, 1e-12, 0.005, 0.1, 0.8, 2.0, 6.0, 14.0] {
+                let mut old_a = 0.0_f64;
+                for row in (1..=15).rev() {
+                    let offset = NWRowA_OFF[row];
+                    let degree = NWRowA_DEG[row];
+                    let mut p = NW_P[offset];
+                    for j in 1..=degree {
+                        p = p.mul_add(y, NW_P[offset + j]);
+                    }
+                    old_a = old_a.mul_add(x, p);
+                }
+                let new_a = rows_a!(x, y);
+                assert_eq!(new_a.to_bits(), old_a.to_bits(), "A x={x}, y={y}");
+
+                let mut old_b = 0.0_f64;
+                for row in (1..=16).rev() {
+                    let offset = NWRowB_OFF[row];
+                    let degree = NWRowB_DEG[row];
+                    let mut p = NW_D[offset];
+                    for j in 1..degree {
+                        p = p.mul_add(y, NW_D[offset + j]);
+                    }
+                    old_b = old_b.mul_add(x, p * y);
+                }
+                let new_b = rows_b!(x, y);
+                assert_eq!(new_b.to_bits(), old_b.to_bits(), "B x={x}, y={y}");
+            }
+        }
+    }
+
+    #[test]
     fn both_direct_regions_and_fallback_are_reachable() {
         for (h, a) in [(0.2_f64, 1.4_f64), (1.0, 9.0), (2.0, 20.0)] {
             let c = h.exp_m1() / a.exp_m1();
