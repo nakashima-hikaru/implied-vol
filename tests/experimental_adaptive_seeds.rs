@@ -6889,8 +6889,10 @@ fn volfi_book_sinh_independent_reference_seams() {
         let got = implied_vol::volfi_book::chart_total_volatility_sinh(h, b);
         if let Some(s) = got {
             let rho = (((s - hi) - lo).abs() / hi) / eta;
-            assert!(s.is_finite() && s > 0.0 && rho.is_finite() && rho < 64.0,
-                "h={h:e}, b={b:e}, rho_J={rho}, sigma={s:e}");
+            assert!(
+                s.is_finite() && s > 0.0 && rho.is_finite() && rho < 64.0,
+                "h={h:e}, b={b:e}, rho_J={rho}, sigma={s:e}"
+            );
             if rho > max_rho {
                 max_rho = rho;
                 worst = (h, b);
