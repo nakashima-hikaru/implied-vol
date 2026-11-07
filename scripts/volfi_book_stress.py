@@ -41,6 +41,20 @@ def invert(h, b):
         hi *= 2
         if hi > 128:
             raise ValueError("unrepresentable upper bracket")
+    # The root can be tiny for normal binary64 far-wing prices.
+    # Bisection to a *relative* bracket is essential: unguarded Newton
+    # starting from a near-cap volatility makes microscopic progress while
+    # b is many orders of magnitude below the current Black price.
+    for _ in range(128):
+        if lo > 0 and hi / lo <= mp.mpf("1.25"):
+            break
+        midpoint = (lo + hi) / 2
+        if black(h, midpoint) > b:
+            hi = midpoint
+        else:
+            lo = midpoint
+    else:
+        raise ValueError("failed to establish a relative root bracket")
     s = (lo + hi) / 2
     for _ in range(180):
         p = black(h, s)

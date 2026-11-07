@@ -34,13 +34,19 @@ fn main() {
             continue;
         };
         let rho = (((s - hi) - lo).abs() / hi) / eta;
-        assert!(s.is_finite() && s > 0.0 && rho.is_finite(), "invalid result: {line}");
+        assert!(
+            s.is_finite() && s > 0.0 && rho.is_finite(),
+            "invalid result: {line}"
+        );
         covered += 1;
         values.push(rho);
         if rho >= 1.0 {
             fails += 1;
             if fails <= 30 {
-                println!("FAIL|h={h:.17e}|b={b:.17e}|rho={rho:.9}|region={}", parts[5]);
+                println!(
+                    "FAIL|h={h:.17e}|b={b:.17e}|rho={rho:.9}|region={}",
+                    parts[5]
+                );
             }
         }
         if rho > max_rho {
@@ -54,7 +60,6 @@ fn main() {
     let p95 = values[(95 * values.len()) / 100];
     println!(
         "STRESS|total={total}|covered={covered}|rho_gt_one={fails}|max_rho={max_rho:.9}|p95={p95:.9}|worst_h={:.17e}|worst_b={:.17e}",
-        worst.0,
-        worst.1
+        worst.0, worst.1
     );
 }
