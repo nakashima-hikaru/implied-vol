@@ -3,6 +3,8 @@
 mod central;
 mod constants;
 mod direct_d;
+#[cfg(test)]
+mod rank3_tests;
 mod upper;
 use crate::experimental::lanes::F64x2;
 use crate::experimental::math::inverse_norm_cdf;
@@ -290,14 +292,50 @@ fn rank_seed_shape<
     let half = LANES / 2;
     assert!(rank <= half, "rank factors");
     let mut values = [0.0; 8];
-    for k in (0..LANES).step_by(2) {
-        let z = F64x2::splat(if k < half { x } else { y });
-        let n = if k < half { X_DEGREE } else { Y_DEGREE };
-        let mut v = F64x2::new(c[n * LANES + k], c[n * LANES + k + 1]);
-        for j in (0..n).rev() {
-            v = v.mul_add(z, F64x2::new(c[j * LANES + k], c[j * LANES + k + 1]));
+    if rank == 3 && LANES == 8 {
+        // Repack the three live factors as (x_k, y_k) instead of four
+        // (x_even, x_odd) / (y_even, y_odd) pairs. This removes one SIMD
+        // Horner chain without changing the operation order in a live lane.
+        // Zero-padding the higher y degrees is exact for finite inputs.
+        let arg = F64x2::new(x, y);
+        for k in 0..3 {
+            let mut v = F64x2::new(
+                c[X_DEGREE * LANES + k],
+                if X_DEGREE == Y_DEGREE {
+                    c[Y_DEGREE * LANES + half + k]
+                } else {
+                    0.0
+                },
+            );
+            for j in (0..X_DEGREE).rev() {
+                v = v.mul_add(
+                    arg,
+                    F64x2::new(
+                        c[j * LANES + k],
+                        if j <= Y_DEGREE {
+                            c[j * LANES + half + k]
+                        } else {
+                            0.0
+                        },
+                    ),
+                );
+            }
+            let pair = v.to_array();
+            values[k] = pair[0];
+            values[half + k] = pair[1];
         }
-        values[k..k + 2].copy_from_slice(&v.to_array());
+    } else {
+        // Rank-two tables already use four lanes. Full-rank tables retain
+        // the original degree-specific two-lane Horner evaluations.
+        for k in (0..LANES).step_by(2) {
+            let z = F64x2::splat(if k < half { x } else { y });
+            let n = if k < half { X_DEGREE } else { Y_DEGREE };
+            let mut v = F64x2::new(c[n * LANES + k], c[n * LANES + k + 1]);
+            for j in (0..n).rev() {
+                v = v.mul_add(z, F64x2::new(c[j * LANES + k], c[j * LANES + k + 1]));
+            }
+            values[k..k + 2].copy_from_slice(&v.to_array());
+        }
     }
     let mut v = values[0] * values[half];
     for k in 1..rank {
