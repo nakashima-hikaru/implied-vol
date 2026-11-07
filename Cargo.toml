@@ -14,6 +14,7 @@ default = []
 fma = []
 flashiv = []
 experimental = ["dep:fearless_simd"]
+volfi_book = ["experimental"]
 cxx_bench = ["cxx", "cxx-build"]
 
 [dev-dependencies]

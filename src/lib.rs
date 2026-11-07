@@ -226,6 +226,8 @@
 mod builder;
 #[cfg(feature = "experimental")]
 mod experimental;
+#[cfg(feature = "volfi_book")]
+pub mod volfi_book;
 mod explicit_black;
 mod flashiv;
 pub mod solver;
