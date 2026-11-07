@@ -11,7 +11,13 @@
 //!
 //! Inputs: h=abs(log(F/K)), b=OTM price/sqrt(F*K).
 //! Output: total implied volatility (the upstream book chart returns variance).
-#![allow(non_upper_case_globals, clippy::doc_markdown)]
+#![allow(
+    non_upper_case_globals,
+    clippy::doc_markdown,
+    clippy::approx_constant,
+    clippy::wildcard_imports,
+    clippy::manual_range_contains
+)]
 mod tables;
 use tables::*;
 
