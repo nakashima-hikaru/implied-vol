@@ -125,3 +125,58 @@ jobs:
         with:
           name: hybrid-lbr-${{ matrix.mode }}
           path: benchmark-results/
+
+  rank3-perf:
+    name: Experimental rank-three paired A/B (temporary)
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'codex/experimental-rank3-simd-packing-20261107'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      RUSTFLAGS: -C target-cpu=native -C target-feature=+fma
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fcd44963881830e8a07596da1d7c117e0792e901
+          path: baseline
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: candidate
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Use exactly the same benchmark harness
+        run: cp candidate/benches/implied_black_vol_paths.rs baseline/benches/implied_black_vol_paths.rs
+      - name: Build both benchmark executables
+        shell: bash
+        run: |
+          mkdir -p results
+          CARGO_TARGET_DIR="$PWD/target-base" cargo bench --manifest-path baseline/Cargo.toml --bench implied_black_vol_paths --features experimental --no-run --message-format=json > results/baseline.jsonl
+          CARGO_TARGET_DIR="$PWD/target-new" cargo bench --manifest-path candidate/Cargo.toml --bench implied_black_vol_paths --features experimental --no-run --message-format=json > results/candidate.jsonl
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          for label in ("baseline", "candidate"):
+              artifacts = (json.loads(line) for line in Path(f"results/{label}.jsonl").read_text().splitlines())
+              exes = [item["executable"] for item in artifacts if item.get("reason") == "compiler-artifact"
+                      and item["target"]["name"] == "implied_black_vol_paths" and item.get("executable")]
+              if len(exes) != 1:
+                  raise RuntimeError(f"expected one {label} executable, got {exes}")
+              with open(os.environ["GITHUB_ENV"], "a") as env:
+                  env.write(f"{label.upper()}_BENCH={Path(exes[0]).resolve()}\n")
+          PY
+          rustc -vV > results/rustc.txt
+          lscpu > results/cpu.txt
+      - name: Run rotating ABBA/BAAB comparison
+        shell: bash
+        run: |
+          python3 -m unittest discover -s candidate/benches -p test_compare_experimental.py
+          python3 candidate/benches/compare_experimental.py "$BASELINE_BENCH" "$CANDIDATE_BENCH" --iterations 100000 --rounds 2 --blocks 4 --features experimental --flags "$RUSTFLAGS" --output results/rank3.json > results/summary.txt
+          cat results/summary.txt >> "$GITHUB_STEP_SUMMARY"
+      - name: Save paired samples
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: experimental-rank3-paired
+          path: results/

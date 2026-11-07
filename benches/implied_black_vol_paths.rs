@@ -253,6 +253,8 @@ fn run<S: BenchmarkSolver>(
             ("central_shape1", 0.1, 0.03),
             ("central_shape2", 0.1, 0.017),
             ("central_extended", 0.4, 0.04),
+            ("rank_small3", 0.6, 0.095),
+            ("rank_core4", 2.5, 0.005),
             (
                 "rank_small2",
                 f64::from_bits(0x3fe2_922b_4695_6c82),

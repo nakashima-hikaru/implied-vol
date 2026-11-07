@@ -34,7 +34,7 @@ def all_samples(blocks=2, rounds=2, **flags):
 
 class CsvTests(unittest.TestCase):
     def test_population_flags_preserve_default_and_require_opt_in_rows(self):
-        self.assertEqual(len(compare.cases_for("experimental")), 28)
+        self.assertEqual(len(compare.cases_for("experimental")), 30)
         self.assertEqual(len(compare.cases_for("hybrid", as1_paths=True, dpoly_paths=True)), 12)
         flags = {"experimental_paths": False, "as1_paths": True, "dpoly_paths": True}
         samples = compare.parse_samples(csv_output(**flags), "baseline", "experimental", 2, **flags)
@@ -69,7 +69,7 @@ class CsvTests(unittest.TestCase):
 class PairedAggregationTests(unittest.TestCase):
     def test_cross_version_changed_checksum_is_allowed_and_recorded(self):
         summary = compare.summarize(all_samples(), 2, 2)
-        self.assertEqual(len(summary), 28 + 12)
+        self.assertEqual(len(summary), 30 + 12)
         self.assertTrue(all(row["samples_per_version"] == 8 for row in summary))
         self.assertTrue(all(row["checksum_changed_between_versions"] for row in summary))
         self.assertTrue(all(row["baseline_checksum"] == "1" and row["candidate_checksum"] == "1.1"
