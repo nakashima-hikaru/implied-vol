@@ -50,3 +50,8 @@ lto = true
 [[bench]]
 name = "implied_black_vol_paths"
 harness = false
+
+[[bench]]
+name = "volfi_compare"
+harness = false
+required-features = ["volfi_book"]
