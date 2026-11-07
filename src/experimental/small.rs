@@ -293,37 +293,47 @@ fn rank_seed_shape<
     assert!(rank <= half, "rank factors");
     let mut values = [0.0; 8];
     if rank == 3 && LANES == 8 {
-        // Repack the three live factors as (x_k, y_k) instead of four
-        // (x_even, x_odd) / (y_even, y_odd) pairs. This removes one SIMD
-        // Horner chain without changing the operation order in a live lane.
-        // Zero-padding the higher y degrees is exact for finite inputs.
-        let arg = F64x2::new(x, y);
-        for k in 0..3 {
-            let mut v = F64x2::new(
-                c[X_DEGREE * LANES + k],
-                if X_DEGREE == Y_DEGREE {
-                    c[Y_DEGREE * LANES + half + k]
-                } else {
-                    0.0
-                },
-            );
-            for j in (0..X_DEGREE).rev() {
-                v = v.mul_add(
-                    arg,
-                    F64x2::new(
-                        c[j * LANES + k],
-                        if j <= Y_DEGREE {
-                            c[j * LANES + half + k]
-                        } else {
-                            0.0
-                        },
-                    ),
-                );
+        // Two ordinary x/y coefficient pairs remain in their original lanes.
+        // Pack only the third live x/y factors together, removing the two
+        // unused fourth-factor lanes without three cross-coordinate chains.
+        // Every live factor keeps exactly its original fused Horner order.
+        for k in [0, half] {
+            let z = F64x2::splat(if k == 0 { x } else { y });
+            let n = if k == 0 { X_DEGREE } else { Y_DEGREE };
+            let mut v = F64x2::new(c[n * LANES + k], c[n * LANES + k + 1]);
+            for j in (0..n).rev() {
+                v = v.mul_add(z, F64x2::new(c[j * LANES + k], c[j * LANES + k + 1]));
             }
-            let pair = v.to_array();
-            values[k] = pair[0];
-            values[half + k] = pair[1];
+            values[k..k + 2].copy_from_slice(&v.to_array());
         }
+
+        // Both degree chains have the same highest coefficient index after
+        // zero-padding the missing y terms (which starts with exact zero).
+        let arg = F64x2::new(x, y);
+        let mut v = F64x2::new(
+            c[X_DEGREE * LANES + 2],
+            if X_DEGREE == Y_DEGREE {
+                c[Y_DEGREE * LANES + half + 2]
+            } else {
+                0.0
+            },
+        );
+        for j in (0..X_DEGREE).rev() {
+            v = v.mul_add(
+                arg,
+                F64x2::new(
+                    c[j * LANES + 2],
+                    if j <= Y_DEGREE {
+                        c[j * LANES + half + 2]
+                    } else {
+                        0.0
+                    },
+                ),
+            );
+        }
+        let [last_x, last_y] = v.to_array();
+        values[2] = last_x;
+        values[half + 2] = last_y;
     } else {
         // Rank-two tables already use four lanes. Full-rank tables retain
         // the original degree-specific two-lane Horner evaluations.
