@@ -73,7 +73,10 @@ fn direct_a(h: f64, a: f64) -> f64 {
 #[inline]
 fn direct_b(h: f64, a: f64) -> f64 {
     let u = a.sqrt().recip();
-    let f1 = clenshaw(&NW_F1, u.mul_add(5.537_929_048_854_298, -1.209_314_043_451_270_6));
+    let f1 = clenshaw(
+        &NW_F1,
+        u.mul_add(5.537_929_048_854_298, -1.209_314_043_451_270_6),
+    );
     let pp = u * f1;
     let t = h * pp;
     let w = pp * pp;
