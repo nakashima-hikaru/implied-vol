@@ -116,8 +116,10 @@ macro_rules! rows_b {
 }
 
 #[inline]
-fn direct_a<const COMPENSATED: bool>(h: f64, a: f64) -> f64 {
-    let (a0, t) = if COMPENSATED {
+fn direct_a<const COMPENSATED: bool, const SELECTIVE: bool>(h: f64, a: f64) -> f64 {
+    let (a0, t) = if SELECTIVE {
+        compensated::region_a_scale_selective(h, a)
+    } else if COMPENSATED {
         compensated::region_a_scale(h, a)
     } else {
         let g = clenshaw(&NW_G0, a.mul_add(0.318_309_886_183_790_7, -1.0));
@@ -132,7 +134,10 @@ fn direct_a<const COMPENSATED: bool>(h: f64, a: f64) -> f64 {
 
 #[inline]
 #[allow(clippy::suboptimal_flops)] // Retain the analysed unfused correction order.
-fn direct_b<const REFINED_RSQRT: bool, const COMPENSATED: bool>(h: f64, a: f64) -> f64 {
+fn direct_b<const REFINED_RSQRT: bool, const COMPENSATED: bool, const SELECTIVE: bool>(
+    h: f64,
+    a: f64,
+) -> f64 {
     let root = a.sqrt();
     let mut u = root.recip();
     if REFINED_RSQRT {
@@ -147,7 +152,9 @@ fn direct_b<const REFINED_RSQRT: bool, const COMPENSATED: bool>(h: f64, a: f64) 
         let correction = reciprocal_residual - (0.5 * square_residual) * (u * u);
         u = u.mul_add(correction, u);
     }
-    let pp = if COMPENSATED {
+    let pp = if SELECTIVE {
+        compensated::region_b_scale_selective(a)
+    } else if COMPENSATED {
         compensated::region_b_scale(a)
     } else {
         let f1 = clenshaw(
@@ -172,7 +179,7 @@ fn direct_b<const REFINED_RSQRT: bool, const COMPENSATED: bool>(h: f64, a: f64) 
 #[must_use]
 #[inline]
 pub fn chart_total_volatility(h: f64, b: f64) -> Option<f64> {
-    chart_impl::<false, false, false>(h, b)
+    chart_impl::<false, false, false, false>(h, b)
 }
 
 /// Alternative algebraically equivalent coordinate:
@@ -183,7 +190,7 @@ pub fn chart_total_volatility(h: f64, b: f64) -> Option<f64> {
 #[must_use]
 #[inline]
 pub fn chart_total_volatility_sinh(h: f64, b: f64) -> Option<f64> {
-    chart_impl::<true, false, false>(h, b)
+    chart_impl::<true, false, false, false>(h, b)
 }
 
 /// Research chart variant with a single FMA-based inverse-sqrt correction
@@ -191,7 +198,7 @@ pub fn chart_total_volatility_sinh(h: f64, b: f64) -> Option<f64> {
 #[must_use]
 #[inline]
 pub fn chart_total_volatility_rsqrt(h: f64, b: f64) -> Option<f64> {
-    chart_impl::<false, true, false>(h, b)
+    chart_impl::<false, true, false, false>(h, b)
 }
 
 /// High-precision chart-coordinate prototype; evaluated only when opted in.
@@ -199,11 +206,24 @@ pub fn chart_total_volatility_rsqrt(h: f64, b: f64) -> Option<f64> {
 #[must_use]
 #[inline]
 pub fn chart_total_volatility_compensated(h: f64, b: f64) -> Option<f64> {
-    chart_impl::<false, true, true>(h, b)
+    chart_impl::<false, true, true, false>(h, b)
+}
+
+/// Localized twofold Clenshaw research variant, retaining the same A/B
+/// approximate coefficient tables and the original Experimental fallback.
+#[must_use]
+#[inline]
+pub fn chart_total_volatility_selective(h: f64, b: f64) -> Option<f64> {
+    chart_impl::<false, true, false, true>(h, b)
 }
 
 #[inline]
-fn chart_impl<const SINH: bool, const REFINED_RSQRT: bool, const COMPENSATED: bool>(
+fn chart_impl<
+    const SINH: bool,
+    const REFINED_RSQRT: bool,
+    const COMPENSATED: bool,
+    const SELECTIVE: bool,
+>(
     h: f64,
     b: f64,
 ) -> Option<f64> {
@@ -230,12 +250,12 @@ fn chart_impl<const SINH: bool, const REFINED_RSQRT: bool, const COMPENSATED: bo
         if h > 0.35 * a {
             return None;
         }
-        direct_a::<COMPENSATED>(h, a)
+        direct_a::<COMPENSATED, SELECTIVE>(h, a)
     } else {
         if !(a <= A_MAX && h <= 4.0 && h <= a.mul_add(0.16, 0.85)) {
             return None;
         }
-        direct_b::<REFINED_RSQRT, COMPENSATED>(h, a)
+        direct_b::<REFINED_RSQRT, COMPENSATED, SELECTIVE>(h, a)
     };
     (v > 0.0 && v.is_finite()).then_some(v)
 }
@@ -272,6 +292,14 @@ pub fn implied_total_volatility_rsqrt(h: f64, b: f64) -> f64 {
 #[inline]
 pub fn implied_total_volatility_compensated(h: f64, b: f64) -> f64 {
     chart_total_volatility_compensated(h, b)
+        .unwrap_or_else(|| crate::experimental::implied_total_volatility(h, b))
+}
+
+/// Localized twofold chart with Experimental fallback.
+#[must_use]
+#[inline]
+pub fn implied_total_volatility_selective(h: f64, b: f64) -> f64 {
+    chart_total_volatility_selective(h, b)
         .unwrap_or_else(|| crate::experimental::implied_total_volatility(h, b))
 }
 

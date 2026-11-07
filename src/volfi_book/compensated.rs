@@ -53,12 +53,24 @@ fn mul(a: Pair, b: Pair) -> Pair {
     two_sum(prod, lo)
 }
 
+/// Run the fast binary64 recurrence for the high-order cells, switching to
+/// twofold arithmetic for exactly the last LOW_STAGES internal cells and the
+/// final coefficient. This is a *localized* error compensation, not a
+/// high-precision evaluation of the entire Chebyshev polynomial.
 #[inline(always)]
-fn clenshaw<const N: usize>(coefficients: &[f64; N], x: f64) -> Pair {
+fn clenshaw<const N: usize, const LOW_STAGES: usize>(coefficients: &[f64; N], x: f64) -> Pair {
+    const { assert!(LOW_STAGES < N); }
     let x2 = x + x;
-    let mut e0 = exact(0.0);
-    let mut e1 = exact(0.0);
-    for i in (1..N).rev() {
+    let mut fast0 = 0.0_f64;
+    let mut fast1 = 0.0_f64;
+    for i in (LOW_STAGES + 1..N).rev() {
+        let next = x2.mul_add(fast0, coefficients[i]) - fast1;
+        fast1 = fast0;
+        fast0 = next;
+    }
+    let mut e0 = exact(fast0);
+    let mut e1 = exact(fast1);
+    for i in (1..=LOW_STAGES).rev() {
         let next = add(sub(mul(exact(x2), e0), e1), exact(coefficients[i]));
         e1 = e0;
         e0 = next;
@@ -71,9 +83,9 @@ fn clenshaw<const N: usize>(coefficients: &[f64; N], x: f64) -> Pair {
 /// The division is corrected once with the error of the product and the
 /// low part of A0. This preserves its original uncorrected chart separately.
 #[inline]
-pub(super) fn region_a_scale(h: f64, a: f64) -> (f64, f64) {
+fn region_a_scale_impl<const LOW_STAGES: usize>(h: f64, a: f64) -> (f64, f64) {
     let x = a.mul_add(0.318_309_886_183_790_7, -1.0);
-    let g = clenshaw(&NW_G0, x);
+    let g = clenshaw::<23, LOW_STAGES>(&NW_G0, x);
     let a0 = mul(exact(a), g);
     let initial = h / a0.hi;
     let residual = (-initial).mul_add(a0.hi, h) - initial * a0.lo;
@@ -84,7 +96,7 @@ pub(super) fn region_a_scale(h: f64, a: f64) -> (f64, f64) {
 /// FMA-refined 1/sqrt(a), twofold Clenshaw F1, then compensated product.
 #[inline]
 #[allow(clippy::suboptimal_flops)] // Exact operation sequence of the research correction.
-pub(super) fn region_b_scale(a: f64) -> f64 {
+fn region_b_scale_impl<const LOW_STAGES: usize>(a: f64) -> f64 {
     let root = a.sqrt();
     let inv = root.recip();
     let square_residual = (-root).mul_add(root, a);
@@ -93,7 +105,31 @@ pub(super) fn region_b_scale(a: f64) -> f64 {
     let u = two_sum(inv, correction);
     let x =
         u.hi.mul_add(5.537_929_048_854_298, -1.209_314_043_451_270_6);
-    let f1 = clenshaw(&NW_F1, x);
+    let f1 = clenshaw::<40, LOW_STAGES>(&NW_F1, x);
     let pp = mul(u, f1);
     pp.hi + pp.lo
+}
+
+/// Full double-double Chebyshev recurrence; used as a numerical reference.
+#[inline]
+pub(super) fn region_a_scale(h: f64, a: f64) -> (f64, f64) {
+    region_a_scale_impl::<22>(h, a)
+}
+
+/// Only the final Clenshaw coefficient needs twofold arithmetic in region A.
+#[inline]
+pub(super) fn region_a_scale_selective(h: f64, a: f64) -> (f64, f64) {
+    region_a_scale_impl::<0>(h, a)
+}
+
+/// Full double-double Chebyshev recurrence; used as a numerical reference.
+#[inline]
+pub(super) fn region_b_scale(a: f64) -> f64 {
+    region_b_scale_impl::<39>(a)
+}
+
+/// Only the final two Clenshaw coefficient stages are twofold in region B.
+#[inline]
+pub(super) fn region_b_scale_selective(a: f64) -> f64 {
+    region_b_scale_impl::<1>(a)
 }

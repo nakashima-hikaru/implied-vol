@@ -2,6 +2,7 @@
 //! Use with benches/compare_volfi.py, not the historical cross-host README values.
 use implied_vol::solver::{
     BlackSolver, Experimental, VolfiBook, VolfiBookCompensated, VolfiBookRsqrt, VolfiBookSinh,
+    VolfiBookSelective,
 };
 use implied_vol::{
     DefaultSpecialFn, ImpliedBlackVolatility, ImpliedBlackVolatilityNormalised,
@@ -193,6 +194,7 @@ fn main() {
         "volfi-sinh" => run::<VolfiBookSinh>(case, n, rounds),
         "volfi-rsqrt" => run::<VolfiBookRsqrt>(case, n, rounds),
         "volfi-compensated" => run::<VolfiBookCompensated>(case, n, rounds),
+        "volfi-selective" => run::<VolfiBookSelective>(case, n, rounds),
         _ => panic!("unknown solver: {solver}"),
     }
 }
