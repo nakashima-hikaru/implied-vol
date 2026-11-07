@@ -3,7 +3,11 @@
 // 7347f68025fea2463b30f67c714a7448a64d1c39
 // Source: include/volfi/volfi_wb_tables.hpp
 // See LICENSE-BSD-3-CLAUSE. Do not hand-edit.
-#![allow(non_upper_case_globals, clippy::unreadable_literal, clippy::excessive_precision)]
+#![allow(
+    non_upper_case_globals,
+    clippy::unreadable_literal,
+    clippy::excessive_precision
+)]
 #[rustfmt::skip]
 pub(super) const NW_G0: [f64; 23] = [
     3.8224015853096448e-1, -2.1050116070918079e-2, -3.5630703295439368e-3,
