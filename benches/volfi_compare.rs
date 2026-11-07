@@ -49,9 +49,7 @@ fn make_cases(name: &str) -> Vec<(f64, f64)> {
                     rng.random_range(8.0..40.0)
                 };
                 let (x, b) = from_intrinsic(h, a);
-                if b.is_normal()
-                    && volfi_book::chart_total_volatility(-x, b).is_some()
-                {
+                if b.is_normal() && volfi_book::chart_total_volatility(-x, b).is_some() {
                     inputs.push((x, b));
                 }
             }
@@ -158,7 +156,10 @@ fn run<S: BlackSolver>(name: &str, n: usize, rounds: usize) {
         } else {
             time_core::<S>(&norm, n)
         };
-        println!("{name},{round},{ns:.6},{checksum:.17e},{covered},{}", inputs.len());
+        println!(
+            "{name},{round},{ns:.6},{checksum:.17e},{covered},{}",
+            inputs.len()
+        );
     }
 }
 
@@ -179,7 +180,9 @@ fn main() {
         }
     }
     assert!(CASES.contains(&case), "unknown case: {case}");
-    let n = numbers.first().map_or(150000, |v| v.parse().expect("iterations"));
+    let n = numbers
+        .first()
+        .map_or(150000, |v| v.parse().expect("iterations"));
     let rounds = numbers.get(1).map_or(2, |v| v.parse().expect("rounds"));
     assert!(n > 0 && rounds > 0 && numbers.len() <= 2);
     match solver {

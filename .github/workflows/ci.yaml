@@ -154,6 +154,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p benchmark-results
+          cargo check --features "${{ matrix.features }}" --bench volfi_compare
           cargo bench --bench volfi_compare --features "${{ matrix.features }}" \
             --no-run --message-format=json > benchmark-results/build.jsonl
           python3 - <<'PY'
