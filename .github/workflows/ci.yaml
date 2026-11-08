@@ -169,6 +169,13 @@ jobs:
           PY
           rustc -vV > finish-results/rustc.txt
           lscpu > finish-results/cpu.txt
+      - name: Verify source bridge to pinned reviewed Experimental
+        shell: bash
+        run: |
+          python3 candidate/scripts/verify_finish_scalar_bridge.py \
+            --source candidate/src/experimental/small.rs \
+            --report finish-results/source-bridge.json
+          cat finish-results/source-bridge.json >> "$GITHUB_STEP_SUMMARY"
       - name: Compare immutable binaries with ABBA order
         shell: bash
         run: |
