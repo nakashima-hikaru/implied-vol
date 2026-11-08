@@ -131,3 +131,61 @@ fn exact_exponential_pair_matches_generic_multiplication() {
         assert_eq!(original.lo.to_bits(), optimized.lo.to_bits(), "low {i}");
     }
 }
+
+#[test]
+fn finish_dispatch_boundaries_preserve_output_bits() {
+    // Include both sides of t=0.001, t=0.5, t=1 and h=2, the
+    // boundaries at which the existing D evaluator switches formulas.
+    let hs = [0.0001, 0.01, 0.04, 0.1, 0.5, 1.999_999, 2.0, 2.000_001, 7.9];
+    let ts = [
+        0.000_1, 0.000_499, 0.000_5, 0.000_501, 0.249_999,
+        0.25, 0.250_001, 0.499_999, 0.5, 0.500_001, 1.0, 2.5, 5.49,
+    ];
+    let mut checked = 0_usize;
+    for h in hs {
+        for t in ts {
+            let s = 2.0 * t;
+            let a = h * s;
+            if a > 10.0 {
+                continue;
+            }
+            let price = PriceBlackScholesNormalised::builder()
+                .log_moneyness(-a)
+                .total_volatility(s)
+                .build()
+                .unwrap()
+                .calculate::<DefaultSpecialFn>();
+            if !(price >= f64::MIN_POSITIVE && price < (-0.5 * a).exp()) {
+                continue;
+            }
+            for tweak in [-1e-5_f64, 0.0, 1e-5] {
+                let seed = s * (1.0 + tweak);
+                let old = frozen_finish(a, price, seed);
+                let new = finish(a, price, seed);
+                if old.is_finite() {
+                    assert_eq!(
+                        old.to_bits(),
+                        new.to_bits(),
+                        "h={h:.17e} t={t:.17e} tweak={tweak}"
+                    );
+                    checked += 1;
+                }
+            }
+        }
+    }
+    assert!(checked > 65, "insufficient representable boundary fixtures: {checked}");
+}
+
+#[test]
+fn scalar_square_subnormal_paths_match_original() {
+    for exponent in [-530, -520, -512, -511, -510, -500, -1, 0, 1] {
+        let x = 2.0_f64.powi(exponent);
+        for scale in [1.0, 1.125, 1.5] {
+            let y = x * scale;
+            let old = mul(Pair::from(y), Pair::from(y));
+            let new = square_scalar(y);
+            assert_eq!(old.hi.to_bits(), new.hi.to_bits());
+            assert_eq!(old.lo.to_bits(), new.lo.to_bits());
+        }
+    }
+}
