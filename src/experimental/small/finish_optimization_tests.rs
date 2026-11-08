@@ -261,7 +261,7 @@ fn seeded_wide_exponent_grid_preserves_source_bits() {
             4 => fma(x, 0.7, -(x * 0.7)),
             _ => {
                 let ulp = f64::from_bits(x.to_bits() + 1) - x;
-                let scale = f64::from((seed >> 7) % 1024) / 2048.0 - 0.25;
+                let scale = f64::from(((seed >> 7) % 1024) as u32) / 2048.0 - 0.25;
                 scale * ulp
             }
         };
@@ -280,7 +280,7 @@ fn seeded_wide_exponent_grid_preserves_source_bits() {
         );
         for scalar in [-0.5, 2.0, 0.125, 0.7] {
             let old = old_scale(pair, scalar);
-            let new = scale(pair, scalar);
+            let new = new_scale(pair, scalar);
             assert_eq!(
                 old.hi.to_bits(),
                 new.hi.to_bits(),
