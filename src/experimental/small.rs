@@ -71,25 +71,30 @@ fn scale(a: Pair, b: f64) -> Pair {
     add(Pair::from(hi), Pair::from(lo))
 }
 
-// The exact binary64 square is already normalized to a high/low pair
-// whenever its rounded high component is a normal float. Avoid a generic
-// twofold multiplication and normalization on this very common path.
+// A binary64 square has at most 106 exact significand bits.
+// Above 2^-900, its FMA product residual is exactly representable even
+// in the lowest possible nonzero binade (no subnormal residual rounding).
+// Near underflow, old mul+renormalization can change the rounded high:
+// use the original operation there, not just high.is_normal().
 #[inline]
 fn square_scalar(x: f64) -> Pair {
     let high = x * x;
-    if high.is_normal() {
-        Pair::new(high, fma(x, x, -high))
+    if high >= f64::from_bits(0x07b0_0000_0000_0000) && high.is_finite() {
+        // The old add(high,low) makes exact zero +0 even when the
+        // FMA residual alone is -0. Preserve both component sign bits.
+        Pair::new(high, fma(x, x, -high) + 0.0)
     } else {
         mul(Pair::from(x), Pair::from(x))
     }
 }
 
-// Scaling a normalized twofold number by 1/2 is exact if its components
-// remain normal. The tiny-value branch retains the original computation.
+// Scaling a normalized twofold number by 1/2 is exact in the
+// normal range, including the rounded low residual. Canonicalize
+// signed zero exactly as old mul's final l + a.lo*0.0 does.
 #[inline]
 fn scale_negative_half(a: Pair) -> Pair {
     if a.hi >= f64::from_bits(0x20b0_0000_0000_0000) {
-        Pair::new(-0.5 * a.hi, -0.5 * a.lo)
+        Pair::new(-0.5 * a.hi, -0.5 * a.lo + 0.0)
     } else {
         scale(a, -0.5)
     }

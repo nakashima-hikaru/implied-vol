@@ -192,3 +192,40 @@ fn scalar_square_subnormal_paths_match_original() {
         }
     }
 }
+
+#[test]
+fn scalar_dd_adversarial_underflow_and_signed_zero() {
+    // With x*x close to the normal/subnormal boundary, a rounded
+    // FMA residual can move the old mul's renormalized high by 1 ULP.
+    // The earlier high.is_normal() shortcut failed on this exact input.
+    let critical = f64::from_bits(0x200a_b8bf_40df_0b0a);
+    let original = mul(Pair::from(critical), Pair::from(critical));
+    let candidate = square_scalar(critical);
+    assert_eq!(original.hi.to_bits(), candidate.hi.to_bits());
+    assert_eq!(original.lo.to_bits(), candidate.lo.to_bits());
+
+    let pair = Pair::new(f64::from_bits(0x2505_fec6_9703_9bba), f64::from_bits(1));
+    let original = mul(pair, Pair::from(-0.5));
+    let candidate = scale_negative_half(pair);
+    assert_eq!(original.hi.to_bits(), candidate.hi.to_bits());
+    assert_eq!(original.lo.to_bits(), candidate.lo.to_bits());
+
+    let mut checked = 0_usize;
+    // Sweep exact represented significands around the 2^-900
+    // guard and the smallest normal square transition.
+    for exponent in [-545, -530, -515, -512, -511, -505, -480, -455, -450, -449, -448, -447, -20, 0] {
+        for fraction in 0..512_u64 {
+            let x = f64::from_bits(
+                (((1023 + exponent) as u64) << 52)
+                    | ((fraction * 0x1f3d_47d3) & ((1_u64 << 52) - 1)),
+            );
+            let before = mul(Pair::from(x), Pair::from(x));
+            let after = square_scalar(x);
+            assert_eq!(before.hi.to_bits(), after.hi.to_bits(), "square high e={exponent} f={fraction}");
+            assert_eq!(before.lo.to_bits(), after.lo.to_bits(), "square low e={exponent} f={fraction}");
+            checked += 1;
+        }
+    }
+    assert_eq!(checked, 14 * 512);
+}
+
