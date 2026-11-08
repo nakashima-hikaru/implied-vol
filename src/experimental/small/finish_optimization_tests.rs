@@ -138,8 +138,8 @@ fn finish_dispatch_boundaries_preserve_output_bits() {
     // boundaries at which the existing D evaluator switches formulas.
     let hs = [0.0001, 0.01, 0.04, 0.1, 0.5, 1.999_999, 2.0, 2.000_001, 7.9];
     let ts = [
-        0.000_1, 0.000_499, 0.000_5, 0.000_501, 0.249_999,
-        0.25, 0.250_001, 0.499_999, 0.5, 0.500_001, 1.0, 2.5, 5.49,
+        0.000_1, 0.000_499, 0.000_5, 0.000_501, 0.249_999, 0.25, 0.250_001, 0.499_999, 0.5,
+        0.500_001, 1.0, 2.5, 5.49,
     ];
     let mut checked = 0_usize;
     for h in hs {
@@ -173,7 +173,10 @@ fn finish_dispatch_boundaries_preserve_output_bits() {
             }
         }
     }
-    assert!(checked > 65, "insufficient representable boundary fixtures: {checked}");
+    assert!(
+        checked > 65,
+        "insufficient representable boundary fixtures: {checked}"
+    );
 }
 
 #[test]
