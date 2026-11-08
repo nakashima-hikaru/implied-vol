@@ -4,6 +4,8 @@ mod central;
 mod constants;
 mod direct_d;
 #[cfg(test)]
+mod finish_optimization_tests;
+#[cfg(test)]
 mod rank3_tests;
 mod upper;
 use crate::experimental::lanes::F64x2;
@@ -60,7 +62,42 @@ fn div(a: Pair, b: Pair) -> Pair {
 }
 #[inline]
 fn scale(a: Pair, b: f64) -> Pair {
-    mul(a, Pair::from(b))
+    // Specialized multiplication by a scalar: the second low component
+    // is exactly zero. The two live FMA operations retain their original
+    // order, as does the final Pair normalization.
+    let hi = a.hi * b;
+    let lo = fma(a.hi, b, -hi);
+    let lo = fma(a.lo, b, lo);
+    add(Pair::from(hi), Pair::from(lo))
+}
+
+// A binary64 square has at most 106 exact significand bits.
+// Above 2^-900, its FMA product residual is exactly representable even
+// in the lowest possible nonzero binade (no subnormal residual rounding).
+// Near underflow, old mul+renormalization can change the rounded high:
+// use the original operation there, not just high.is_normal().
+#[inline]
+fn square_scalar(x: f64) -> Pair {
+    let high = x * x;
+    if high >= f64::from_bits(0x07b0_0000_0000_0000) && high.is_finite() {
+        // The old add(high,low) makes exact zero +0 even when the
+        // FMA residual alone is -0. Preserve both component sign bits.
+        Pair::new(high, fma(x, x, -high) + 0.0)
+    } else {
+        mul(Pair::from(x), Pair::from(x))
+    }
+}
+
+// Scaling a normalized twofold number by 1/2 is exact in the
+// normal range, including the rounded low residual. Canonicalize
+// signed zero exactly as old mul's final l + a.lo*0.0 does.
+#[inline]
+fn scale_negative_half(a: Pair) -> Pair {
+    if a.hi >= f64::from_bits(0x20b0_0000_0000_0000) {
+        Pair::new(-0.5 * a.hi, -0.5 * a.lo + 0.0)
+    } else {
+        scale(a, -0.5)
+    }
 }
 
 #[inline]
@@ -152,7 +189,10 @@ fn forward_D(h: Pair, t: Pair) -> Pair {
     if t.hi <= 1.0 && (t.hi <= 0.5 || h.hi >= 2.0) {
         return direct_d::evaluate(h, t);
     }
-    div(dual_mills(sub(h, t), add(h, t), false), scale(t, 2.0))
+    div(
+        dual_mills(sub(h, t), add(h, t), false),
+        Pair::from(2.0 * t.hi),
+    )
 }
 #[inline]
 fn finish(a: f64, b: f64, s: f64) -> f64 {
@@ -163,15 +203,19 @@ fn finish(a: f64, b: f64, s: f64) -> f64 {
         return f64::NAN;
     }
     let hh = mul(h, h);
-    let tt = mul(t, t);
+    let tt = square_scalar(t.hi);
     let D = forward_D(h, t);
     if !(D.hi > 0.0 && D.hi.is_finite()) {
         return f64::NAN;
     }
-    let exponent = scale(add(hh, tt), -0.5);
+    let exponent = scale_negative_half(add(hh, tt));
     let ev = exponent.hi.exp();
+    // Since the other high factor is exactly one and ev is finite and
+    // positive, the generic twofold product reduces to this TwoSum.
+    // Its coefficient rounding matches the old FMA with a zero addend.
+    let exp_pair = add(Pair::from(ev), Pair::from(ev * exponent.lo));
     let v = mul(
-        mul(Pair::from(ev), Pair::new(1.0, exponent.lo)),
+        exp_pair,
         Pair::new(
             f64::from_bits(0x3fd9884533d43651),
             -f64::from_bits(0x3c7cbc0d30ebfd15),
@@ -430,7 +474,10 @@ fn near_atm(a: f64, b: f64) -> f64 {
         ),
     );
     let v = f64::from_bits(0x3fd9884533d43651) * (-s.hi * s.hi / 8.0).exp();
-    let w = scale(mul(s, s), 0.125);
+    // Preserve the original near-ATM operation order exactly. Unlike
+    // the finite rank common finish, this route has a separate precision
+    // certificate and must not inherit its proof domain automatically.
+    let w = mul(mul(s, s), Pair::from(0.125));
     let mut tail = ATM_SERIES[18].hi;
     for n in (3..18).rev() {
         tail = fma(tail, w.hi, ATM_SERIES[n].hi);
