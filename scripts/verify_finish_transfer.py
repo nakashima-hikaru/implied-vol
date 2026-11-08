@@ -116,12 +116,13 @@ def check_exact_envelopes():
     # Original finite seed cover lower bound; accepted t=s0/2.
     assert (SEED_LOWER/2)**2 > SQ
     # A binary64 x=M*2^e has at most 53 significant bits. If
-    # RN(x*x)>=2^-900 and 0<x<5.5, x>=2^-450 and e>=-502;
-    # thus the exact product and its RN residual live on a
-    # 2^(2e) >= 2^-1004 grid, which cannot underflow. The
+    # RN(x*x)>=2^-900 and 0<x<5.5 implies x>2^-451,
+    # including the predecessor of 2^-450 that may round up;
+    # hence e>=-503 and the represented product and its RN
+    # residual lie on a grid no finer than 2^-1006. The
     # residual is <=0.5 ULP of the product and has <=53 bits.
-    assert F(1,2**1004) > MIN_NORM
-    assert 2*(-450-52) == -1004
+    assert F(1,2**1006) > MIN_NORM
+    assert 2*(-451-52) == -1006
     assert F(8)**2+F(11,2)**2 == F(377,4)
     exp_abs_max = F(377,8)
     # Elementary strict bound ln(2)>0.69 from positive terms
@@ -136,7 +137,7 @@ def check_exact_envelopes():
     return {"small_seed_lower":"2^-350",
             "min_accepted_t2":"strictly above 2^-702",
             "specialized_square_threshold":"2^-900",
-            "min_exact_product_grid":"2^-1004",
+            "min_exact_product_grid":"2^-1006",
             "dd_half_guard":"2^-500",
             "exp_lower_theorem":"exp(-377/8)>2^-70",
             "normal_min":"2^-1022",
