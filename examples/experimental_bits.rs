@@ -66,7 +66,11 @@ fn generate(case: usize, state: &mut u64) -> (f64, f64) {
             } else {
                 cap * 2.0_f64.powi(-((random_word(state) % 55) as i32 + 1))
             };
-            f64::from_bits(b0.to_bits().saturating_add(random_word(state) % 3).saturating_sub(1))
+            f64::from_bits(
+                b0.to_bits()
+                    .saturating_add(random_word(state) % 3)
+                    .saturating_sub(1),
+            )
         }
         11 => a * exp_between(state, -700.0, 4.0),
         12 => cap * unit(state),
