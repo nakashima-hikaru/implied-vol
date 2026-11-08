@@ -45,6 +45,7 @@ jobs:
         run: |
           python3 scripts/verify_finish_scalar_bridge.py
           python3 scripts/verify_finish_transfer.py --samples 80000
+          python3 scripts/replay_finish_certificate.py --help >/dev/null
       - run: cargo check --workspace --features "${{ matrix.features }}"
       - run: cargo clippy --features "${{ matrix.features }}" -- -D warnings
       - run: RUSTFLAGS="-C target-cpu=native -C target-feature=+fma" cargo test --features "${{ matrix.features }}" --doc -- --show-output

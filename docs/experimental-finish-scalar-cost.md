@@ -120,11 +120,14 @@ redundant arithmetic without introducing a different price model.
 The `src/experimental/small.rs` file changes, so the previous
 source-hash-bound **continuous `rho_J<1` certificate is not
 automatically re-qualified** by these finite tests or the source
-bridge. In particular, the theorem requires accounting for
-normality, underflow and vendor `exp` behavior in the new
-source operation order. The working assumption remains round-to-nearest
-binary64, explicit FMA, and gradual underflow; fast-math reassociation
-is not included in the numerical contract.
+bridge. The negative controls revealed a genuine underflow and
+signed-zero exception in an earlier shortcut; both have been
+guarded. The [IEEE transfer analysis](experimental-finish-transfer.md)
+now derives exact parameter envelopes and bit-preserving local
+operation identities **conditional on the inherited accepted-leaf
+and normalized-DD hypotheses**. Replaying the original full
+proof archive and independently verifying all IEEE lemmas
+remain required before an unconditional certificate claim.
 
 ## Timings: pinned source, same host, rotating ABBA
 
@@ -278,9 +281,13 @@ cargo test --features experimental
 # recipe in the A/B job artifact. Use identical flags/harness for both revisions.
 ```
 
-The next research direction is to certify the new source-operation
-rounding ledger against the archived continuous seed covers,
-then investigate branch-specific geometry simplifications only where
-the dynamic A/B experiments show positive return. A direct
-seed-only acceptance path is not presently certified or benchmarked;
-the existing cubic finish therefore remains intact.
+The [transfer proof obligations](experimental-finish-transfer.md)
+and the new `scripts/replay_finish_certificate.py` make the
+remaining archived continuous proof dependency explicit. The
+boundary-corrected implementation is faster by 9.30% on
+`rank_small3`, 9.56% on `rank_core4`, 9.46% on
+`finite_seed`, and 3.96% on `mixed_normalised` on
+a same-host pinned x86-64 rerun. See that report for
+the exact normal/subnormal and signed-zero counterexamples.
+A direct seed-only acceptance path is not currently certified;
+the existing cubic finish remains intact.
