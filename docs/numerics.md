@@ -50,6 +50,17 @@ in the erfcx difference and seed error in extreme tails can produce larger
 errors than Jäckel's attainable-precision target. Its regression allowance
 reflects this method's accuracy trade-off.
 
+
+The `small::finish` research optimization specializes only known-zero and
+power-of-two double-double operands, without changing the fitted seed,
+Black-price residual, or the cubic inverse coefficients. The original
+source is reconstructible byte-for-byte by
+[`scripts/verify_finish_scalar_bridge.py`](../scripts/verify_finish_scalar_bridge.py).
+Finite bitwise regression tests and same-host benchmarks are reported in
+[the 2026-11-08 common-finish cost study](experimental-finish-scalar-cost.md).
+Reconstructing the reviewed source does not by itself renew its
+source-hash-bound numerical proof for the altered arithmetic.
+
 **Experimental** uses fitted seeds, compensated residuals, Mills evaluation,
 and an internal LBR branch. Its common finish uses seed coordinates
 `h=abs(x)/s0` and `t=s0/2`, then applies a cubic inverse of the local price series:

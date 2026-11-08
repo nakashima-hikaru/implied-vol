@@ -127,7 +127,7 @@ jobs:
           path: benchmark-results/
 
   experimental-finish-study:
-    name: Experimental exponential-pair incremental A/B (temporary)
+    name: Experimental common finish final A/B (temporary)
     if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'codex/experimental-compensated-finish-cost-20261108'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -136,7 +136,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 8a4e0ad3aa4b4f053170b05a054b6692ec37ee88
+          ref: c6bb0c1313ac4dc3a23e18ac4752ac21fc87e46f
           path: base
           persist-credentials: false
       - uses: actions/checkout@v4
