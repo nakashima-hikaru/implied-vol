@@ -257,9 +257,19 @@ products, halving and exponential factors, and
 87,680 squares including guard neighbors.
 It also asserts that **both old unsafe
 shortcuts fail** on their constructed negative
-controls. Rust integration tests independently
-check the frozen old common finish, boundary
-inputs and exact high/low component bits.
+controls. Rust tests additionally cover **300,000
+deterministic normalized pairs** with biased
+exponents from 1 through 1533 (unbiased -1022
+through +510, chosen so tested squares are finite),
+varying high/low components and signed zeros.
+They compare the actual old and new f64 helper
+outputs bit-for-bit and protect the near-ATM
+operation-order handoff. The existing
+independent high-precision root regressions and
+normal/fma CI variants also pass.
+
+These are finite validation results, not
+exhaustive verification of all binary64 states.
 
 For a **fresh replay of the original source-hash-
 bound continuous certificate**, the required
@@ -273,15 +283,20 @@ python3 scripts/replay_finish_certificate.py \
   --out target/proof/finish-source-transfer.json
 ```
 
-The replay tool first reconstructs the exact
-reviewed `small.rs` blob, then creates a temporary
+The replay tool first runs the current
+`verify_finish_transfer.py` source and f64
+equivalence checks, then reconstructs the exact
+reviewed `small.rs` blob, creates a temporary
 canonical repository and runs the existing
-`scripts/verify_direct_d.py` with its actual
-archived dependencies and SIMD backend. It
-rejects missing archives or an error bound
-`rho_J>=1`; it cannot fabricate data or silently
-substitute finite samples. It never modifies
-the active optimized source.
+`scripts/verify_direct_d.py` against its
+**actual** archived dependencies and SIMD backend.
+Both stages are mandatory for a successful result.
+The tool rejects missing archives, source mismatches,
+or a recomputed error bound `rho_J>=1`; it
+cannot fabricate archive inputs, substitute
+cached JSON bounds, or silently pass on finite
+samples alone. It never modifies the active
+optimized source.
 
 **Outstanding for an unconditional release:**
 supply the reviewed reference archive, run
@@ -318,3 +333,33 @@ compiler/CPU hashes](https://github.com/nakashima-hikaru/implied-vol/actions/run
 The original `Experimental` seed, cubic inverse,
 application-facing API and fallback routes
 remain unchanged.
+
+### Independent final repeat after near-ATM isolation
+
+The `near_atm` route uses the original generic
+twofold multiplication rather than inheriting the
+small/core/wing common-finish precision conditions.
+This change has its own exact inverse source bridge
+and 300,000 wide-exponent helper regressions. The
+last same-executable, pinned-main scalar A/B on an
+AMD EPYC Linux runner gives:
+
+| Workload | Main ns | Candidate ns | Change |
+|---|---:|---:|---:|
+| rank_small3 | 113.22 | 109.85 | **-2.98%** |
+| rank_core4 | 100.03 | 96.76 | **-3.27%** |
+| finite_seed | 103.74 | 96.64 | **-6.84%** |
+| wing_seed | 108.21 | 102.33 | **-5.44%** |
+| mixed_normalised | 106.77 | 104.71 | **-1.93%** |
+| mixed_full | 126.57 | 123.76 | **-2.22%** |
+| large_lower (control) | 166.69 | 166.72 | +0.01% |
+
+All four paired blocks improve for each of the
+six listed target workloads. Changes are runner
+and population specific; this table must not be
+mixed with the preceding runner's absolute
+nanoseconds to form a before/after improvement.
+
+[Complete last-run raw JSON, paired blocks,
+binary SHA-256 hashes and CPU/compiler record](https://github.com/nakashima-hikaru/implied-vol/actions/runs/42447206905/artifacts/13603594714).
+

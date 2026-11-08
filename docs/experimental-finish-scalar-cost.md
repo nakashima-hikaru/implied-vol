@@ -281,6 +281,15 @@ cargo test --features experimental
 # recipe in the A/B job artifact. Use identical flags/harness for both revisions.
 ```
 
+The final near-ATM-preserving version has its own
+[pinned-runner A/B artifact](https://github.com/nakashima-hikaru/implied-vol/actions/runs/42447206905/artifacts/13603594714);
+it remains **1.93% faster** on `mixed_normalised`,
+**2.22% faster** on `mixed_full`, and **3–7% faster**
+on representative small/core/finite/wing routes.
+The modified routine no longer changes near-ATM
+common scalar multiplication outside the intended
+small/core/wing conditional proof domain.
+
 The [transfer proof obligations](experimental-finish-transfer.md)
 and the new `scripts/replay_finish_certificate.py` make the
 remaining archived continuous proof dependency explicit. The
