@@ -189,6 +189,14 @@ fn forward_D(h: Pair, t: Pair) -> Pair {
         Pair::from(2.0 * t.hi),
     )
 }
+// Thread-local research counter used only by the self-contained test that
+// profiles the existing seed->finish residual distribution. No release cost.
+#[cfg(test)]
+thread_local! {
+    static FINISH_N_HIST: std::cell::RefCell<[usize; 8]> =
+        const { std::cell::RefCell::new([0; 8]) };
+}
+
 #[inline]
 fn finish(a: f64, b: f64, s: f64) -> f64 {
     let hv = a / s;
@@ -215,6 +223,28 @@ fn finish(a: f64, b: f64, s: f64) -> f64 {
     let sv = scale(v, s);
     let residual = (fma(-sv.hi, D.hi, b) - sv.hi * D.lo) - sv.lo * D.hi;
     let n = residual / sv.hi;
+    #[cfg(test)]
+    FINISH_N_HIST.with(|hist| {
+        let v = n.abs();
+        let index = if v == 0.0 {
+            0
+        } else if v < 2.0_f64.powi(-40) {
+            1
+        } else if v < 2.0_f64.powi(-32) {
+            2
+        } else if v < 2.0_f64.powi(-28) {
+            3
+        } else if v < 2.0_f64.powi(-24) {
+            4
+        } else if v < 2.0_f64.powi(-20) {
+            5
+        } else if v < 2.0_f64.powi(-16) {
+            6
+        } else {
+            7
+        };
+        hist.borrow_mut()[index] += 1;
+    });
     let H2 = hh.hi - tt.hi;
     // Revert the local price series through n^3. The seed error is small
     // enough for the fourth-order remainder; no iterative refinement is needed.

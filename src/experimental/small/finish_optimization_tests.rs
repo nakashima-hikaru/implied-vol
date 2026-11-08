@@ -6,6 +6,7 @@ use super::{
     Pair, add, finish, fma, forward_D, mul, scale as new_scale, scale_negative_half, square_scalar,
 };
 use crate::{DefaultSpecialFn, PriceBlackScholesNormalised};
+use rand::{RngExt, SeedableRng};
 
 #[inline]
 fn old_scale(a: Pair, b: f64) -> Pair {
@@ -117,4 +118,34 @@ fn common_finish_matches_frozen_expression() {
         }
     }
     assert!(compared > 1200, "insufficient accepted finish cases");
+}
+
+#[test]
+fn profile_existing_finish_residual_distribution() {
+    let mut rng = rand::rngs::StdRng::from_seed([42; 32]);
+    let mut complete = 0_usize;
+    let mut accepted = 0_usize;
+    super::FINISH_N_HIST.with(|h| *h.borrow_mut() = [0; 8]);
+    while complete < 4096 {
+        let a = rng.random_range(1e-4_f64..5.0_f64);
+        let total_vol = rng.random_range(1e-3_f64..5.0_f64);
+        let b = PriceBlackScholesNormalised::builder()
+            .log_moneyness(-a)
+            .total_volatility(total_vol)
+            .build()
+            .unwrap()
+            .calculate::<DefaultSpecialFn>();
+        if b < f64::MIN_POSITIVE || b >= (-0.5 * a).exp() {
+            continue;
+        }
+        let vol = super::solve(a, b);
+        if vol.is_finite() && vol > 0.0 {
+            accepted += 1;
+        }
+        complete += 1;
+    }
+    let hist = super::FINISH_N_HIST.with(|h| *h.borrow());
+    let total: usize = hist.iter().sum();
+    assert!(accepted > 3000 && total > 250);
+    eprintln!("FINISH_N_PROFILE|input_count={complete}|valid={accepted}|finish_count={total}|hist={hist:?}");
 }
