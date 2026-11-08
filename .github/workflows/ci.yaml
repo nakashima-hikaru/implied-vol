@@ -127,7 +127,7 @@ jobs:
           path: benchmark-results/
 
   experimental-finish-study:
-    name: Experimental common finish scalar A/B (temporary)
+    name: Experimental exponential-pair incremental A/B (temporary)
     if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'codex/experimental-compensated-finish-cost-20261108'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -136,7 +136,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: c6bb0c1313ac4dc3a23e18ac4752ac21fc87e46f
+          ref: 8a4e0ad3aa4b4f053170b05a054b6692ec37ee88
           path: base
           persist-credentials: false
       - uses: actions/checkout@v4
@@ -177,14 +177,6 @@ jobs:
             --iterations 120000 --rounds 2 --blocks 4 \
             --output finish-results/paired.json > finish-results/summary.md
           cat finish-results/summary.md >> "$GITHUB_STEP_SUMMARY"
-      - name: Profile actual rank-route correction magnitudes (test-only)
-        shell: bash
-        run: |
-          CARGO_TARGET_DIR="$GITHUB_WORKSPACE/target-profile" cargo test \
-            --manifest-path candidate/Cargo.toml --features experimental --lib \
-            profile_existing_finish_residual_distribution -- --nocapture \
-            > finish-results/residual-profile.txt 2>&1
-          grep 'FINISH_N_PROFILE' finish-results/residual-profile.txt >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
