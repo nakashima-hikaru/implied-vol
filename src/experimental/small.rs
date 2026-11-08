@@ -5,6 +5,8 @@ mod constants;
 mod direct_d;
 #[cfg(test)]
 mod rank3_tests;
+#[cfg(test)]
+mod finish_optimization_tests;
 mod upper;
 use crate::experimental::lanes::F64x2;
 use crate::experimental::math::inverse_norm_cdf;
@@ -60,7 +62,37 @@ fn div(a: Pair, b: Pair) -> Pair {
 }
 #[inline]
 fn scale(a: Pair, b: f64) -> Pair {
-    mul(a, Pair::from(b))
+    // Specialized multiplication by a scalar: the second low component
+    // is exactly zero. The two live FMA operations retain their original
+    // order, as does the final Pair normalization.
+    let hi = a.hi * b;
+    let lo = fma(a.hi, b, -hi);
+    let lo = fma(a.lo, b, lo);
+    add(Pair::from(hi), Pair::from(lo))
+}
+
+// The exact binary64 square is already normalized to a high/low pair
+// whenever its rounded high component is a normal float. Avoid a generic
+// twofold multiplication and normalization on this very common path.
+#[inline]
+fn square_scalar(x: f64) -> Pair {
+    let high = x * x;
+    if high.is_normal() {
+        Pair::new(high, fma(x, x, -high))
+    } else {
+        mul(Pair::from(x), Pair::from(x))
+    }
+}
+
+// Scaling a normalized twofold number by 1/2 is exact if its components
+// remain normal. The tiny-value branch retains the original computation.
+#[inline]
+fn scale_negative_half(a: Pair) -> Pair {
+    if a.hi >= f64::from_bits(0x20b0_0000_0000_0000) {
+        Pair::new(-0.5 * a.hi, -0.5 * a.lo)
+    } else {
+        scale(a, -0.5)
+    }
 }
 
 #[inline]
@@ -152,7 +184,7 @@ fn forward_D(h: Pair, t: Pair) -> Pair {
     if t.hi <= 1.0 && (t.hi <= 0.5 || h.hi >= 2.0) {
         return direct_d::evaluate(h, t);
     }
-    div(dual_mills(sub(h, t), add(h, t), false), scale(t, 2.0))
+    div(dual_mills(sub(h, t), add(h, t), false), Pair::from(2.0 * t.hi))
 }
 #[inline]
 fn finish(a: f64, b: f64, s: f64) -> f64 {
@@ -163,12 +195,12 @@ fn finish(a: f64, b: f64, s: f64) -> f64 {
         return f64::NAN;
     }
     let hh = mul(h, h);
-    let tt = mul(t, t);
+    let tt = square_scalar(t.hi);
     let D = forward_D(h, t);
     if !(D.hi > 0.0 && D.hi.is_finite()) {
         return f64::NAN;
     }
-    let exponent = scale(add(hh, tt), -0.5);
+    let exponent = scale_negative_half(add(hh, tt));
     let ev = exponent.hi.exp();
     let v = mul(
         mul(Pair::from(ev), Pair::new(1.0, exponent.lo)),
