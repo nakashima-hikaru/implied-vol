@@ -300,3 +300,25 @@ a same-host pinned x86-64 rerun. See that report for
 the exact normal/subnormal and signed-zero counterexamples.
 A direct seed-only acceptance path is not currently certified;
 the existing cubic finish remains intact.
+
+## Acceptance and reproducibility addendum
+
+The production-logic change was **accepted for the opt-in
+`solver::Experimental` implementation only**. In addition to
+the pinned ABBA measurements and source-level IEEE transfer,
+a separate pinned-main/native-FMA release binary comparison
+verified **all 131,072 individual input and output rows**
+byte-for-byte (107,712 positive finite, 22,781 zero and
+579 `None`; no mismatches). The [complete artifact](https://github.com/nakashima-hikaru/implied-vol/actions/runs/42452983641/artifacts/13605534124)
+retains both output files, the case count, CPU/compiler metadata
+and SHA-256 hashes. Unlike the earlier warm benchmark checksum
+tests, this comparison checks **each individual result**.
+
+The source-hash-bound archived continuous proof and
+fully mechanized IEEE equivalence remain **conditional**:
+the archive is external to the accessible repository.
+Adoption means retaining the previously documented
+accepted-domain precision contract under the
+[floating-point transfer assumptions](experimental-finish-transfer.md),
+not claiming a newly established unconditional theorem.
+No seed, cubic correction, fallback or default solver changed.

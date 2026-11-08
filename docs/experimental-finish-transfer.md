@@ -363,3 +363,67 @@ nanoseconds to form a before/after improvement.
 [Complete last-run raw JSON, paired blocks,
 binary SHA-256 hashes and CPU/compiler record](https://github.com/nakashima-hikaru/implied-vol/actions/runs/42447206905/artifacts/13603594714).
 
+
+## Adoption decision — 2026-11-08
+
+**Accepted for the opt-in `solver::Experimental` implementation**, not
+for the default Hybrid solver and not as a newly published,
+unconditionally certified algorithm. The objective is to reduce
+unnecessary double-double operations *without changing* the
+underlying approximation or numerical model.
+
+The decision uses the following independent gates:
+
+1. **Bit-level end-to-end comparator.** Two separate native/FMA
+   release-mode executables, built from pinned
+   `main@c6bb0c1313ac4dc3a23e18ac4752ac21fc87e46f`
+   and the final candidate, ran the same deterministic test harness
+   over 16 constructed regimes (ATM, normal-price interiors,
+   log-price tails, upper cap neighbors, tiny a/b, and
+   small/large branch thresholds), 8,192 cases per regime.
+   The entire **131,072-line output files were byte-for-byte equal**,
+   not just a checksum. Of these outputs, **107,712** were
+   positive finite binary64 results, **22,781** were zero,
+   and **579** were `None`. The output SHA-256 in both
+   builds is `efc126994a49ee117542da4fa854441a58fbc1d7a3c5581260e08558627b1fb1`.
+   [Complete output and provenance artifact](https://github.com/nakashima-hikaru/implied-vol/actions/runs/42452983641/artifacts/13605534124).
+
+2. **Source and rounding domain.** The exact inverse
+   transformation reconstructs the reviewed old source
+   (Git blob `6a6c5e55719c64de2134d8803482a892c02eb638`).
+   The FP transfer ledger accounts for normality, the
+   `2^-900` exact-product threshold, the `2^-500` halving
+   guard, the counterexamples and signed zero. The
+   near-ATM route explicitly retains the original generic
+   operation because it has a different proof domain.
+
+3. **No loss of existing tests.** The full feature-matrix
+   `experimental` unit/integration/independent-root tests,
+   source binding, 300,000 wide-exponent comparisons and
+   negative controls pass. The exact-output comparator is
+   finite evidence, not a universal all-input proof.
+
+4. **Measured return.** Pinned-main paired Linux AMD x86-64
+   scalar benchmarks improve the broader
+   `mixed_normalised` case by **1.93%** and `mixed_full`
+   by **2.22%** on the final near-ATM-preserving version;
+   `finite_seed` improves **6.84%** and `wing_seed`
+   **5.44%**. The result is not claimed for every CPU,
+   and user-level total-portfolio impact depends on the
+   trade population.
+
+**Limit of acceptance:** the independently reviewed external
+`implied-black-volatility` proof archive was not accessible
+for a fresh rerun; a fully mechanized all-binary64
+equivalence theorem is also unavailable. Existing source-bound
+`rho_J<1` conclusions are therefore inherited **conditionally**
+on the original accepted-leaf contracts and the explicitly
+documented floating-point equivalence lemmas. This adoption
+does **not** assert a fresh unconditional certificate. The
+fail-closed archive replay tool remains available for later
+independent requalification. Because this is confined to
+opt-in Experimental and the complete output comparison is
+bit-identical on a broad finite corpus, the modest performance
+improvement is judged worth adopting without changing the
+default or claiming stronger numerical guarantees.
+
