@@ -132,3 +132,53 @@ jobs:
         with:
           name: hybrid-lbr-${{ matrix.mode }}
           path: benchmark-results/
+
+  experimental-bit-identity:
+    name: Pinned Experimental full-output bit identity (temporary)
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'codex/experimental-compensated-finish-cost-20261108'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      RUSTFLAGS: -C target-cpu=native -C target-feature=+fma
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: c6bb0c1313ac4dc3a23e18ac4752ac21fc87e46f
+          path: baseline
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: candidate
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Compile same input/serialization harness against both versions
+        shell: bash
+        run: |
+          mkdir -p identity-results baseline/examples
+          cp candidate/examples/experimental_bits.rs baseline/examples/experimental_bits.rs
+          CARGO_TARGET_DIR="$GITHUB_WORKSPACE/target-bit-baseline" cargo run \
+            --release --manifest-path baseline/Cargo.toml --features experimental \
+            --example experimental_bits --quiet > identity-results/baseline.txt
+          CARGO_TARGET_DIR="$GITHUB_WORKSPACE/target-bit-candidate" cargo run \
+            --release --manifest-path candidate/Cargo.toml --features experimental \
+            --example experimental_bits --quiet > identity-results/candidate.txt
+          if ! cmp identity-results/baseline.txt identity-results/candidate.txt; then
+            diff -u identity-results/baseline.txt identity-results/candidate.txt \
+              | head -100 > identity-results/first-differences.txt || true
+            echo 'FAILED: source-precise Experimental output mismatch'
+            cat identity-results/first-differences.txt
+            exit 1
+          fi
+          wc -l identity-results/baseline.txt > identity-results/case-count.txt
+          sha256sum identity-results/*.txt > identity-results/hashes.txt
+          rustc -vV > identity-results/rustc.txt
+          lscpu > identity-results/cpu.txt
+          printf '%s\n' 'Pinned main vs candidate: exact output files match for 131072 prepared values' \
+            >> "$GITHUB_STEP_SUMMARY"
+          cat identity-results/case-count.txt >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: experimental-bit-identity
+          path: identity-results/
