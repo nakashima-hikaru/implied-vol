@@ -38,7 +38,32 @@ def main():
     parser.add_argument("--simd-root",type=Path,
                         help="optional reviewed fearless_simd 1.0.0 crate source")
     parser.add_argument("--out",type=Path,default=ROOT/"target/proof/finish-source-transfer.json")
+    parser.add_argument("--transfer-samples",type=int,default=80000,
+                        help="deterministic f64 equivalence cases checked before the old proof")
     args=parser.parse_args()
+    # A successful archived proof is necessary but not sufficient:
+    # re-run this PR's source and FP transfer validation as part of the
+    # same invocation, rather than leaving it to an external checklist.
+    transfer_script=ROOT/"scripts/verify_finish_transfer.py"
+    if not 0 < args.transfer_samples <= 1_000_000:
+        parser.error("--transfer-samples must be in 1..1000000")
+    with tempfile.TemporaryDirectory(prefix="implied-vol-fp-transfer-") as fp_tmp:
+        transfer_output=Path(fp_tmp)/"transfer.json"
+        transfer_cmd=[
+            sys.executable,str(transfer_script),
+            "--source",str(ROOT/"src/experimental/small.rs"),
+            "--report",str(transfer_output),
+            "--samples",str(args.transfer_samples),
+        ]
+        transfer=subprocess.run(transfer_cmd,capture_output=True,text=True,check=False)
+        if transfer.returncode:
+            raise RuntimeError(
+                f"optimized arithmetic transfer failed, code={transfer.returncode}"
+                f"\nSTDOUT:\n{transfer.stdout[-5000:]}\nSTDERR:\n{transfer.stderr[-5000:]}"
+            )
+        transfer_report=json.loads(transfer_output.read_text())
+    if not transfer_report["finite_checks"]["all_finite_bit_checks_passed"]:
+        raise ValueError("the optimized arithmetic transfer checks failed")
     archive=args.reference_root.resolve()
     required=[archive/"src/small.rs",
               archive/"results/global_proof/small_seed/coverage.json",
@@ -84,6 +109,9 @@ def main():
             "reference_root":str(archive),
             "reference_bounds_rho_J":bounds,
             "proof_result_sha256":hashlib.sha256(output.read_bytes()).hexdigest(),
+            "transfer_finite_counts":transfer_report["finite_checks"]["counts"],
+            "transfer_source_blob":transfer_report["pinned_baseline_blob"],
+            "transfer_envelopes":transfer_report["exact_envelopes"],
             "qualification":"conditional on the separately stated IEEE equivalence "
                             "lemmas and all original proof/environment assumptions",
             "not_claimed":["a newly mechanized complete IEEE proof",
