@@ -69,6 +69,7 @@ fn scale_negative_half(a: Pair) -> Pair {
 fn scale(a: Pair, b: f64) -> Pair {
     mul(a, Pair::from(b))
 }
+
 """
     source = replace_once(source, scale_optimized, scale_original, "scalar scaling and square")
     source = replace_once(
