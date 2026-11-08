@@ -213,7 +213,9 @@ fn scalar_dd_adversarial_underflow_and_signed_zero() {
     let mut checked = 0_usize;
     // Sweep exact represented significands around the 2^-900
     // guard and the smallest normal square transition.
-    for exponent in [-545, -530, -515, -512, -511, -505, -480, -455, -450, -449, -448, -447, -20, 0] {
+    for exponent in [
+        -545, -530, -515, -512, -511, -505, -480, -455, -450, -449, -448, -447, -20, 0,
+    ] {
         for fraction in 0..512_u64 {
             let x = f64::from_bits(
                 (((1023 + exponent) as u64) << 52)
@@ -221,11 +223,18 @@ fn scalar_dd_adversarial_underflow_and_signed_zero() {
             );
             let before = mul(Pair::from(x), Pair::from(x));
             let after = square_scalar(x);
-            assert_eq!(before.hi.to_bits(), after.hi.to_bits(), "square high e={exponent} f={fraction}");
-            assert_eq!(before.lo.to_bits(), after.lo.to_bits(), "square low e={exponent} f={fraction}");
+            assert_eq!(
+                before.hi.to_bits(),
+                after.hi.to_bits(),
+                "square high e={exponent} f={fraction}"
+            );
+            assert_eq!(
+                before.lo.to_bits(),
+                after.lo.to_bits(),
+                "square low e={exponent} f={fraction}"
+            );
             checked += 1;
         }
     }
     assert_eq!(checked, 14 * 512);
 }
-
