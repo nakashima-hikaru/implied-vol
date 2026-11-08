@@ -147,5 +147,7 @@ fn profile_existing_finish_residual_distribution() {
     let hist = super::FINISH_N_HIST.with(|h| *h.borrow());
     let total: usize = hist.iter().sum();
     assert!(accepted > 3000 && total > 250);
-    eprintln!("FINISH_N_PROFILE|input_count={complete}|valid={accepted}|finish_count={total}|hist={hist:?}");
+    eprintln!(
+        "FINISH_N_PROFILE|input_count={complete}|valid={accepted}|finish_count={total}|hist={hist:?}"
+    );
 }
