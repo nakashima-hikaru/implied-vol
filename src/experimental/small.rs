@@ -4,9 +4,9 @@ mod central;
 mod constants;
 mod direct_d;
 #[cfg(test)]
-mod rank3_tests;
-#[cfg(test)]
 mod finish_optimization_tests;
+#[cfg(test)]
+mod rank3_tests;
 mod upper;
 use crate::experimental::lanes::F64x2;
 use crate::experimental::math::inverse_norm_cdf;
@@ -184,7 +184,10 @@ fn forward_D(h: Pair, t: Pair) -> Pair {
     if t.hi <= 1.0 && (t.hi <= 0.5 || h.hi >= 2.0) {
         return direct_d::evaluate(h, t);
     }
-    div(dual_mills(sub(h, t), add(h, t), false), Pair::from(2.0 * t.hi))
+    div(
+        dual_mills(sub(h, t), add(h, t), false),
+        Pair::from(2.0 * t.hi),
+    )
 }
 #[inline]
 fn finish(a: f64, b: f64, s: f64) -> f64 {

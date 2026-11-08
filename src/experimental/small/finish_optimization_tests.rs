@@ -3,8 +3,7 @@
 //! The test reference freezes the old common finish expression, so it also
 //! guards the original FMA operation order independently of result tolerance.
 use super::{
-    Pair, add, div, finish, fma, forward_D, mul, scale, scale_negative_half, scale as new_scale,
-    square_scalar,
+    Pair, add, finish, fma, forward_D, mul, scale as new_scale, scale_negative_half, square_scalar,
 };
 use crate::{DefaultSpecialFn, PriceBlackScholesNormalised};
 
@@ -55,8 +54,7 @@ fn scalar_dd_specialization_preserves_bits() {
         state ^= state << 13;
         state ^= state >> 7;
         state ^= state << 17;
-        let frac = f64::from_bits((0x3ff0_0000_0000_0000_u64)
-            | (state & 0x000f_ffff_ffff_ffff));
+        let frac = f64::from_bits((0x3ff0_0000_0000_0000_u64) | (state & 0x000f_ffff_ffff_ffff));
         let exponent = (i % 980) as i32 - 480;
         let x = frac * 2.0_f64.powi(exponent);
         let low = fma(x, 0.7, -(x * 0.7));
@@ -69,8 +67,16 @@ fn scalar_dd_specialization_preserves_bits() {
         }
         let old_square = mul(Pair::from(x), Pair::from(x));
         let new_square = square_scalar(x);
-        assert_eq!(old_square.hi.to_bits(), new_square.hi.to_bits(), "square hi {i}");
-        assert_eq!(old_square.lo.to_bits(), new_square.lo.to_bits(), "square lo {i}");
+        assert_eq!(
+            old_square.hi.to_bits(),
+            new_square.hi.to_bits(),
+            "square hi {i}"
+        );
+        assert_eq!(
+            old_square.lo.to_bits(),
+            new_square.lo.to_bits(),
+            "square lo {i}"
+        );
         if pair.hi > f64::from_bits(0x20b0_0000_0000_0000) {
             let old = old_scale(pair, -0.5);
             let new = scale_negative_half(pair);
@@ -103,7 +109,8 @@ fn common_finish_matches_frozen_expression() {
         let new = finish(a, price, seed);
         if old.is_finite() && new.is_finite() {
             assert_eq!(
-                old.to_bits(), new.to_bits(),
+                old.to_bits(),
+                new.to_bits(),
                 "a={a:.17e}, b={price:.17e}, seed={seed:.17e}"
             );
             compared += 1;
