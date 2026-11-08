@@ -38,7 +38,7 @@ fn generate(case: usize, state: &mut u64) -> (f64, f64) {
         7 => exp_between(state, -800.0, -10.0),
         8 => 0.25 * unit(state),
         9 => {
-            let guard = [0.0625, 0.25, 0.45, 0.5, 1.6, 4.0, 10.0];
+            let guard: [f64; 7] = [0.0625, 0.25, 0.45, 0.5, 1.6, 4.0, 10.0];
             let k = (random_word(state) as usize) % guard.len();
             let bits = guard[k].to_bits();
             f64::from_bits(bits + (random_word(state) % 3) - 1)
