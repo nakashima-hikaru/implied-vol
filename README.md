@@ -115,6 +115,7 @@ trade-off from Hybrid. Its direct erfcx subtraction can lose digits near ATM;
 returning a finite result does not certify convergence.
 
 - [Performance results and reproducible benchmarks](docs/performance.md)
+- [Experimental common-finish scalar/twofold cost reduction (research)](docs/experimental-finish-scalar-cost.md)
 - [Algorithms, accuracy contracts, and numerical limits](docs/numerics.md)
 
 ## Algorithm references

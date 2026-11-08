@@ -190,6 +190,49 @@ new algorithm. The demonstrated hotspot improvement is material (typically
 are smaller because some inputs use other branches. These are
 host/workload-specific timings, not portable speed guarantees.
 
+## Final integrated pinned-main comparison
+
+After the exponential factor change and removal of all profiling code,
+the final integrated implementation was compared directly against
+`main@c6bb0c13` on another pinned, same-host experiment, AMD EPYC
+9V45, rustc 1.99.1 / LLVM 23.1.1, native/FMA flags and LTO.
+The benchmark executable source is shared by both builds; outputs
+have matching checksums on **all 13 workloads**. Each of four
+paired blocks has two rounds and 120,000 calls per timed invocation.
+
+| Case | Main ns | Optimized ns | Change |
+|---|---:|---:|---:|
+| rank_small2 | 107.80 | 101.48 | **-5.86%** |
+| rank_small3 | 113.43 | 111.19 | -1.97% |
+| rank_core4 | 99.97 | 96.83 | **-3.14%** |
+| finite_seed | 103.74 | 96.68 | **-6.81%** |
+| wing_seed | 107.44 | 101.62 | **-5.42%** |
+| lower_middle | 112.61 | 108.28 | -3.85% |
+| upper_middle | 127.67 | 122.67 | -3.92% |
+| mixed_normalised | 106.97 | 104.10 | **-2.68%** |
+| mixed_full | 127.09 | 123.69 | **-2.68%** |
+| central_deferred (control) | 57.28 | 57.33 | +0.10% |
+| central_shape1 (control) | 59.65 | 59.62 | -0.06% |
+| mixed_near_atm | 64.86 | 64.86 | -0.01% |
+| large_lower (control) | 168.54 | 167.44 | -0.65% |
+
+Every paired block improves for `finite_seed`, `wing_seed`,
+`lower_middle`, both mixed workloads, and most other targeted
+paths; the isolated `rank_small3` case has one regressing
+block (+1.56%), so no guarantee of per-invocation speedup is made.
+The changed code does not affect the large route; the latter's
+small control difference is host noise and code-layout effects.
+
+[Final baseline/candidate raw measurements, executable SHA-256 hashes,
+CPU details and verified source bridge](https://github.com/nakashima-hikaru/implied-vol/actions/runs/42443951789/artifacts/13603180352).
+
+The source bridge reports the reconstructed Git blob
+`6a6c5e55719c64de2134d8803482a892c02eb638`
+**exactly equal** to the pinned main source, proving only that
+the textual changes are exhaustively enumerated. The
+implementation's continuous source-order rounding certificate still
+needs separate re-qualification.
+
 ## Why not remove the cubic correction?
 
 A deterministic sample of 4,096 existing `mixed_normalised`
