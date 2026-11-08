@@ -112,16 +112,22 @@ let s = option.calculate_with::<VolfiBook>().unwrap();
 assert!(s > 0.0);
 ```
 
-With monomorphized polynomial rows, the scalar port is **8.40% faster**
-than `Experimental` on a synthetic 4,096-quote **chart-only** workload,
-but **23.35% slower** on a broader synthetic market workload (and slower
-on fixed single-input paths). Independent high-precision fixtures contain
-a directly routed point with `rho_J > 1`, so **it is not a substitute
-for the existing Experimental precision target**. The report below includes
-source attribution, workload coverage, full same-host measurements, accuracy
-and numerical limitations.
+The baseline whole-book chart can fail `rho_J<1`. A research
+variant, `solver::VolfiBookB17Final`, restores upstream's 17th conformal
+row and compensates final volatility reconstruction. It meets `rho_J<1`
+on **1,327 finite independent-reference tests** (495 archived seams plus
+832 new high-precision Black roots), with maximum observed values 0.905
+and 0.807, respectively. This is not a whole-domain precision proof.
+
+On a same-host scalar synthetic 4,096-quote **chart-only** workload,
+`VolfiBookB17Final` is **2.71% faster** than `Experimental`, but it
+is **25.42% slower** on the broader market-like synthetic population.
+The full original C++ volfi AVX2/AVX-512 method was not benchmarked.
+Thus it remains a research solver, **not a substitute for Experimental**.
+Numerical derivations and benchmark provenance are linked below.
 
 - [Volfi whole-book port: research results and reproducibility](docs/volfi-book-study.md)
+- [2026-11-08: compensated final volatility and 17th conformal row](docs/volfi-error-localization.md)
 
 ## Performance and precision
 

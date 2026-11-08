@@ -266,11 +266,18 @@ The `VolfiBookSinh` variant uses the exact identity
 `a = log1p(expm1(h)/(b*exp(h/2)))`.
 
 This is an opt-in research comparison **not covered by Experimental's
-source-bound conditional accuracy proof**. For 975 independent-reference
-seed-seam fixtures, the direct chart covers 495 and reaches
-`rho_J=2.17876517`; therefore it does not satisfy the `rho_J<1`
-target even over all tested accepted inputs. After compile-time
-specialization of the chart polynomial rows, a chart-only 4,096-quote
-synthetic benchmark improves by 8.40%, but the wider market and full
-API workloads remain slower than Experimental. See
-[the reproducible study](volfi-book-study.md).
+source-bound conditional accuracy proof**. The original Rust port exceeds
+`rho_J=1` on 39 of 495 archived direct-chart fixtures. The research
+`VolfiBookB17Final` variant uses the unused seventeenth conformal
+coefficient row, a corrected reciprocal square root, localized compensated
+Clenshaw evaluation, and an error-compensated final volatility product and
+sum. It meets `rho_J<1` in all **495 archived plus 832 newly generated**
+binary64-input high-precision tests. These are finite observations, not
+whole-domain certification.
+
+On a scalar same-host 4,096-quote chart-only synthetic workload, that
+variant is 2.71% faster than Experimental, but it is 25.42% slower on
+the broader market-like workload with 25.4% direct-chart coverage.
+The original C++ volfi SIMD engine is not ported or benchmarked.
+See [the baseline report](volfi-book-study.md) and
+[the extended error analysis](volfi-error-localization.md).

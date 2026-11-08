@@ -193,6 +193,34 @@ transcendentals and chart fallback overwhelm the savings. The
 `rho_J>1` accepted-input counterexample still disqualifies
 it as a precision-equivalent replacement.
 
+
+## 2026-11-08: B-series extension and localized last-sum compensation
+
+Follow-up research has established a more informative decomposition of
+the original accuracy problem and produced a faster precision-oriented
+candidate. See the complete
+[2026-11-08 error-localization report](volfi-error-localization.md).
+
+On 975 archived independent exact-binary64 reference inputs, 495 are
+inside the direct chart: the original port has 39 `rho_J>=1` failures,
+while the new `VolfiBookB17Final` has zero (maximum `rho_J=0.905019`).
+An independent 832-input, 100-digit Black-root corpus covers both
+region A and B; the original fails 33, while B17Final fails zero
+(maximum `rho_J=0.807092`).
+
+The correction is **two-dimensional**: retaining the upstream's available
+17th B-series row reduces the exact-arithmetic truncation error near
+`h=4`, while FMA/TwoSum residual recovery in the final
+`v=t + t*q*S` eliminates the remaining tested binary64 failures.
+Neither change requires new fitted coefficients.
+
+The latest scalar same-host chart-only 4,096-input comparison yields
+`Experimental=188.90 ns` and `B17Final=183.79 ns` (-2.71%),
+but the synthetic market-like workload regresses from 195.95 ns to
+245.76 ns (+25.42%). A broad precision proof and a realistic-market
+throughput advantage remain **unestablished**. The existing
+`Experimental` solver is not changed.
+
 ## Theory-first follow-up research
 
 1. **Weighted approximation / attainable precision.** Construct a direct
