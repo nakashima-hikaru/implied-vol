@@ -87,6 +87,13 @@ fn scale(a: Pair, b: f64) -> Pair {
         "exact doubling of positive t",
     )
     source = replace_once(source,
+        """    // Preserve the original near-ATM operation order exactly. Unlike
+    // the finite rank common finish, this route has a separate precision
+    // certificate and must not inherit its proof domain automatically.
+    let w = mul(mul(s, s), Pair::from(0.125));""",
+        """    let w = scale(mul(s, s), 0.125);""",
+        "near ATM old generic scalar operation")
+    source = replace_once(source,
                           "    let tt = square_scalar(t.hi);",
                           "    let tt = mul(t, t);",
                           "normal square specialization")

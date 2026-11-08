@@ -474,7 +474,10 @@ fn near_atm(a: f64, b: f64) -> f64 {
         ),
     );
     let v = f64::from_bits(0x3fd9884533d43651) * (-s.hi * s.hi / 8.0).exp();
-    let w = scale(mul(s, s), 0.125);
+    // Preserve the original near-ATM operation order exactly. Unlike
+    // the finite rank common finish, this route has a separate precision
+    // certificate and must not inherit its proof domain automatically.
+    let w = mul(mul(s, s), Pair::from(0.125));
     let mut tail = ATM_SERIES[18].hi;
     for n in (3..18).rev() {
         tail = fma(tail, w.hi, ATM_SERIES[n].hi);

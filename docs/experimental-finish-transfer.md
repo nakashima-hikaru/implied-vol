@@ -24,6 +24,24 @@ Reconstructing the old source is an exact source **binding**, not
 by itself a proof that modified floating-point computations are equal.
 The transfer argument therefore requires the following separate lemmas.
 
+## Near-ATM scope exclusion
+
+The original `small.rs::near_atm` route also called the
+shared `scale` helper when computing `w=(s^2)/8`.
+That route has **different** precision premises from
+the common small/core/wing finish, so the generic
+`scale` optimization cannot simply import the
+common-finish bound there.
+
+The candidate now explicitly invokes
+`mul(mul(s,s),Pair::from(0.125))` for this particular
+call, **exactly the expression the original
+`scale(mul(s,s),0.125)` expanded to**. Thus the
+separately reviewed near-ATM calculation retains
+its previous arithmetic and no new claim about
+that route's full domain is necessary.
+The source bridge checks the exact inverse.
+
 ## 1. Inherited proof-domain hypotheses
 
 The existing continuous seed/common-finish analysis qualifies
