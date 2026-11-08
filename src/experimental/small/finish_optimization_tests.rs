@@ -238,3 +238,49 @@ fn scalar_dd_adversarial_underflow_and_signed_zero() {
     }
     assert_eq!(checked, 14 * 512);
 }
+
+#[test]
+fn seeded_full_exponent_grid_preserves_source_bits() {
+    // Independently exercise the full f64 normal exponent range, rather than
+    // only the source-accepted region. Accepted-leaf proof obligations are
+    // narrower; this test deliberately probes the slow-path guards.
+    let mut seed = 0x2bc7_5813_9e41_d65f_u64;
+    let mut checked = 0_usize;
+    for i in 0..300_000 {
+        seed ^= seed << 13;
+        seed ^= seed >> 7;
+        seed ^= seed << 17;
+        let exponent = 1 + ((seed >> 53) % 1022);
+        let significand = seed & ((1_u64 << 52) - 1);
+        let x = f64::from_bits((exponent << 52) | significand);
+        let low = match i % 8 {
+            0 => f64::from_bits(1),
+            1 => -f64::from_bits(1),
+            2 => 0.0,
+            3 => -0.0,
+            4 => fma(x, 0.7, -(x * 0.7)),
+            _ => {
+                let ulp = f64::from_bits(x.to_bits() + 1) - x;
+                let scale = f64::from((seed >> 7) % 1024) / 2048.0 - 0.25;
+                scale * ulp
+            }
+        };
+        let pair = add(Pair::from(x), Pair::from(low));
+        let old_square = mul(Pair::from(x), Pair::from(x));
+        let new_square = square_scalar(x);
+        assert_eq!(old_square.hi.to_bits(), new_square.hi.to_bits(), "square hi i={i}");
+        assert_eq!(old_square.lo.to_bits(), new_square.lo.to_bits(), "square lo i={i}");
+        for scalar in [-0.5, 2.0, 0.125, 0.7] {
+            let old = old_scale(pair, scalar);
+            let new = scale(pair, scalar);
+            assert_eq!(old.hi.to_bits(), new.hi.to_bits(), "scale hi i={i} scalar={scalar}");
+            assert_eq!(old.lo.to_bits(), new.lo.to_bits(), "scale lo i={i} scalar={scalar}");
+        }
+        let old = old_scale(pair, -0.5);
+        let new = scale_negative_half(pair);
+        assert_eq!(old.hi.to_bits(), new.hi.to_bits(), "half hi i={i}");
+        assert_eq!(old.lo.to_bits(), new.lo.to_bits(), "half lo i={i}");
+        checked += 1;
+    }
+    assert_eq!(checked, 300_000);
+}
