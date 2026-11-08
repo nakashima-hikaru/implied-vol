@@ -177,6 +177,14 @@ jobs:
             --iterations 120000 --rounds 2 --blocks 4 \
             --output finish-results/paired.json > finish-results/summary.md
           cat finish-results/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Profile actual rank-route correction magnitudes (test-only)
+        shell: bash
+        run: |
+          CARGO_TARGET_DIR="$GITHUB_WORKSPACE/target-profile" cargo test \
+            --manifest-path candidate/Cargo.toml --features experimental --lib \
+            profile_existing_finish_residual_distribution -- --nocapture \
+            > finish-results/residual-profile.txt 2>&1
+          grep 'FINISH_N_PROFILE' finish-results/residual-profile.txt >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
