@@ -229,6 +229,8 @@ mod experimental;
 mod explicit_black;
 mod flashiv;
 pub mod solver;
+#[cfg(feature = "volfi_book")]
+pub mod volfi_book;
 
 #[cfg(feature = "cxx_bench")]
 pub mod cxx;

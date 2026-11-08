@@ -50,12 +50,94 @@ pub struct FlashIv<SpFn = DefaultSpecialFn>(PhantomData<SpFn>);
 #[cfg(feature = "experimental")]
 pub struct Experimental;
 
+/// Research volfi whole-book direct chart with Experimental fallback.
+#[cfg(feature = "volfi_book")]
+pub struct VolfiBook;
+
+/// Research variant of `VolfiBook` using the exact sinh-coordinate identity.
+#[cfg(feature = "volfi_book")]
+pub struct VolfiBookSinh;
+
+/// Research variant that refines the inverse square root in region B.
+#[cfg(feature = "volfi_book")]
+pub struct VolfiBookRsqrt;
+
+/// Experimental twofold A/B coordinate and Clenshaw evaluation.
+#[cfg(feature = "volfi_book")]
+pub struct VolfiBookCompensated;
+
+/// Localized final-stage compensated Clenshaw reference.
+#[cfg(feature = "volfi_book")]
+pub struct VolfiBookSelective;
+
+/// Localized FMA error-free transformation with no general twofold recurrence.
+#[cfg(feature = "volfi_book")]
+pub struct VolfiBookEndpoint;
+
+/// Endpoint-compensated volfi book with additional B-series row 17.
+#[cfg(feature = "volfi_book")]
+pub struct VolfiBookB17;
+
+/// Endpoint-compensated volfi book with additional B-series rows 17 and 18.
+#[cfg(feature = "volfi_book")]
+pub struct VolfiBookB18;
+
+/// B-series row 17 with a compensated final volatility reconstruction.
+#[cfg(feature = "volfi_book")]
+pub struct VolfiBookB17Final;
+
 impl<SpFn: SpecialFn> sealed::Sealed for Hybrid<SpFn> {}
 impl<SpFn: SpecialFn> sealed::Sealed for Jaeckel<SpFn> {}
 #[cfg(feature = "flashiv")]
 impl<SpFn: SpecialFn> sealed::Sealed for FlashIv<SpFn> {}
 #[cfg(feature = "experimental")]
 impl sealed::Sealed for Experimental {
+    const MINIMUM_TIME_VALUE: f64 = 0.0;
+    const CHECK_ROUNDED_INTERIOR_CAP: bool = false;
+}
+
+#[cfg(feature = "volfi_book")]
+impl sealed::Sealed for VolfiBook {
+    const MINIMUM_TIME_VALUE: f64 = 0.0;
+    const CHECK_ROUNDED_INTERIOR_CAP: bool = false;
+}
+#[cfg(feature = "volfi_book")]
+impl sealed::Sealed for VolfiBookSinh {
+    const MINIMUM_TIME_VALUE: f64 = 0.0;
+    const CHECK_ROUNDED_INTERIOR_CAP: bool = false;
+}
+#[cfg(feature = "volfi_book")]
+impl sealed::Sealed for VolfiBookRsqrt {
+    const MINIMUM_TIME_VALUE: f64 = 0.0;
+    const CHECK_ROUNDED_INTERIOR_CAP: bool = false;
+}
+#[cfg(feature = "volfi_book")]
+impl sealed::Sealed for VolfiBookCompensated {
+    const MINIMUM_TIME_VALUE: f64 = 0.0;
+    const CHECK_ROUNDED_INTERIOR_CAP: bool = false;
+}
+#[cfg(feature = "volfi_book")]
+impl sealed::Sealed for VolfiBookSelective {
+    const MINIMUM_TIME_VALUE: f64 = 0.0;
+    const CHECK_ROUNDED_INTERIOR_CAP: bool = false;
+}
+#[cfg(feature = "volfi_book")]
+impl sealed::Sealed for VolfiBookEndpoint {
+    const MINIMUM_TIME_VALUE: f64 = 0.0;
+    const CHECK_ROUNDED_INTERIOR_CAP: bool = false;
+}
+#[cfg(feature = "volfi_book")]
+impl sealed::Sealed for VolfiBookB17 {
+    const MINIMUM_TIME_VALUE: f64 = 0.0;
+    const CHECK_ROUNDED_INTERIOR_CAP: bool = false;
+}
+#[cfg(feature = "volfi_book")]
+impl sealed::Sealed for VolfiBookB18 {
+    const MINIMUM_TIME_VALUE: f64 = 0.0;
+    const CHECK_ROUNDED_INTERIOR_CAP: bool = false;
+}
+#[cfg(feature = "volfi_book")]
+impl sealed::Sealed for VolfiBookB17Final {
     const MINIMUM_TIME_VALUE: f64 = 0.0;
     const CHECK_ROUNDED_INTERIOR_CAP: bool = false;
 }
@@ -137,6 +219,168 @@ impl BlackSolver for Experimental {
             return Some(f64::INFINITY);
         }
         let s = crate::experimental::implied_total_volatility(x.abs(), beta);
+        (s.is_finite() && s > 0.0).then_some(s)
+    }
+}
+
+#[cfg(feature = "volfi_book")]
+impl BlackSolver for VolfiBookSinh {
+    #[inline]
+    fn implied_total_volatility(x: f64, beta: f64) -> Option<f64> {
+        if !valid_input(x, beta) {
+            return None;
+        }
+        if beta == 0.0 {
+            return Some(0.0);
+        }
+        if x == 0.0 && beta == 1.0 {
+            return Some(f64::INFINITY);
+        }
+        let s = crate::volfi_book::implied_total_volatility_sinh(x.abs(), beta);
+        (s.is_finite() && s > 0.0).then_some(s)
+    }
+}
+
+#[cfg(feature = "volfi_book")]
+impl BlackSolver for VolfiBook {
+    #[inline]
+    fn implied_total_volatility(x: f64, beta: f64) -> Option<f64> {
+        if !valid_input(x, beta) {
+            return None;
+        }
+        if beta == 0.0 {
+            return Some(0.0);
+        }
+        if x == 0.0 && beta == 1.0 {
+            return Some(f64::INFINITY);
+        }
+        let s = crate::volfi_book::implied_total_volatility(x.abs(), beta);
+        (s.is_finite() && s > 0.0).then_some(s)
+    }
+}
+
+#[cfg(feature = "volfi_book")]
+impl BlackSolver for VolfiBookRsqrt {
+    #[inline]
+    fn implied_total_volatility(x: f64, beta: f64) -> Option<f64> {
+        if !valid_input(x, beta) {
+            return None;
+        }
+        if beta == 0.0 {
+            return Some(0.0);
+        }
+        if x == 0.0 && beta == 1.0 {
+            return Some(f64::INFINITY);
+        }
+        let s = crate::volfi_book::implied_total_volatility_rsqrt(x.abs(), beta);
+        (s.is_finite() && s > 0.0).then_some(s)
+    }
+}
+
+#[cfg(feature = "volfi_book")]
+impl BlackSolver for VolfiBookCompensated {
+    #[inline]
+    fn implied_total_volatility(x: f64, beta: f64) -> Option<f64> {
+        if !valid_input(x, beta) {
+            return None;
+        }
+        if beta == 0.0 {
+            return Some(0.0);
+        }
+        if x == 0.0 && beta == 1.0 {
+            return Some(f64::INFINITY);
+        }
+        let s = crate::volfi_book::implied_total_volatility_compensated(x.abs(), beta);
+        (s.is_finite() && s > 0.0).then_some(s)
+    }
+}
+
+#[cfg(feature = "volfi_book")]
+impl BlackSolver for VolfiBookSelective {
+    #[inline]
+    fn implied_total_volatility(x: f64, beta: f64) -> Option<f64> {
+        if !valid_input(x, beta) {
+            return None;
+        }
+        if beta == 0.0 {
+            return Some(0.0);
+        }
+        if x == 0.0 && beta == 1.0 {
+            return Some(f64::INFINITY);
+        }
+        let s = crate::volfi_book::implied_total_volatility_selective(x.abs(), beta);
+        (s.is_finite() && s > 0.0).then_some(s)
+    }
+}
+
+#[cfg(feature = "volfi_book")]
+impl BlackSolver for VolfiBookEndpoint {
+    #[inline]
+    fn implied_total_volatility(x: f64, beta: f64) -> Option<f64> {
+        if !valid_input(x, beta) {
+            return None;
+        }
+        if beta == 0.0 {
+            return Some(0.0);
+        }
+        if x == 0.0 && beta == 1.0 {
+            return Some(f64::INFINITY);
+        }
+        let s = crate::volfi_book::implied_total_volatility_endpoint(x.abs(), beta);
+        (s.is_finite() && s > 0.0).then_some(s)
+    }
+}
+
+#[cfg(feature = "volfi_book")]
+impl BlackSolver for VolfiBookB17 {
+    #[inline]
+    fn implied_total_volatility(x: f64, beta: f64) -> Option<f64> {
+        if !valid_input(x, beta) {
+            return None;
+        }
+        if beta == 0.0 {
+            return Some(0.0);
+        }
+        if x == 0.0 && beta == 1.0 {
+            return Some(f64::INFINITY);
+        }
+        let s = crate::volfi_book::implied_total_volatility_b17(x.abs(), beta);
+        (s.is_finite() && s > 0.0).then_some(s)
+    }
+}
+
+#[cfg(feature = "volfi_book")]
+impl BlackSolver for VolfiBookB18 {
+    #[inline]
+    fn implied_total_volatility(x: f64, beta: f64) -> Option<f64> {
+        if !valid_input(x, beta) {
+            return None;
+        }
+        if beta == 0.0 {
+            return Some(0.0);
+        }
+        if x == 0.0 && beta == 1.0 {
+            return Some(f64::INFINITY);
+        }
+        let s = crate::volfi_book::implied_total_volatility_b18(x.abs(), beta);
+        (s.is_finite() && s > 0.0).then_some(s)
+    }
+}
+
+#[cfg(feature = "volfi_book")]
+impl BlackSolver for VolfiBookB17Final {
+    #[inline]
+    fn implied_total_volatility(x: f64, beta: f64) -> Option<f64> {
+        if !valid_input(x, beta) {
+            return None;
+        }
+        if beta == 0.0 {
+            return Some(0.0);
+        }
+        if x == 0.0 && beta == 1.0 {
+            return Some(f64::INFINITY);
+        }
+        let s = crate::volfi_book::implied_total_volatility_b17_final(x.abs(), beta);
         (s.is_finite() && s > 0.0).then_some(s)
     }
 }

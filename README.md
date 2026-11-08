@@ -61,9 +61,11 @@ let volatility = option.calculate_with::<Jaeckel>().unwrap();
 | `solver::Jaeckel` | Always | Let's Be Rational |
 | `solver::FlashIv` | `flashiv` feature | FlashIV paper's fixed-count Algorithm 1 |
 | `solver::Experimental` | `experimental` feature | Author's own implementation |
+| `solver::VolfiBook` | `volfi_book` feature | Research port of volfi's whole-book direct charts, with Experimental fallback |
+| `solver::VolfiBookSinh` | `volfi_book` feature | Research-only equivalent-coordinate variant |
 
-Solver features add types and leave the default solver selection unchanged. Both
-optional solvers can be enabled together:
+Solver features add types and leave the default solver selection unchanged. FlashIv
+and Experimental can be enabled together:
 
 ```toml
 implied-vol = { version = "2.1", features = ["flashiv", "experimental"] }
@@ -83,8 +85,49 @@ Black solver selection does not change pricing or Bachelier inversion.
 |---|---|
 | `flashiv` | Makes `solver::FlashIv` available |
 | `experimental` | Makes `solver::Experimental` available |
+| `volfi_book` | Adds the experimental `VolfiBook` and `VolfiBookSinh` solvers, and enables `experimental` |
 | `fma` | Enables optional FMA arithmetic in shared numerical kernels |
 | `cxx_bench` | Builds the bundled C++ comparison implementation; requires a C++ compiler |
+
+### Experimental volfi whole-book research
+
+On this source branch, `volfi_book` enables an **opt-in research port of volfi's
+whole-book direct A/B charts**. It is **not the complete four-chart C++ volfi
+engine**: inputs outside the direct charts use the existing Experimental solver,
+and Rust's standard `exp_m1` / `ln_1p` replace volfi's vectorizable custom
+transcendental kernels. This feature does **not** change the default solver.
+
+```toml
+# Local checkout of this research branch; volfi_book is not yet published to crates.io.
+implied-vol = { path = "../implied-vol", features = ["volfi_book"] }
+```
+
+```rust
+use implied_vol::{ImpliedBlackVolatilityNormalised, solver::VolfiBook};
+
+let option = ImpliedBlackVolatilityNormalised::builder()
+    .log_moneyness(-0.2).normalised_price(0.05)
+    .build().unwrap();
+let s = option.calculate_with::<VolfiBook>().unwrap();
+assert!(s > 0.0);
+```
+
+The baseline whole-book chart can fail `rho_J<1`. A research
+variant, `solver::VolfiBookB17Final`, restores upstream's 17th conformal
+row and compensates final volatility reconstruction. It meets `rho_J<1`
+on **1,327 finite independent-reference tests** (495 archived seams plus
+832 new high-precision Black roots), with maximum observed values 0.905
+and 0.807, respectively. This is not a whole-domain precision proof.
+
+On a same-host scalar synthetic 4,096-quote **chart-only** workload,
+`VolfiBookB17Final` is **2.71% faster** than `Experimental`, but it
+is **25.42% slower** on the broader market-like synthetic population.
+The full original C++ volfi AVX2/AVX-512 method was not benchmarked.
+Thus it remains a research solver, **not a substitute for Experimental**.
+Numerical derivations and benchmark provenance are linked below.
+
+- [Volfi whole-book port: research results and reproducibility](docs/volfi-book-study.md)
+- [2026-11-08: compensated final volatility and 17th conformal row](docs/volfi-error-localization.md)
 
 ## Performance and precision
 

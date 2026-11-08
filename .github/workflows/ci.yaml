@@ -28,6 +28,10 @@ jobs:
             features: flashiv,experimental,cxx_bench
           - mode: combined-fma
             features: flashiv,experimental,fma,cxx_bench
+          - mode: volfi-book
+            features: volfi_book,cxx_bench
+          - mode: volfi-book-fma
+            features: volfi_book,fma,cxx_bench
     name: Test ${{ matrix.mode }}
     steps:
       - uses: actions/checkout@v4

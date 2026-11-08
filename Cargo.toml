@@ -14,6 +14,7 @@ default = []
 fma = []
 flashiv = []
 experimental = ["dep:fearless_simd"]
+volfi_book = ["experimental"]
 cxx_bench = ["cxx", "cxx-build"]
 
 [dev-dependencies]
@@ -49,3 +50,12 @@ lto = true
 [[bench]]
 name = "implied_black_vol_paths"
 harness = false
+
+[[bench]]
+name = "volfi_compare"
+harness = false
+required-features = ["volfi_book"]
+
+[[example]]
+name = "volfi_book_stress"
+required-features = ["volfi_book"]
